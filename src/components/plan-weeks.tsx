@@ -87,7 +87,9 @@ export function PlanWeeks({ first, last, phaseColor }: { first: number; last: nu
       const value = weekFromHash(window.location.hash);
       if (!value || !values.has(value)) return;
       accordion.open(value);
-      document.getElementById(value)?.scrollIntoView({ block: "start" });
+      const item = document.getElementById(value);
+      item?.scrollIntoView({ block: "start" });
+      item?.querySelector("button")?.focus({ preventScroll: true });
     }
     openFromHash();
     window.addEventListener("hashchange", openFromHash);

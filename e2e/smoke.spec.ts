@@ -57,6 +57,7 @@ test("a timeline era opens its first week in the plan", async ({ page }) => {
   await page.getByRole("link", { name: "Open week 13 in the plan" }).click();
   await expect(page).toHaveURL(/\/plan#week-13$/);
   await expect(page.getByRole("button", { name: /Wk 13 / })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: /Wk 13 / })).toBeFocused();
 });
 
 test("the memory verse switches between hidden, first letters and full text", async ({ page }) => {

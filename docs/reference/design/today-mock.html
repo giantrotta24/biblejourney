@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-palette="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today · One-Year Bible Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&display=block" rel="stylesheet">
+<style>
+  :root, [data-palette="a"] {
+    --ground: #fbfaf8; --ink: #2b2a28; --muted: #77736d; --hair: #e6e3de; --accent: #c8453b; --track: #b4afa8;
+  }
+  [data-palette="b"] {
+    --ground: #ffffff; --ink: #1c1c1e; --muted: #6e6e73; --hair: #e5e5ea; --accent: #2a72c2; --track: #aeaeb4;
+  }
+  [data-palette="c"] {
+    --ground: #f4f6f1; --ink: #1f2a24; --muted: #646e67; --hair: #dfe4dc; --accent: #2f6b4f; --track: #a7b0a8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--ground); -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Literata", Georgia, serif;
+    font-optical-sizing: auto;
+    font-size: 17px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: lining-nums;
+  }
+  ::selection { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--ink); }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  .sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; }
+  .page { max-width: 390px; margin: 0 auto; padding: 0 24px 56px; }
+
+  /* top */
+  .top { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .brand { font-size: 15px; font-weight: 500; letter-spacing: 0; color: var(--ink); }
+  .tools { display: flex; margin-right: -12px; }
+  .tools a { width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
+  .tools svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  nav { display: flex; justify-content: space-between; border-bottom: 1px solid var(--hair); margin: 0 -2px; }
+  nav a {
+    position: relative; height: 46px; display: flex; align-items: center; padding: 0 2px;
+    font-size: 15px; color: var(--muted); letter-spacing: -0.005em;
+  }
+  nav a[aria-current] { color: var(--ink); font-weight: 600; }
+  nav a[aria-current]::after {
+    content: ""; position: absolute; left: 2px; right: 2px; bottom: -1px; height: 2px; background: var(--accent); border-radius: 1px;
+  }
+
+  /* year */
+  .year { margin-top: 30px; }
+  .year svg { display: block; width: 100%; height: 18px; overflow: visible; }
+  .year p { margin-top: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+  /* today */
+  .today { margin-top: 40px; }
+  h1 {
+    font-size: 46px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em;
+    font-variation-settings: "opsz" 72;
+  }
+  .context { margin-top: 14px; font-size: 17px; line-height: 1.4; }
+  .context .day { color: var(--ink); }
+  .context .theme { color: var(--ink); }
+  .meta { margin-top: 4px; font-size: 14px; color: var(--muted); }
+
+  .actions { margin-top: 28px; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; width: 100%; height: 50px;
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    font-size: 16px; font-weight: 600; letter-spacing: 0.005em;
+  }
+  .link {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; margin-top: 6px;
+    font-size: 15px; color: var(--accent); font-weight: 500;
+  }
+  .link svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* sections */
+  h2 { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; }
+  section { margin-top: 44px; }
+  section.week { margin-top: 36px; }
+  .week h2 { margin-bottom: 6px; }
+
+  ol { list-style: none; }
+  ol li { border-bottom: 1px solid var(--hair); }
+  ol li:last-child { border-bottom: 0; }
+  .row { display: grid; grid-template-columns: 22px 44px 1fr; align-items: center; column-gap: 12px; min-height: 52px; }
+  .box { width: 20px; height: 20px; }
+  .box circle { fill: none; stroke: var(--track); stroke-width: 1.5; }
+  .done .box circle { stroke: var(--muted); }
+  .done .box path { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .now .box circle { stroke: var(--accent); }
+  .now .box .dot { fill: var(--accent); stroke: none; }
+  .dname { font-size: 13px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+  .reading { font-size: 17px; }
+  .done .reading { color: var(--muted); }
+  .now .reading { font-weight: 600; }
+  .now .dname { color: var(--accent); font-weight: 600; }
+  .note { margin-top: 14px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+  .sunday p { margin-top: 10px; font-size: 17px; line-height: 1.55; }
+  .verse blockquote { margin-top: 12px; font-size: 22px; line-height: 1.45; font-weight: 400; letter-spacing: -0.005em; }
+  .verse cite { display: block; margin-top: 10px; font-style: normal; font-size: 14px; color: var(--muted); }
+
+  .ask h2 { margin-bottom: 4px; }
+  .prompts { display: flex; flex-wrap: nowrap; justify-content: space-between; }
+  .prompts a { height: 44px; display: inline-flex; align-items: center; font-size: 14px; white-space: nowrap; color: var(--accent); font-weight: 500;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <span class="brand">One-Year Bible Journey</span>
+    <div class="tools">
+      <a href="#" aria-label="Account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.75"/><path d="M4.75 20c.9-3.6 3.8-5.5 7.25-5.5s6.35 1.9 7.25 5.5"/></svg></a>
+      <a href="#" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></a>
+    </div>
+  </header>
+
+  <nav class="sans" aria-label="Main">
+    <a href="#" aria-current="page">Today</a>
+    <a href="#">Plan</a>
+    <a href="#">Timeline</a>
+    <a href="#">Verses</a>
+    <a href="#">Who’s who</a>
+  </nav>
+
+  <div class="year" aria-label="Your year: week 1 of 52">
+    <svg id="yearline" viewBox="0 0 342 18" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <p class="sans">Week 1 of 52 · 1 of 312 days</p>
+  </div>
+
+  <main class="today">
+    <h1>Genesis 5–7</h1>
+    <p class="context"><span class="day">Tuesday</span> · <span class="theme">Creation and the early world</span></p>
+    <p class="meta sans">3 chapters · about 15 minutes</p>
+
+    <div class="actions sans">
+      <a class="btn" href="#">Mark as read</a>
+      <a class="link" href="#">Read online <svg viewBox="0 0 16 16"><path d="M3 8h9.5M8.5 4l4 4-4 4"/></svg></a>
+    </div>
+  </main>
+
+  <section class="week">
+    <h2>This week</h2>
+    <ol>
+      <li class="row done"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/><path d="M6.4 10.3l2.4 2.4 4.8-5"/></svg><span class="dname sans">Mon</span><span class="reading">Genesis 1–4</span></li>
+      <li class="row now" aria-current="date"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/><circle class="dot" cx="10" cy="10" r="3.25"/></svg><span class="dname sans">Tue</span><span class="reading">Genesis 5–7</span></li>
+      <li class="row"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/></svg><span class="dname sans">Wed</span><span class="reading">Genesis 8–11</span></li>
+      <li class="row"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/></svg><span class="dname sans">Thu</span><span class="reading">Job 1–4</span></li>
+      <li class="row"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/></svg><span class="dname sans">Fri</span><span class="reading">Job 5–8</span></li>
+      <li class="row"><svg class="box" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.75"/></svg><span class="dname sans">Sat</span><span class="reading">Job 9–12</span></li>
+    </ol>
+    <p class="note">On Thursday the plan moves to Job, whose setting resembles the age of the patriarchs.</p>
+  </section>
+
+  <section class="sunday">
+    <h2>This Sunday</h2>
+    <p>Find the Tigris and Euphrates on a map; this is the world of Genesis 1–11.</p>
+  </section>
+
+  <section class="verse">
+    <h2>Memory verse</h2>
+    <blockquote>“In the beginning God created the heaven and the earth.”</blockquote>
+    <cite class="sans">Genesis 1:1 · KJV</cite>
+  </section>
+
+  <section class="ask">
+    <h2>Ask about today</h2>
+    <div class="prompts sans">
+      <a href="#">Historical setting</a>
+      <a href="#">Where on the map</a>
+      <a href="#">Who’s who</a>
+    </div>
+  </section>
+</div>
+
+<script>
+  // 52 week marks; small gaps at the three phase boundaries (after weeks 12, 26, 39).
+  (function () {
+    var svg = document.getElementById('yearline');
+    var W = 342, gaps = [12, 26, 39], gap = 5, n = 52;
+    var step = (W - 3 - gaps.length * gap) / (n - 1);
+    var x = 1.5, out = '';
+    for (var w = 1; w <= n; w++) {
+      if (w === 1) {
+        out += '<rect x="' + (x - 1.5) + '" y="0" width="3" height="18" rx="1.5" fill="var(--accent)"/>';
+      } else {
+        out += '<rect x="' + (x - 0.75) + '" y="5" width="1.5" height="8" rx="0.75" fill="var(--track)"/>';
+      }
+      x += step;
+      if (gaps.indexOf(w) !== -1) x += gap;
+    }
+    svg.innerHTML = out;
+  })();
+</script>
+</body>
+</html>

@@ -85,6 +85,11 @@ test("the memory verse switches between hidden, first letters and full text", as
   await expect(card.getByText("I t b G c t h a t e.")).toBeVisible();
   await card.getByRole("radio", { name: "Full text" }).click();
   await expect(card.getByText("In the beginning God created the heaven and the earth.")).toBeVisible();
+  const selected = card.getByRole("radio", { name: "Full text" });
+  const other = card.getByRole("radio", { name: "Hide", exact: true });
+  const weight = async (radio: typeof selected) => Number(await radio.evaluate((element) => getComputedStyle(element).fontWeight));
+  expect(await weight(selected)).toBeGreaterThan(await weight(other));
+  expect(await selected.evaluate((element) => parseFloat(getComputedStyle(element, "::after").height))).toBeGreaterThan(0);
 });
 
 test.describe("dark theme", () => {
@@ -93,8 +98,8 @@ test.describe("dark theme", () => {
   test("follows the system and yields to a data-theme override", async ({ page }) => {
     await page.goto("/");
     const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    expect(await background()).toBe("rgb(14, 20, 36)");
+    expect(await background()).toBe("rgb(20, 26, 22)");
     await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
-    expect(await background()).toBe("rgb(243, 245, 249)");
+    expect(await background()).toBe("rgb(244, 246, 241)");
   });
 });

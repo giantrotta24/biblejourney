@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { DAY_COUNT, DAYS_PER_WEEK, getPhase, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
 import { progressStats, weekMask, weekState } from "@/lib/progress";
-import { phaseColor, weekAnchor } from "@/lib/phase";
+import { weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress, useProgressUnsaved } from "@/progress/client";
 
 function weekMaskCount(done: ReadonlySet<number>, week: number) {
@@ -14,13 +14,10 @@ function weekMaskCount(done: ReadonlySet<number>, week: number) {
 
 const phaseSummary = phases.map((phase) => `${phase.name}, weeks ${phase.weeks[0]}–${phase.weeks[1]}`).join("; ");
 
-const SEGMENT = 10;
-const HEIGHT = 64;
-const TOP = 12;
-const HIT_TOP = -14;
-const HIT_BOTTOM = 12;
-const BAR_INSET = 3;
-const BAR_WIDTH = SEGMENT - BAR_INSET * 2;
+const WIDTH = 342;
+const HEIGHT = 18;
+const PHASE_GAP = 5;
+const STEP = (WIDTH - 3 - (phases.length - 1) * PHASE_GAP) / (WEEK_COUNT - 1);
 
 function weekHref(week: number) {
   return `/plan#${weekAnchor(week)}`;
@@ -84,7 +81,7 @@ export function ProgressStrip() {
   }
 
   return (
-    <section aria-labelledby="journey-heading" aria-busy={!progress.ready} className="mb-8">
+    <section aria-labelledby="journey-heading" aria-busy={!progress.ready} className="-mt-[13px] mb-10 font-sans">
       <h2 id="journey-heading" className="sr-only">
         Your journey
       </h2>
@@ -103,17 +100,21 @@ export function ProgressStrip() {
       >
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${WEEK_COUNT * SEGMENT} ${HEIGHT}`}
+        viewBox={`0 -13 ${WIDTH} 44`}
         preserveAspectRatio="none"
-        className="block h-14 w-full touch-manipulation overflow-visible"
+        className="block h-11 w-full touch-manipulation overflow-visible"
         role="group"
         aria-label="Weeks of the plan. Use the left and right arrow keys to move between weeks."
         onKeyDown={onKeyDown}
       >
         {weeks.map((week) => {
-          const x = (week.week - 1) * SEGMENT;
-          const color = phaseColor(week.phase);
+          const x = 1.5 + (week.week - 1) * STEP + phases.filter((phase) => phase.weeks[1] < week.week).length * PHASE_GAP;
           const state = weekState(progress.days, week.week);
+          const current = week.week === currentWeek;
+          const height = current ? HEIGHT : 8;
+          const top = (HEIGHT - height) / 2;
+          const width = current || state !== "empty" ? 3 : 1.5;
+          const color = current || state !== "empty" ? "var(--accent)" : "var(--track)";
           return (
             <a
               key={week.week}
@@ -130,40 +131,37 @@ export function ProgressStrip() {
               data-week={week.week}
               data-state={state}
             >
-              <rect data-part="hit" x={x} y={HIT_TOP} width={SEGMENT} height={HEIGHT - HIT_TOP + HIT_BOTTOM} fill="transparent" />
+              <rect data-part="hit" x={x - STEP / 2} y={-13} width={STEP} height={44} fill="transparent" />
               <rect
                 data-part="focus"
-                x={x + 0.6}
-                y={TOP - 3}
-                width={SEGMENT - 1.2}
-                height={HEIGHT - TOP + 5}
-                rx={3}
+                x={x - STEP / 2}
+                y={-3}
+                width={STEP}
+                height={24}
+                rx={1}
                 fill="none"
                 stroke="transparent"
                 strokeWidth={2}
                 vectorEffect="non-scaling-stroke"
               />
-              <g className={week.week === currentWeek ? "current-week" : undefined}>
+              <g className={current ? "current-week" : undefined} data-part={current ? "marker" : undefined}>
                 <rect
                   data-part="outline"
-                  x={x + BAR_INSET}
-                  y={TOP}
-                  width={BAR_WIDTH}
-                  height={HEIGHT - TOP - 1}
-                  rx={1.5}
-                  fill={state === "full" ? color : "none"}
-                  stroke={color}
-                  strokeWidth={1.5}
-                  vectorEffect="non-scaling-stroke"
+                  x={x - width / 2}
+                  y={top}
+                  width={width}
+                  height={state === "partial" ? (height - 3) / 2 : height}
+                  rx={width / 2}
+                  fill={color}
                 />
                 {state === "partial" && (
                   <rect
                     data-part="bar"
-                    x={x + BAR_INSET}
-                    y={TOP + (HEIGHT - TOP - 1) / 2}
-                    width={BAR_WIDTH}
-                    height={(HEIGHT - TOP - 1) / 2}
-                    rx={1.5}
+                    x={x - width / 2}
+                    y={top + (height + 3) / 2}
+                    width={width}
+                    height={(height - 3) / 2}
+                    rx={width / 2}
                     fill={color}
                   />
                 )}
@@ -171,34 +169,12 @@ export function ProgressStrip() {
             </a>
           );
         })}
-        {currentWeek && (
-          <path
-            data-part="marker"
-            pointerEvents="none"
-            d={`M${(currentWeek - 1) * SEGMENT - 1} 0 H${currentWeek * SEGMENT + 1} L${(currentWeek - 0.5) * SEGMENT} 8.5 Z`}
-            fill="var(--ink)"
-          />
-        )}
       </svg>
-      <ul
-        className="m-0 mt-2 grid list-none gap-x-[0.4%] p-0 text-[0.8125rem] leading-snug text-muted"
-        style={{ gridTemplateColumns: phases.map((p) => `${p.weeks[1] - p.weeks[0] + 1}fr`).join(" ") }}
-        aria-hidden="true"
-      >
-        {phases.map((phase) => (
-          <li key={phase.id} className="border-t-2 pt-1.5" style={{ borderColor: phaseColor(phase.id) }}>
-            <span className="block text-ink tabular-nums">
-              {phase.weeks[0]}–{phase.weeks[1]}
-            </span>
-            <span className="hidden pr-2 sm:block">{phase.name}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-1 mb-0 min-h-11" aria-hidden={!progress.ready || undefined}>
+      <p className="mt-0.5 mb-0 min-h-11" aria-hidden={!progress.ready || undefined}>
         {progress.ready && (
           <Link
             href={captionWeek ? weekHref(captionWeek) : "/plan"}
-            className="inline-flex min-h-11 items-center py-1 text-[0.9375rem] leading-snug text-ink no-underline hover:underline"
+            className="inline-flex min-h-11 items-start text-[0.8125rem] leading-snug tracking-[0.01em] text-muted no-underline hover:underline"
             data-testid="strip-caption"
           >
             <span>
@@ -215,18 +191,18 @@ export function ProgressStrip() {
         )}
       </p>
       </div>
-      <p className="mt-1 mb-0 flex flex-wrap gap-x-4 gap-y-0.5 text-[0.9375rem] text-muted" aria-hidden="true" data-testid="journey-stats">
+      <p className="m-0 flex flex-wrap gap-x-3 gap-y-0.5 text-[0.8125rem] text-muted" aria-hidden="true" data-testid="journey-stats">
         <span className="whitespace-nowrap">
-          <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> read
+          <span className={`tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> read
         </span>
         <span className="whitespace-nowrap">
-          <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{daysDone}</span> of {DAY_COUNT} days
+          <span className={`tabular-nums ${statsClass ?? ""}`}>{daysDone}</span> of {DAY_COUNT} days
         </span>
         <span className="whitespace-nowrap">
-          <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{versesLearned}</span> of {WEEK_COUNT} verses
+          <span className={`tabular-nums ${statsClass ?? ""}`}>{versesLearned}</span> of {WEEK_COUNT} verses
         </span>
       </p>
-      <p aria-live="polite" className="mt-2 mb-0 text-[0.9375rem] text-muted">
+      <p aria-live="polite" className={`${unsaved ? "mt-2" : "mt-0"} mb-0 text-[0.9375rem] text-muted`}>
         {unsaved && "Progress isn’t being saved on this device right now."}
       </p>
     </section>

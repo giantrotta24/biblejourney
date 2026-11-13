@@ -94,7 +94,7 @@ test("each route has its own title, one h1, the main landmarks and an English la
 const LAST_STOP: Record<(typeof ROUTES)[number]["path"], RegExp> = {
   "/": /^I know it/,
   "/plan": /^Wk 52/,
-  "/timeline": /^Open week \d+ in the plan$/,
+  "/timeline": /^Open week \d+ in the plan( →)?$/,
   "/verses": /^I know it/,
   "/whos-who": /^Who’s who$/,
   "/account": /^Who’s who$/,

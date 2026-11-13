@@ -5,6 +5,7 @@ import {
   createSettingsStore,
   parseSettings,
   reconcileProfile,
+  THEME_COLORS,
   THEME_SCRIPT,
   TRANSLATIONS,
   type ProfileRemote,
@@ -93,6 +94,22 @@ describe("Read online links", () => {
 });
 
 describe("theme script", () => {
+  it("uses the sage grounds for browser chrome", () => {
+    expect(THEME_COLORS).toEqual({ light: "#f4f6f1", dark: "#141a16" });
+  });
+
+  it("updates every theme-color meta before paint when an override is saved", () => {
+    const content = ["", ""];
+    const metas = content.map((_, index) => ({ setAttribute: (_name: string, value: string) => { content[index] = value; } }));
+    for (const theme of ["light", "dark"] as const) {
+      new Function("document", "localStorage", THEME_SCRIPT)(
+        { documentElement: { dataset: {} }, querySelectorAll: () => metas },
+        memoryStorage({ "bible-journey:settings": JSON.stringify({ theme }) }),
+      );
+      expect(content).toEqual([THEME_COLORS[theme], THEME_COLORS[theme]]);
+    }
+  });
+
   function run(stored: string | null) {
     const root = { dataset: {} as Record<string, string> };
     const storage = memoryStorage(stored === null ? {} : { "bible-journey:settings": stored });

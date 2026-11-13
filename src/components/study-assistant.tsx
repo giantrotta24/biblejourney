@@ -71,7 +71,7 @@ function NotSetUp() {
   return (
     <>
       <p className="m-0 max-w-[65ch]">The study assistant isn’t set up on this copy of the app.</p>
-      <p className="mt-1 mb-0 max-w-[65ch] text-sm text-muted">Everything else works as usual.</p>
+      <p className="mt-1 mb-0 max-w-[65ch] font-sans text-sm text-muted">Everything else works as usual.</p>
     </>
   );
 }
@@ -124,10 +124,10 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
 
   return (
     <section aria-labelledby="ask-heading" className="mb-10">
-      <h2 id="ask-heading" className="m-0 text-2xl leading-tight">
+      <h2 id="ask-heading" className="m-0 text-[1.3125rem] leading-tight">
         Ask about this reading
       </h2>
-      <p className="mt-1 mb-4 max-w-[65ch] text-sm text-muted">Get the history, geography and people behind today’s passage.</p>
+      <p className="mt-1 mb-4 max-w-[65ch] font-sans text-sm text-muted">Get the history, geography and people behind today’s passage.</p>
       {body}
     </section>
   );
@@ -225,12 +225,12 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-between gap-x-3">
         {QUICK_PROMPTS.map((prompt) => (
           <button
             key={prompt.type}
             type="button"
-            className="btn"
+            className="btn text-sm"
             aria-disabled={blocked || undefined}
             onClick={(event) => {
               if (!blocked) void ask({ type: prompt.type }, event.currentTarget);
@@ -262,11 +262,11 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
             aria-describedby="ask-question-count"
             className="field min-w-0 flex-1"
           />
-          <button type="submit" className="btn btn-primary" aria-disabled={blocked || !question.trim() || undefined}>
+          <button type="submit" className="btn shrink-0" aria-disabled={blocked || !question.trim() || undefined}>
             Ask
           </button>
         </div>
-        <p id="ask-question-count" className="m-0 text-sm text-muted">
+        <p id="ask-question-count" className="m-0 font-sans text-sm text-muted">
           {question.length} of {QUESTION_MAX_LENGTH} characters
         </p>
       </form>

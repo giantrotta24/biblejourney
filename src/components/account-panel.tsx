@@ -95,6 +95,7 @@ function SignIn() {
       <p className="mt-6 mb-0">
         <button type="button" className="btn" onClick={onGoogle} disabled={busy}>
           Continue with Google
+          <span aria-hidden="true"> →</span>
         </button>
       </p>
       {error && (
@@ -137,7 +138,7 @@ function SignedIn({ email }: { email: string | null }) {
           Sign out
         </button>
       </p>
-      <p className="mt-2 mb-0 text-sm text-muted">Signing out keeps your progress on this device.</p>
+      <p className="mt-2 mb-0 font-sans text-sm text-muted">Signing out keeps your progress on this device.</p>
       {error && (
         <p role="alert" className="mt-4 mb-0">
           {error}

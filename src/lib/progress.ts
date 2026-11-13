@@ -52,12 +52,10 @@ export function nextVerseWeek(pool: readonly number[], shown: number, random: ()
 
 export function sundayWeek(done: ReadonlySet<number>, seen: number | null): number | null {
   if (done.size === 0 || done.size >= DAY_COUNT) return null;
-  const furthest = Math.max(...done);
-  if (furthest % DAYS_PER_WEEK !== DAYS_PER_WEEK - 1) return null;
-  const week = Math.floor(furthest / DAYS_PER_WEEK) + 1;
-  if (!isWeekComplete(done, week)) return null;
-  if (seen !== null && seen >= week) return null;
-  return week;
+  for (let week = WEEK_COUNT; week > (seen ?? 0); week--) {
+    if (isWeekComplete(done, week)) return week;
+  }
+  return null;
 }
 
 export function catchUpDays(done: ReadonlySet<number>, throughWeek: number): PlanDay[] {

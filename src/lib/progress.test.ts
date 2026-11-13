@@ -98,12 +98,26 @@ describe("sundayWeek", () => {
   it("is null mid-week, before any reading, or once the next week is started", () => {
     expect(sundayWeek(new Set(), null)).toBeNull();
     expect(sundayWeek(range(0, 4), null)).toBeNull();
-    expect(sundayWeek(range(0, 7), null)).toBeNull();
+  });
+
+  it("survives ticking a day ahead in a later week", () => {
+    expect(sundayWeek(range(0, 7), null)).toBe(1);
+    expect(sundayWeek(new Set([...range(0, 6), 40]), null)).toBe(1);
+  });
+
+  it("follows the highest complete week when the reader unticks and re-ticks", () => {
+    const done = range(0, 12);
+    expect(sundayWeek(done, 1)).toBe(2);
+    done.delete(11);
+    expect(sundayWeek(done, null)).toBe(1);
+    expect(sundayWeek(done, 1)).toBeNull();
+    done.add(11);
+    expect(sundayWeek(done, 1)).toBe(2);
   });
 
   it("needs all six days of that week, not only the Saturday", () => {
     expect(sundayWeek(new Set([5]), null)).toBeNull();
-    expect(sundayWeek(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter((i) => i !== 8)), null)).toBeNull();
+    expect(sundayWeek(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter((i) => i !== 8)), null)).toBe(1);
   });
 
   it("still shows when an earlier week has gaps", () => {

@@ -118,8 +118,12 @@ export function supabaseRemote(client: SupabaseClient, userId: string): RemotePr
         ),
       ),
     deleteVerse: (week) => check(() => client.from("verse_progress").delete().eq("user_id", userId).eq("week", week)),
-    markReset: (at) =>
-      check(() => client.from("profiles").upsert({ user_id: userId, progress_reset_at: at }, { onConflict: "user_id" })),
+    async markReset() {
+      await signedIn();
+      const { data, error, status } = await client.rpc("reset_progress");
+      if (error) throw remoteError(error, status);
+      return isoTime(data);
+    },
     subscribe(onChange) {
       const channel = client.channel(progressTopic(userId), { config: { private: true } });
       channel.on("broadcast", { event: "*" }, (message: { payload?: BroadcastPayload }) => {

@@ -18,6 +18,7 @@ const earliest = <R>(existing: R | undefined, row: R, time: (row: R) => string) 
 export function createFakeServer() {
   const accounts = new Map<string, Account>();
   const listeners = new Map<string, Set<(change: RemoteChange) => void>>();
+  let resets = 0;
 
   function account(userId: string): Account {
     let found = accounts.get(userId);
@@ -125,11 +126,20 @@ export function createFakeServer() {
           if (account(userId).verses.delete(week)) broadcast(userId, { kind: "delete-verse", week });
         });
       },
-      async markReset(at) {
+      async markReset() {
         guard("markReset");
-        ifSignedIn(() => {
-          account(userId).resetAt = at;
-        });
+        if (self.sessionDropped) return null;
+        const owned = account(userId);
+        for (const dayIndex of [...owned.days.keys()]) {
+          owned.days.delete(dayIndex);
+          broadcast(userId, { kind: "delete-day", day_index: dayIndex });
+        }
+        for (const week of [...owned.verses.keys()]) {
+          owned.verses.delete(week);
+          broadcast(userId, { kind: "delete-verse", week });
+        }
+        owned.resetAt = `server-reset-${++resets}`;
+        return owned.resetAt;
       },
       subscribe(onChange) {
         let set = listeners.get(userId);

@@ -15,7 +15,7 @@ export type RemoteProgress = {
   deleteDay(dayIndex: number): Promise<void>;
   putVerses(rows: readonly VerseRow[]): Promise<void>;
   deleteVerse(week: number): Promise<void>;
-  markReset(at: string): Promise<void>;
+  markReset(at: string): Promise<string | null>;
   subscribe(onChange: (change: RemoteChange) => void): () => void;
 };
 
@@ -34,7 +34,7 @@ export function changeKey(change: RemoteChange): string {
   }
 }
 
-export function sendChange(remote: RemoteProgress, change: RemoteChange): Promise<void> {
+export function sendChange(remote: RemoteProgress, change: RemoteChange): Promise<unknown> {
   switch (change.kind) {
     case "put-day":
       return remote.putDays([change.row]);

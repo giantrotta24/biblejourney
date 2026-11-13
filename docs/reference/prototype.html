@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One-Year Bible Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9;--surface:#FFFFFF;--surface2:#E9EDF4;--ink:#16213B;--muted:#59647D;--line:#D9DFEA;
+  --lapis:#1E4FA3;--ochre:#A9761A;--done:#4F7A2A;
+  --p1:#C49A3C;--p2:#1E4FA3;--p3:#9B2C3C;--p4:#6A4C93;
+  --display:"Marcellus","Trajan Pro",Georgia,serif;--body:"Literata",Georgia,"Times New Roman",serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1424;--surface:#172036;--surface2:#1E2943;--ink:#E7EBF3;--muted:#9CA7BF;--line:#2A3552;
+  --lapis:#86A9F0;--ochre:#E3B45C;--done:#9DBB64;--p1:#D8B05A;--p2:#6F98EA;--p3:#D3606F;--p4:#A58ADB;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1424;--surface:#172036;--surface2:#1E2943;--ink:#E7EBF3;--muted:#9CA7BF;--line:#2A3552;
+  --lapis:#86A9F0;--ochre:#E3B45C;--done:#9DBB64;--p1:#D8B05A;--p2:#6F98EA;--p3:#D3606F;--p4:#A58ADB;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit}
+a{color:var(--lapis)}
+:focus-visible{outline:2px solid var(--lapis);outline-offset:2px;border-radius:4px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{max-width:760px;margin:0 auto;padding:10px 16px 0}
+.brand{font-family:var(--display);font-size:20px;letter-spacing:.02em;margin:0 0 6px}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav a{flex:0 0 auto;text-decoration:none;color:var(--muted);padding:8px 12px 10px;font-size:15px;border-bottom:2px solid transparent}
+nav a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--lapis)}
+main{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+.view{display:none}.view.on{display:block}
+h2{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.2;margin:0 0 6px}
+h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 4px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+/* River of time */
+.river{margin:4px 0 22px}
+.river svg{width:100%;height:auto;display:block}
+.river .legend{display:flex;justify-content:space-between;gap:6px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.river .legend span{flex:1;text-align:center}
+.river .legend b{display:block;font-weight:500;color:var(--ink);font-size:13px}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 20px}
+.stat strong{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1}
+.stat span{font-size:13.5px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 16px}
+.reading{border-left:5px solid var(--pc,var(--lapis))}
+.where{font-size:14px;color:var(--muted)}
+.passage{font-family:var(--display);font-size:clamp(28px,7.5vw,40px);line-height:1.15;margin:6px 0 4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;cursor:pointer;font-size:15px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+.btn.primary{background:var(--lapis);border-color:var(--lapis);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:default}
+.weekdays{list-style:none;padding:0;margin:12px 0 0}
+.weekdays li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
+.weekdays li:first-child{border-top:0}
+.chk{appearance:none;-webkit-appearance:none;width:22px;height:22px;border:1.5px solid var(--muted);border-radius:6px;flex:0 0 22px;margin:2px 0 0;cursor:pointer;display:grid;place-content:center;background:var(--surface)}
+.chk:checked{background:var(--done);border-color:var(--done)}
+.chk:checked::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.weekdays label{cursor:pointer;flex:1}
+.weekdays .d{display:inline-block;width:2.6em;color:var(--muted);font-size:14px}
+.weekdays li.now label{font-weight:600}
+.done-txt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.dd{margin-top:10px;font-size:15.5px}
+/* verse */
+.verse-ref{font-family:var(--display);font-size:20px}
+.verse-text{font-size:19px;line-height:1.55;margin:10px 0 0;min-height:1.5em}
+.verse-text.hidden{color:var(--muted);font-style:italic;font-size:16px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:7px 12px;cursor:pointer;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--ink)}
+/* ask */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ask-in{display:flex;gap:8px;margin-top:10px}
+.ask-in input{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink)}
+.answer{margin-top:14px;white-space:pre-wrap;font-size:16px;line-height:1.65}
+.answer:empty{display:none}
+/* plan */
+.phase-h{display:flex;align-items:baseline;gap:10px;margin:26px 0 8px}
+.phase-h .sw{width:12px;height:12px;border-radius:3px;background:var(--pc);flex:0 0 12px;transform:translateY(-2px)}
+details.week{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 8px}
+details.week>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:12px;align-items:center}
+details.week>summary::-webkit-details-marker{display:none}
+.wnum{font-family:var(--display);font-size:15px;color:var(--muted);width:3.2em;flex:0 0 auto}
+.wt{flex:1;min-width:0}
+.dots{display:flex;gap:3px;flex:0 0 auto}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--done)}
+details.week .inner{padding:0 14px 14px}
+details.week.cur{border-color:var(--pc)}
+/* timeline */
+.era{position:relative;padding:0 0 22px 26px}
+.era::before{content:"";position:absolute;left:6px;top:8px;bottom:-8px;width:2px;background:var(--line)}
+.era:last-child::before{display:none}
+.era .node{position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--pc);border:3px solid var(--bg)}
+.era.cur .node{box-shadow:0 0 0 3px var(--pc)}
+.era .when{font-size:14px;color:var(--muted)}
+.era .tag{display:inline-block;font-size:13px;padding:1px 9px;border-radius:999px;background:var(--surface2);margin:4px 6px 0 0}
+.era p{margin:6px 0}
+/* verses list */
+.vlist{display:grid;gap:10px}
+.vcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.vcard.future{opacity:.62}
+.vcard .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.vcard .txt{margin:8px 0 0;font-size:16px}
+.learned{font-size:14px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted)}
+/* people */
+dl.people{margin:0}
+dl.people dt{font-family:var(--display);font-size:19px;margin-top:14px}
+dl.people dd{margin:2px 0 0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.curtick{animation:pulse 2s ease-in-out infinite}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <p class="brand">One-Year Bible Journey</p>
+  <nav aria-label="Sections">
+    <a href="#today">Today</a><a href="#plan">Plan</a><a href="#timeline">Timeline</a><a href="#verses">Verses</a><a href="#people">Who’s who</a>
+  </nav>
+</div></header>
+<main>
+<section id="v-today" class="view" aria-labelledby="t-today">
+  <h2 id="t-today" class="sr" style="position:absolute;left:-9999px">Today</h2>
+  <div class="river" id="river"></div>
+  <div class="stats" id="stats"></div>
+  <div id="todayCard"></div>
+  <div class="panel" id="verseCard"></div>
+  <div class="panel" id="askCard" hidden>
+    <h3>Ask about this reading</h3>
+    <p class="muted small" style="margin:0">Get the history, geography and people behind today’s passage.</p>
+    <div class="chips">
+      <button class="btn" data-ask="history">Historical setting</button>
+      <button class="btn" data-ask="map">Where on the map</button>
+      <button class="btn" data-ask="people">Who’s who</button>
+    </div>
+    <div class="ask-in"><input id="askQ" placeholder="Or ask your own question…" aria-label="Your question"><button class="btn primary" id="askGo">Ask</button></div>
+    <div class="answer" id="answer" aria-live="polite"></div>
+  </div>
+</section>
+<section id="v-plan" class="view"><h2>The full plan</h2><p class="muted" style="margin:0">52 weeks, read in the order events happened. Tick days as you go.</p><div id="planList"></div></section>
+<section id="v-timeline" class="view"><h2>The story in time</h2><p class="muted" style="margin:0 0 20px">Each era, the empire in charge, and the weeks you’ll read it. Dates are approximate; early ones are debated.</p><div id="tl"></div></section>
+<section id="v-verses" class="view">
+  <h2>Memory verses</h2>
+  <p class="muted" style="margin:0">One a week, tied to what you’re reading. Text is the King James Version (public domain); learn it in whichever translation you read.</p>
+  <div class="panel" id="quiz" style="margin-top:16px"></div>
+  <div class="vlist" id="vlist"></div>
+</section>
+<section id="v-people" class="view"><h2>Who’s who</h2><div id="people"></div></section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const WEEKS = [{"w": 1, "t": "Creation and the early world", "v": "Genesis 1:1", "vt": "In the beginning God created the heaven and the earth.", "dd": "Find the Tigris and Euphrates on a map; this is the world of Genesis 1–11. Watch BibleProject’s Genesis 1–11 overview. Note: Job is placed here because its setting resembles the age of the patriarchs.", "days": [{"r": "Genesis 1–4", "c": 4}, {"r": "Genesis 5–7", "c": 3}, {"r": "Genesis 8–11", "c": 4}, {"r": "Job 1–4", "c": 4}, {"r": "Job 5–8", "c": 4}, {"r": "Job 9–12", "c": 4}]}, {"w": 2, "t": "The book of Job", "v": "Job 19:25", "vt": "For I know that my redeemer liveth, and that he shall stand at the latter day upon the earth.", "dd": "Write one paragraph: what do Job’s friends get wrong about suffering, and how does God answer?", "days": [{"r": "Job 13–15", "c": 3}, {"r": "Job 16–19", "c": 4}, {"r": "Job 20–23", "c": 4}, {"r": "Job 24–28", "c": 5}, {"r": "Job 29–31", "c": 3}, {"r": "Job 32–34", "c": 3}]}, {"w": 3, "t": "Abraham’s call", "v": "Genesis 12:2–3", "vt": "And I will make of thee a great nation, and I will bless thee, and make thy name great; and thou shalt be a blessing: And I will bless them that bless thee, and curse him that curseth thee: and in thee shall all families of the earth be blessed.", "dd": "Trace Abraham’s journey: Ur to Harran to Canaan to Egypt and back. Note what God promises him; it drives the whole Bible.", "days": [{"r": "Job 35–38", "c": 4}, {"r": "Job 39–41", "c": 3}, {"r": "Job 42; Genesis 12–15", "c": 5}, {"r": "Genesis 16–18", "c": 3}, {"r": "Genesis 19–22", "c": 4}, {"r": "Genesis 23–24", "c": 2}]}, {"w": 4, "t": "Isaac, Jacob, and the twelve sons", "v": "Genesis 28:15", "vt": "And, behold, I am with thee, and will keep thee in all places whither thou goest, and will bring thee again into this land; for I will not leave thee, until I have done that which I have spoken to thee of.", "dd": "Draw a family tree from Abraham to Jacob’s 12 sons. These sons become the 12 tribes of Israel.", "days": [{"r": "Genesis 25–27", "c": 3}, {"r": "Genesis 28–30", "c": 3}, {"r": "Genesis 31–32", "c": 2}, {"r": "Genesis 33–35", "c": 3}, {"r": "Genesis 36–38", "c": 3}, {"r": "Genesis 39–41", "c": 3}]}, {"w": 5, "t": "Joseph in Egypt; the Exodus begins", "v": "Genesis 50:20", "vt": "But as for you, ye thought evil against me; but God meant it unto good, to bring to pass, as it is this day, to save much people alive.", "dd": "Locate Egypt, the Nile, and Goshen. Read about how Joseph’s family ends up enslaved generations later.", "days": [{"r": "Genesis 42–43", "c": 2}, {"r": "Genesis 44–46", "c": 3}, {"r": "Genesis 47–50", "c": 4}, {"r": "Exodus 1–4", "c": 4}, {"r": "Exodus 5–7", "c": 3}, {"r": "Exodus 8–11", "c": 4}]}, {"w": 6, "t": "Passover, the Red Sea, and Sinai", "v": "Exodus 20:2–3", "vt": "I am the LORD thy God, which have brought thee out of the land of Egypt, out of the house of bondage. Thou shalt have no other gods before me.", "dd": "Look at a map of possible Exodus routes and locations proposed for Mount Sinai. Learn the 10 Commandments in order.", "days": [{"r": "Exodus 12–14", "c": 3}, {"r": "Exodus 15–17", "c": 3}, {"r": "Exodus 18–21", "c": 4}, {"r": "Exodus 22–24", "c": 3}, {"r": "Exodus 25–27", "c": 3}, {"r": "Exodus 28–29", "c": 2}]}, {"w": 7, "t": "The Tabernacle; Leviticus begins", "v": "Exodus 34:6", "vt": "And the LORD passed by before him, and proclaimed, The LORD, The LORD God, merciful and gracious, longsuffering, and abundant in goodness and truth.", "dd": "Sketch the Tabernacle layout: courtyard, Holy Place, Most Holy Place. Watch BibleProject’s Leviticus overview.", "days": [{"r": "Exodus 30–33", "c": 4}, {"r": "Exodus 34–35", "c": 2}, {"r": "Exodus 36–38", "c": 3}, {"r": "Exodus 39–40; Leviticus 1–2", "c": 4}, {"r": "Leviticus 3–6", "c": 4}, {"r": "Leviticus 7–9", "c": 3}]}, {"w": 8, "t": "Holiness and sacrifice", "v": "Leviticus 19:18", "vt": "Thou shalt not avenge, nor bear any grudge against the children of thy people, but thou shalt love thy neighbour as thyself: I am the LORD.", "dd": "Study the Day of Atonement (Leviticus 16). What were clean/unclean laws for? You’ll meet these ideas again in Hebrews.", "days": [{"r": "Leviticus 10–12", "c": 3}, {"r": "Leviticus 13–14", "c": 2}, {"r": "Leviticus 15–17", "c": 3}, {"r": "Leviticus 18–20", "c": 3}, {"r": "Leviticus 21–23", "c": 3}, {"r": "Leviticus 24–25", "c": 2}]}, {"w": 9, "t": "Numbers: Israel organized", "v": "Numbers 6:24–26", "vt": "The LORD bless thee, and keep thee: The LORD make his face shine upon thee, and be gracious unto thee: The LORD lift up his countenance upon thee, and give thee peace.", "dd": "Draw how the 12 tribes camped around the Tabernacle (Numbers 2).", "days": [{"r": "Leviticus 26–27; Numbers 1", "c": 3}, {"r": "Numbers 2–3", "c": 2}, {"r": "Numbers 4–5", "c": 2}, {"r": "Numbers 6–7", "c": 2}, {"r": "Numbers 8–10", "c": 3}, {"r": "Numbers 11–13", "c": 3}]}, {"w": 10, "t": "Forty years in the wilderness", "v": "Numbers 23:19", "vt": "God is not a man, that he should lie; neither the son of man, that he should repent: hath he said, and shall he not do it? or hath he spoken, and shall he not make it good?", "dd": "Map Kadesh, Edom, and the plains of Moab. Why did Israel wander 40 years?", "days": [{"r": "Numbers 14–15", "c": 2}, {"r": "Numbers 16–19", "c": 4}, {"r": "Numbers 20–22", "c": 3}, {"r": "Numbers 23–25", "c": 3}, {"r": "Numbers 26–28", "c": 3}, {"r": "Numbers 29–31", "c": 3}]}, {"w": 11, "t": "Deuteronomy: Moses’ final speeches", "v": "Deuteronomy 6:4–5", "vt": "Hear, O Israel: The LORD our God is one LORD: And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might.", "dd": "Learn what a covenant is. Ancient Near Eastern treaties had a similar structure to Deuteronomy.", "days": [{"r": "Numbers 32–33", "c": 2}, {"r": "Numbers 34–36", "c": 3}, {"r": "Deuteronomy 1–2", "c": 2}, {"r": "Deuteronomy 3–5", "c": 3}, {"r": "Deuteronomy 6–9", "c": 4}, {"r": "Deuteronomy 10–12", "c": 3}]}, {"w": 12, "t": "Moses’ farewell", "v": "Deuteronomy 31:6", "vt": "Be strong and of a good courage, fear not, nor be afraid of them: for the LORD thy God, he it is that doth go with thee; he will not fail thee, nor forsake thee.", "dd": "Phase 1 review: write the story from creation to Moses’ death in 10 sentences. Review verses 1–12.", "days": [{"r": "Deuteronomy 13–16", "c": 4}, {"r": "Deuteronomy 17–21", "c": 5}, {"r": "Deuteronomy 22–25", "c": 4}, {"r": "Deuteronomy 26–28", "c": 3}, {"r": "Deuteronomy 29–31", "c": 3}, {"r": "Deuteronomy 32–34", "c": 3}]}, {"w": 13, "t": "Joshua and the conquest", "v": "Joshua 1:9", "vt": "Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest.", "dd": "Map the tribal territories (Joshua 13–21). Who were the Canaanites and what did they worship?", "days": [{"r": "Joshua 1–5", "c": 5}, {"r": "Joshua 6–8", "c": 3}, {"r": "Joshua 9–12", "c": 4}, {"r": "Joshua 13–15", "c": 3}, {"r": "Joshua 16–18", "c": 3}, {"r": "Joshua 19–21", "c": 3}]}, {"w": 14, "t": "The judges", "v": "Judges 21:25", "vt": "In those days there was no king in Israel: every man did that which was right in his own eyes.", "dd": "Chart the repeating cycle in Judges: sin, oppression, cry for help, a judge rescues. Who were the Philistines?", "days": [{"r": "Joshua 22–24; Judges 1", "c": 4}, {"r": "Judges 2–4", "c": 3}, {"r": "Judges 5–7", "c": 3}, {"r": "Judges 8–10", "c": 3}, {"r": "Judges 11–14", "c": 4}, {"r": "Judges 15–18", "c": 4}]}, {"w": 15, "t": "Ruth; Samuel; the Psalms begin", "v": "Ruth 1:16", "vt": "And Ruth said, Intreat me not to leave thee, or to return from following after thee: for whither thou goest, I will go; and where thou lodgest, I will lodge: thy people shall be my people, and thy God my God.", "dd": "Ruth is a Moabite (a foreigner) who becomes David’s great-grandmother. Find Moab and Bethlehem on a map.", "days": [{"r": "Judges 19–20", "c": 2}, {"r": "Judges 21; Ruth 1–4", "c": 5}, {"r": "1 Samuel 1–2; Psalms 1–4", "c": 6}, {"r": "1 Samuel 3–4; Psalms 5–8", "c": 6}, {"r": "1 Samuel 5–7; Psalms 9–12", "c": 7}, {"r": "1 Samuel 8–9; Psalms 13–17", "c": 7}]}, {"w": 16, "t": "Saul falls, David rises", "v": "1 Samuel 16:7", "vt": "But the LORD said unto Samuel, Look not on his countenance, or on the height of his stature; because I have refused him: for the Lord seeth not as man seeth; for man looketh on the outward appearance, but the LORD looketh on the heart.", "dd": "Find the Valley of Elah, where David fought Goliath. Read Psalm 23 slowly as David’s song.", "days": [{"r": "1 Samuel 10–11; Psalms 18–19", "c": 4}, {"r": "1 Samuel 12–13; Psalms 20–22", "c": 5}, {"r": "1 Samuel 14; Psalms 23–25", "c": 4}, {"r": "1 Samuel 15–16; Psalms 26–28", "c": 5}, {"r": "1 Samuel 17; Psalms 29–31", "c": 4}, {"r": "1 Samuel 18–19; Psalms 32–33", "c": 4}]}, {"w": 17, "t": "David on the run", "v": "Psalm 51:10", "vt": "Create in me a clean heart, O God; and renew a right spirit within me.", "dd": "Map David’s hideouts (En Gedi, the wilderness of Judah). Many psalms’ headings tie them to these events; look for them.", "days": [{"r": "1 Samuel 20; Psalms 34–36", "c": 4}, {"r": "1 Samuel 21–22; Psalms 37–38", "c": 4}, {"r": "1 Samuel 23; Psalms 39–42", "c": 5}, {"r": "1 Samuel 24–25; Psalms 43–44", "c": 4}, {"r": "1 Samuel 26–27; Psalms 45–49", "c": 7}, {"r": "1 Samuel 28–29; Psalms 50–52", "c": 5}]}, {"w": 18, "t": "Saul’s death; Chronicles’ family trees", "v": "Psalm 56:3", "vt": "What time I am afraid, I will trust in thee.", "dd": "Learn why Chronicles retells Samuel–Kings: it was written after the exile to remind the returned Jews of their roots. Skim the genealogies.", "days": [{"r": "1 Samuel 30–31; Psalms 53–56", "c": 6}, {"r": "1 Chronicles 1–2; Psalms 57–58", "c": 4}, {"r": "1 Chronicles 3; Psalms 59–61", "c": 4}, {"r": "1 Chronicles 4–5; Psalms 62–65", "c": 6}, {"r": "1 Chronicles 6; Psalms 66", "c": 2}, {"r": "1 Chronicles 7; Psalms 67–68", "c": 3}]}, {"w": 19, "t": "David becomes king; Jerusalem", "v": "Psalm 73:26", "vt": "My flesh and my heart faileth: but God is the strength of my heart, and my portion for ever.", "dd": "Look at a map of Jerusalem’s City of David. Why did David choose Jerusalem as his capital?", "days": [{"r": "1 Chronicles 8–9; Psalms 69–70", "c": 4}, {"r": "1 Chronicles 10; Psalms 71–73", "c": 4}, {"r": "2 Samuel 1–2; Psalms 74–75", "c": 4}, {"r": "2 Samuel 3; Psalms 76–77", "c": 3}, {"r": "2 Samuel 4; Psalms 78–80", "c": 4}, {"r": "2 Samuel 5–6; Psalms 81–84", "c": 6}]}, {"w": 20, "t": "God’s promise to David", "v": "2 Samuel 7:16", "vt": "And thine house and thy kingdom shall be established for ever before thee: thy throne shall be established for ever.", "dd": "Study the Davidic covenant (2 Samuel 7). This is why Jesus is called “Son of David” in the Gospels.", "days": [{"r": "2 Samuel 7–8; Psalms 85–88", "c": 6}, {"r": "2 Samuel 9; Psalms 89–90", "c": 3}, {"r": "2 Samuel 10; 1 Chronicles 11; Psalms 91–93", "c": 5}, {"r": "1 Chronicles 12–13; Psalms 94–96", "c": 5}, {"r": "1 Chronicles 14–15; Psalms 97–100", "c": 6}, {"r": "1 Chronicles 16–17; Psalms 101–102", "c": 4}]}, {"w": 21, "t": "David’s sin and its fallout", "v": "Psalm 103:12", "vt": "As far as the east is from the west, so far hath he removed our transgressions from us.", "dd": "Read 2 Samuel 11–12 again with Psalm 51. How does the Bible treat its heroes’ failures?", "days": [{"r": "1 Chronicles 18; Psalms 103–105", "c": 4}, {"r": "1 Chronicles 19; Psalms 106", "c": 2}, {"r": "1 Chronicles 20; 2 Samuel 11; Psalms 107–109", "c": 5}, {"r": "2 Samuel 12; Psalms 110–113", "c": 5}, {"r": "2 Samuel 13–14; Psalms 114–116", "c": 5}, {"r": "2 Samuel 15–16; Psalms 117–118", "c": 4}]}, {"w": 22, "t": "Absalom’s revolt; the Songs of Ascent", "v": "Psalm 119:105", "vt": "Thy word is a lamp unto my feet, and a light unto my path.", "dd": "Psalms 120–134 are “Songs of Ascent,” sung by pilgrims walking up to Jerusalem for festivals. Read a few aloud.", "days": [{"r": "Psalms 119", "c": 1}, {"r": "2 Samuel 17; Psalms 120", "c": 2}, {"r": "2 Samuel 18–19; Psalms 121–124", "c": 6}, {"r": "2 Samuel 20–21; Psalms 125–129", "c": 7}, {"r": "2 Samuel 22–23; Psalms 130–131", "c": 4}, {"r": "2 Samuel 24; 1 Chronicles 21; Psalms 132–135", "c": 6}]}, {"w": 23, "t": "David’s last days; Proverbs begins", "v": "Psalm 139:14", "vt": "I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well.", "dd": "Map the extent of the kingdom under David and Solomon, its largest ever.", "days": [{"r": "1 Chronicles 22–23; Psalms 136–138", "c": 5}, {"r": "1 Chronicles 24; Psalms 139–142", "c": 5}, {"r": "1 Chronicles 25–26; Psalms 143–145", "c": 5}, {"r": "1 Chronicles 27–28; Psalms 146–147", "c": 4}, {"r": "1 Chronicles 29; 1 Kings 1; Psalms 148–150", "c": 5}, {"r": "Proverbs 1–3", "c": 3}]}, {"w": 24, "t": "Solomon’s wisdom and Temple", "v": "Proverbs 3:5–6", "vt": "Trust in the LORD with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths.", "dd": "Look up a diagram of Solomon’s Temple and compare it with your Tabernacle sketch from Week 7.", "days": [{"r": "1 Kings 2; Proverbs 4–5", "c": 3}, {"r": "1 Kings 3; Proverbs 6–7", "c": 3}, {"r": "1 Kings 4; Proverbs 8–9", "c": 3}, {"r": "1 Kings 5; Proverbs 10–12", "c": 4}, {"r": "1 Kings 6; Proverbs 13–14", "c": 3}, {"r": "1 Kings 7; Proverbs 15–16", "c": 3}]}, {"w": 25, "t": "Solomon’s peak and decline", "v": "Proverbs 27:17", "vt": "Iron sharpeneth iron; so a man sharpeneth the countenance of his friend.", "dd": "Read 1 Kings 11 again: how did Solomon’s foreign alliances and wives set up the kingdom’s split?", "days": [{"r": "Proverbs 17–18", "c": 2}, {"r": "1 Kings 8; Proverbs 19–20", "c": 3}, {"r": "1 Kings 9; Proverbs 21–22", "c": 3}, {"r": "1 Kings 10; Proverbs 23–24", "c": 3}, {"r": "1 Kings 11; Proverbs 25–26", "c": 3}, {"r": "2 Chronicles 1; Proverbs 27–29", "c": 4}]}, {"w": 26, "t": "Song of Songs and Ecclesiastes", "v": "Ecclesiastes 3:1", "vt": "To every thing there is a season, and a time to every purpose under the heaven.", "dd": "Phase 2 review: list the kings Saul, David, Solomon and one key event for each. Review verses 13–26.", "days": [{"r": "2 Chronicles 2; Proverbs 30–31; Song of Songs 1", "c": 4}, {"r": "2 Chronicles 3–4; Song of Songs 2–5", "c": 6}, {"r": "2 Chronicles 5; Song of Songs 6–8; Ecclesiastes 1–2", "c": 6}, {"r": "2 Chronicles 6; Ecclesiastes 3–5", "c": 4}, {"r": "2 Chronicles 7–8; Ecclesiastes 6–8", "c": 5}, {"r": "2 Chronicles 9; Ecclesiastes 9–12", "c": 5}]}, {"w": 27, "t": "The kingdom splits; Elijah", "v": "1 Kings 18:21", "vt": "And Elijah came unto all the people, and said, How long halt ye between two opinions? if the LORD be God, follow him: but if Baal, then follow him. And the people answered him not a word.", "dd": "Map the two kingdoms: Israel (north, capital Samaria) and Judah (south, capital Jerusalem). Who was Baal?", "days": [{"r": "1 Kings 12–14", "c": 3}, {"r": "1 Kings 15–17", "c": 3}, {"r": "1 Kings 18–20", "c": 3}, {"r": "1 Kings 21–22; 2 Chronicles 10–11", "c": 4}, {"r": "2 Chronicles 12–16", "c": 5}, {"r": "2 Chronicles 17–20; 2 Kings 1", "c": 5}]}, {"w": 28, "t": "Elisha; Joel; Jonah", "v": "Joel 2:28", "vt": "And it shall come to pass afterward, that I will pour out my spirit upon all flesh; and your sons and your daughters shall prophesy, your old men shall dream dreams, your young men shall see visions.", "dd": "Find Nineveh, Assyria’s capital, on a map. Assyria is the superpower rising in this period.", "days": [{"r": "2 Kings 2–4", "c": 3}, {"r": "2 Kings 5–8", "c": 4}, {"r": "2 Kings 9–11", "c": 3}, {"r": "2 Kings 12–13; 2 Chronicles 21–23", "c": 5}, {"r": "2 Chronicles 24; Joel 1–3", "c": 4}, {"r": "2 Kings 14; Jonah 1–4; 2 Kings 15", "c": 6}]}, {"w": 29, "t": "Amos, Hosea, Micah; the north falls", "v": "Micah 6:8", "vt": "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?", "dd": "Read 2 Kings 17: Assyria destroys Israel in 722 BC and resettles foreigners there. This is where the Samaritans come from.", "days": [{"r": "2 Chronicles 25–27; Amos 1–3", "c": 6}, {"r": "Amos 4–9", "c": 6}, {"r": "Hosea 1–7", "c": 7}, {"r": "Hosea 8–14", "c": 7}, {"r": "2 Kings 16–17; 2 Chronicles 28; Micah 1–2", "c": 5}, {"r": "Micah 3–7; 2 Kings 18", "c": 6}]}, {"w": 30, "t": "Hezekiah; Isaiah begins", "v": "Isaiah 6:8", "vt": "Also I heard the voice of the Lord, saying, Whom shall I send, and who will go for us? Then said I, Here am I; send me.", "dd": "Look up Hezekiah’s tunnel and Sennacherib’s prism, real archaeological finds tied to 2 Kings 18–20.", "days": [{"r": "2 Kings 19–20; 2 Chronicles 29", "c": 3}, {"r": "2 Chronicles 30–32; Isaiah 1", "c": 4}, {"r": "Isaiah 2–5", "c": 4}, {"r": "Isaiah 6–10", "c": 5}, {"r": "Isaiah 11–16", "c": 6}, {"r": "Isaiah 17–22", "c": 6}]}, {"w": 31, "t": "Isaiah: judgment and comfort", "v": "Isaiah 40:31", "vt": "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint.", "dd": "Isaiah 40 onward speaks to exiles in Babylon. Learn why some scholars think later authors wrote these chapters, and why others disagree.", "days": [{"r": "Isaiah 23–28", "c": 6}, {"r": "Isaiah 29–33", "c": 5}, {"r": "Isaiah 34–37", "c": 4}, {"r": "Isaiah 38–42", "c": 5}, {"r": "Isaiah 43–46", "c": 4}, {"r": "Isaiah 47–52", "c": 6}]}, {"w": 32, "t": "Isaiah ends; Josiah; Babylon rises", "v": "Isaiah 53:5", "vt": "But he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed.", "dd": "Nineveh falls in 612 BC (Nahum) and Babylon becomes the new superpower. Read Isaiah 53 and note how the New Testament uses it.", "days": [{"r": "Isaiah 53–58", "c": 6}, {"r": "Isaiah 59–65", "c": 7}, {"r": "Isaiah 66; 2 Kings 21–23", "c": 4}, {"r": "2 Chronicles 33–35", "c": 3}, {"r": "Nahum 1–3; Zephaniah 1–3; Habakkuk 1", "c": 7}, {"r": "Habakkuk 2–3; Jeremiah 1–2", "c": 4}]}, {"w": 33, "t": "Jeremiah warns Judah", "v": "Jeremiah 17:7", "vt": "Blessed is the man that trusteth in the LORD, and whose hope the LORD is.", "dd": "List the last kings of Judah (Josiah, Jehoiakim, Jehoiachin, Zedekiah) and how Jeremiah dealt with each.", "days": [{"r": "Jeremiah 3–6", "c": 4}, {"r": "Jeremiah 7–9", "c": 3}, {"r": "Jeremiah 10–14", "c": 5}, {"r": "Jeremiah 15–19", "c": 5}, {"r": "Jeremiah 20–23", "c": 4}, {"r": "Jeremiah 24–27", "c": 4}]}, {"w": 34, "t": "Jeremiah: the new covenant", "v": "Jeremiah 29:11", "vt": "For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end.", "dd": "Read Jeremiah 29 in full: this famous verse was a letter to exiles told to settle in Babylon for 70 years. Then read 31:31–34.", "days": [{"r": "Jeremiah 28–31", "c": 4}, {"r": "Jeremiah 32–34", "c": 3}, {"r": "Jeremiah 35–39", "c": 5}, {"r": "Jeremiah 40–44", "c": 5}, {"r": "Jeremiah 45–48", "c": 4}, {"r": "Jeremiah 49–50", "c": 2}]}, {"w": 35, "t": "Jerusalem falls; Ezekiel begins", "v": "Lamentations 3:22–23", "vt": "It is of the LORD’s mercies that we are not consumed, because his compassions fail not. They are new every morning: great is thy faithfulness.", "dd": "Map the route from Jerusalem to Babylon. Imagine losing the Temple: how does Lamentations express that grief?", "days": [{"r": "Jeremiah 51–52; 2 Kings 24–25", "c": 4}, {"r": "2 Chronicles 36; Lamentations 1–2", "c": 3}, {"r": "Lamentations 3–5; Obadiah", "c": 4}, {"r": "Ezekiel 1–5", "c": 5}, {"r": "Ezekiel 6–10", "c": 5}, {"r": "Ezekiel 11–15", "c": 5}]}, {"w": 36, "t": "Ezekiel’s visions", "v": "Ezekiel 36:26", "vt": "A new heart also will I give you, and a new spirit will I put within you: and I will take away the stony heart out of your flesh, and I will give you an heart of flesh.", "dd": "Find Tyre on a map (Ezekiel 26–28). Watch BibleProject’s Ezekiel overview.", "days": [{"r": "Ezekiel 16–18", "c": 3}, {"r": "Ezekiel 19–21", "c": 3}, {"r": "Ezekiel 22–24", "c": 3}, {"r": "Ezekiel 25–28", "c": 4}, {"r": "Ezekiel 29–32", "c": 4}, {"r": "Ezekiel 33–36", "c": 4}]}, {"w": 37, "t": "Dry bones; Daniel", "v": "Daniel 3:17–18", "vt": "If it be so, our God whom we serve is able to deliver us from the burning fiery furnace, and he will deliver us out of thine hand, O king. But if not, be it known unto thee, O king, that we will not serve thy gods, nor worship the golden image which thou hast set up.", "dd": "Read Daniel 2 and 7: the sequence of empires (Babylon, Medo-Persia, Greece, and a fourth). Persia conquers Babylon in 539 BC.", "days": [{"r": "Ezekiel 37–39", "c": 3}, {"r": "Ezekiel 40–43", "c": 4}, {"r": "Ezekiel 44–47", "c": 4}, {"r": "Ezekiel 48; Daniel 1–2", "c": 3}, {"r": "Daniel 3–5", "c": 3}, {"r": "Daniel 6–9", "c": 4}]}, {"w": 38, "t": "The return; Temple rebuilt; Esther", "v": "Zechariah 4:6", "vt": "Then he answered and spake unto me, saying, This is the word of the LORD unto Zerubbabel, saying, Not by might, nor by power, but by my spirit, saith the LORD of hosts.", "dd": "Look up the Cyrus Cylinder and a map of the Persian Empire. Learn the story behind the Jewish festival of Purim (Esther).", "days": [{"r": "Daniel 10–12; Ezra 1", "c": 4}, {"r": "Ezra 2–4", "c": 3}, {"r": "Ezra 5–6; Haggai 1–2; Zechariah 1–2", "c": 6}, {"r": "Zechariah 3–9", "c": 7}, {"r": "Zechariah 10–14; Esther 1", "c": 6}, {"r": "Esther 2–8", "c": 7}]}, {"w": 39, "t": "Ezra, Nehemiah, Malachi", "v": "Nehemiah 8:10", "vt": "Then he said unto them, Go your way, eat the fat, and drink the sweet, and send portions unto them for whom nothing is prepared: for this day is holy unto our Lord: neither be ye sorry; for the joy of the LORD is your strength.", "dd": "Study the 400 years between the Testaments: Alexander, the Maccabees and Hanukkah, Rome’s arrival, and the rise of Pharisees and Sadducees. Review verses 27–39.", "days": [{"r": "Esther 9–10; Ezra 7–8", "c": 4}, {"r": "Ezra 9–10; Nehemiah 1–3", "c": 5}, {"r": "Nehemiah 4–6", "c": 3}, {"r": "Nehemiah 7–9", "c": 3}, {"r": "Nehemiah 10–12", "c": 3}, {"r": "Nehemiah 13; Malachi 1–4", "c": 5}]}, {"w": 40, "t": "The Gospel of Mark", "v": "Mark 1:15", "vt": "And saying, The time is fulfilled, and the kingdom of God is at hand: repent ye, and believe the gospel.", "dd": "Map Galilee, Samaria, and Judea in Jesus’ day. Learn the Herod family: who ruled what.", "days": [{"r": "Mark 1–3", "c": 3}, {"r": "Mark 4–5", "c": 2}, {"r": "Mark 6–8", "c": 3}, {"r": "Mark 9–10", "c": 2}, {"r": "Mark 11–12", "c": 2}, {"r": "Mark 13–14", "c": 2}]}, {"w": 41, "t": "Matthew: the Sermon on the Mount", "v": "Matthew 6:33", "vt": "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.", "dd": "Matthew was written with Jewish readers in mind. Count how often he says a prophecy was “fulfilled.”", "days": [{"r": "Mark 15–16; Matthew 1", "c": 3}, {"r": "Matthew 2–5", "c": 4}, {"r": "Matthew 6–8", "c": 3}, {"r": "Matthew 9–11", "c": 3}, {"r": "Matthew 12–13", "c": 2}, {"r": "Matthew 14–16", "c": 3}]}, {"w": 42, "t": "Matthew: the final week", "v": "Matthew 22:37–39", "vt": "Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, and with all thy soul, and with all thy mind. This is the first and great commandment. And the second is like unto it, Thou shalt love thy neighbour as thyself.", "dd": "Jesus quotes Deuteronomy 6:5 and Leviticus 19:18, both verses you’ve memorized. Make a day-by-day timeline of Holy Week.", "days": [{"r": "Matthew 17–19", "c": 3}, {"r": "Matthew 20–21", "c": 2}, {"r": "Matthew 22–24", "c": 3}, {"r": "Matthew 25–26", "c": 2}, {"r": "Matthew 27", "c": 1}, {"r": "Matthew 28; Luke 1", "c": 2}]}, {"w": 43, "t": "Luke: Jesus and the outsiders", "v": "Luke 4:18", "vt": "The Spirit of the Lord is upon me, because he hath anointed me to preach the gospel to the poor; he hath sent me to heal the brokenhearted, to preach deliverance to the captives, and recovering of sight to the blind, to set at liberty them that are bruised.", "dd": "Read the Good Samaritan (Luke 10) again knowing who Samaritans were. Jesus’ hearers would have been shocked.", "days": [{"r": "Luke 2–3", "c": 2}, {"r": "Luke 4–6", "c": 3}, {"r": "Luke 7–8", "c": 2}, {"r": "Luke 9–10", "c": 2}, {"r": "Luke 11–12", "c": 2}, {"r": "Luke 13–14", "c": 2}]}, {"w": 44, "t": "Luke ends; John begins", "v": "John 3:16", "vt": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.", "dd": "Compare one event (like the feeding of the 5,000) across all four Gospels. What does each emphasize?", "days": [{"r": "Luke 15–17", "c": 3}, {"r": "Luke 18–19", "c": 2}, {"r": "Luke 20–21", "c": 2}, {"r": "Luke 22–23", "c": 2}, {"r": "Luke 24; John 1", "c": 2}, {"r": "John 2–4", "c": 3}]}, {"w": 45, "t": "John: the “I am” sayings", "v": "John 14:6", "vt": "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.", "dd": "List John’s seven “I am” statements. Learn about the Feast of Tabernacles (John 7).", "days": [{"r": "John 5–6", "c": 2}, {"r": "John 7", "c": 1}, {"r": "John 8–10", "c": 3}, {"r": "John 11–12", "c": 2}, {"r": "John 13–15", "c": 3}, {"r": "John 16–18", "c": 3}]}, {"w": 46, "t": "The church is born", "v": "Acts 1:8", "vt": "But ye shall receive power, after that the Holy Ghost is come upon you: and ye shall be witnesses unto me both in Jerusalem, and in all Judæa, and in Samaria, and unto the uttermost part of the earth.", "dd": "Acts 1:8 is the map of the book: Jerusalem, Judea and Samaria, the ends of the earth. Read Acts 10: the first Gentile convert.", "days": [{"r": "John 19–21", "c": 3}, {"r": "Acts 1–3", "c": 3}, {"r": "Acts 4–6", "c": 3}, {"r": "Acts 7–8", "c": 2}, {"r": "Acts 9–11", "c": 3}, {"r": "Acts 12–14", "c": 3}]}, {"w": 47, "t": "Jerusalem Council; Paul’s journeys", "v": "Galatians 3:28", "vt": "There is neither Jew nor Greek, there is neither bond nor free, there is neither male nor female: for ye are all one in Christ Jesus.", "dd": "Map Paul’s first and second journeys. Acts 15 settles whether Gentiles must follow Jewish law.", "days": [{"r": "James 1–4", "c": 4}, {"r": "James 5; Galatians 1–3", "c": 4}, {"r": "Galatians 4–6; Acts 15", "c": 4}, {"r": "Acts 16–17; 1 Thessalonians 1–2", "c": 4}, {"r": "1 Thessalonians 3–5; 2 Thessalonians 1–2", "c": 5}, {"r": "2 Thessalonians 3; Acts 18–19; 1 Corinthians 1", "c": 4}]}, {"w": 48, "t": "Corinth", "v": "1 Corinthians 13:4–5", "vt": "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up, Doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil.", "dd": "Learn about Corinth: a wealthy, diverse Roman port city. How does that explain the church’s problems?", "days": [{"r": "1 Corinthians 2–6", "c": 5}, {"r": "1 Corinthians 7–10", "c": 4}, {"r": "1 Corinthians 11–13", "c": 3}, {"r": "1 Corinthians 14–16", "c": 3}, {"r": "2 Corinthians 1–5", "c": 5}, {"r": "2 Corinthians 6–10", "c": 5}]}, {"w": 49, "t": "Romans", "v": "Romans 8:28", "vt": "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.", "dd": "Read Romans 9–11: Paul’s answer to how Jews and Gentiles fit into God’s plan.", "days": [{"r": "2 Corinthians 11–13; Romans 1", "c": 4}, {"r": "Romans 2–5", "c": 4}, {"r": "Romans 6–9", "c": 4}, {"r": "Romans 10–13", "c": 4}, {"r": "Romans 14–16", "c": 3}, {"r": "Acts 20–22", "c": 3}]}, {"w": 50, "t": "Paul’s arrest; letters from prison", "v": "Philippians 4:13", "vt": "I can do all things through Christ which strengtheneth me.", "dd": "Map Paul’s voyage to Rome (Acts 27). Why did his Roman citizenship matter?", "days": [{"r": "Acts 23–26", "c": 4}, {"r": "Acts 27–28; Ephesians 1", "c": 3}, {"r": "Ephesians 2–5", "c": 4}, {"r": "Ephesians 6; Philippians 1–2", "c": 3}, {"r": "Philippians 3–4; Colossians 1–3", "c": 5}, {"r": "Colossians 4; Philemon; 1 Timothy 1–3", "c": 5}]}, {"w": 51, "t": "Letters to churches and leaders", "v": "2 Timothy 3:16", "vt": "All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness.", "dd": "Learn about Nero’s persecution, the traditional deaths of Peter and Paul, and Rome’s destruction of Jerusalem in AD 70.", "days": [{"r": "1 Timothy 4–6; Titus 1–2", "c": 5}, {"r": "Titus 3; 1 Peter 1–4", "c": 5}, {"r": "1 Peter 5; 2 Timothy 1–4", "c": 5}, {"r": "2 Peter 1–3; Jude; Hebrews 1", "c": 5}, {"r": "Hebrews 2–7", "c": 6}, {"r": "Hebrews 8–10", "c": 3}]}, {"w": 52, "t": "Hebrews, John’s letters, Revelation", "v": "Hebrews 11:1", "vt": "Now faith is the substance of things hoped for, the evidence of things not seen.", "dd": "Map the seven churches of Revelation (modern Turkey). Notice how Revelation borrows images from Daniel and Ezekiel. Final review: all 52 verses.", "days": [{"r": "Hebrews 11–13; 1 John 1–2", "c": 5}, {"r": "1 John 3–5; 2 John; 3 John", "c": 5}, {"r": "Revelation 1–5", "c": 5}, {"r": "Revelation 6–11", "c": 6}, {"r": "Revelation 12–17", "c": 6}, {"r": "Revelation 18–22", "c": 5}]}];
+const DAYN=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const PHASES=[{n:"Origins and the Exodus",a:1,b:12,c:"var(--p1)"},{n:"Israel becomes a kingdom",a:13,b:26,c:"var(--p2)"},{n:"Prophets, exile and return",a:27,b:39,c:"var(--p3)"},{n:"Jesus and the early church",a:40,b:52,c:"var(--p4)"}];
+const phaseOf=w=>PHASES.findIndex(p=>w>=p.a&&w<=p.b);
+const DAYS=[];WEEKS.forEach(w=>w.days.forEach((d,i)=>DAYS.push({w:w.w,i,r:d.r,c:d.c})));
+const TOTALC=DAYS.reduce((s,d)=>s+d.c,0);
+const ERAS=[
+ {t:"Creation and the patriarchs",when:"Before c. 1800 BC",emp:"Mesopotamian city-states",wk:[1,5],p:"Adam, Noah, Abraham, Sarah, Isaac, Jacob, Joseph",x:"From the garden to Abraham’s call out of Ur. God promises Abraham a land, many descendants, and blessing for all nations."},
+ {t:"Egypt and the Exodus",when:"c. 1446 or 1250 BC (debated)",emp:"Egypt",wk:[5,12],p:"Moses, Aaron, Miriam, Pharaoh, Joshua",x:"Jacob’s family grows into a nation enslaved in Egypt. Moses leads them out, God gives the Law at Sinai, and they wander 40 years."},
+ {t:"Conquest and the judges",when:"c. 1400/1200–1050 BC",emp:"Canaanite kingdoms; Philistines",wk:[13,15],p:"Joshua, Deborah, Gideon, Samson, Ruth",x:"Israel settles Canaan tribe by tribe, then cycles through unfaithfulness and rescue by local leaders called judges."},
+ {t:"The united kingdom",when:"c. 1050–930 BC",emp:"Israel at its height",wk:[15,26],p:"Samuel, Saul, David, Solomon",x:"Israel asks for a king. David makes Jerusalem the capital and receives God’s promise of an everlasting dynasty. Solomon builds the Temple."},
+ {t:"Two kingdoms",when:"930–722 BC",emp:"Assyria rising",wk:[27,29],p:"Elijah, Elisha, Ahab, Jezebel, Jonah, Amos, Hosea",x:"The kingdom splits: Israel in the north, Judah in the south. Prophets confront Baal worship and injustice. Assyria destroys the north in 722 BC."},
+ {t:"Judah alone",when:"722–586 BC",emp:"Assyria, then Babylon",wk:[29,35],p:"Hezekiah, Isaiah, Micah, Josiah, Jeremiah, Habakkuk",x:"Judah survives Assyria’s siege of Jerusalem, then falls to Babylon. The Temple is destroyed in 586 BC."},
+ {t:"Exile in Babylon",when:"586–539 BC",emp:"Babylon",wk:[35,37],p:"Ezekiel, Daniel, Nebuchadnezzar",x:"Jews live as captives in Babylon, wrestling with how God can be present without the Temple."},
+ {t:"Return and rebuilding",when:"539–430 BC",emp:"Persia",wk:[38,39],p:"Cyrus, Zerubbabel, Haggai, Zechariah, Esther, Ezra, Nehemiah, Malachi",x:"Persia conquers Babylon and lets the exiles go home. They rebuild the Temple and Jerusalem’s walls."},
+ {t:"Between the Testaments",when:"430–5 BC",emp:"Persia, Greece, then Rome",wk:[39,39],p:"Alexander the Great, the Maccabees, Herod the Great",x:"No biblical books cover these centuries in most Protestant Bibles. Greek culture spreads, the Maccabees revolt (the origin of Hanukkah), and Rome takes over in 63 BC. Pharisees and Sadducees emerge."},
+ {t:"The life of Jesus",when:"c. 4 BC–AD 30",emp:"Rome",wk:[40,46],p:"Mary, John the Baptist, the Twelve, Pontius Pilate, Herod Antipas",x:"Jesus teaches in Galilee and Judea, announcing God’s kingdom, and is crucified in Jerusalem under Roman rule."},
+ {t:"The early church",when:"AD 30–95",emp:"Rome",wk:[46,52],p:"Peter, Paul, Barnabas, James, Timothy, John",x:"The movement spreads from Jerusalem across the Roman world. Gentiles join in large numbers. Rome destroys Jerusalem in AD 70."}
+];
+const PEOPLES=[["Hebrews","Abraham’s descendants; the oldest name for the people, often used by outsiders."],["Israelites","The 12 tribes descended from Jacob, who was renamed Israel."],["Israel (northern kingdom)","Ten tribes that split off after Solomon, capital Samaria. Conquered by Assyria in 722 BC."],["Judah (southern kingdom)","The tribes of Judah and Benjamin, capital Jerusalem, ruled by David’s descendants."],["Jews","From “Judah”: those who survived the Babylonian exile. The main name by New Testament times."],["Gentiles","Everyone who isn’t Jewish (“the nations”). How Gentiles join God’s people is a central New Testament question."],["Samaritans","Descendants of northern Israelites mixed with peoples Assyria resettled there. Bitter rivals of the Jews."],["Canaanites","Inhabitants of the land before Israel; worshipped Baal and Asherah."],["Philistines","Seafaring people on the southwest coast; Israel’s rival under Saul and David (Goliath)."],["Moabites, Edomites, Ammonites","Neighbors east of the Jordan, related by ancestry (Lot, Esau). Ruth was a Moabite."],["Pharisees","A popular Jewish movement devoted to careful keeping of the Law, including oral tradition."],["Sadducees","The priestly elite who ran the Temple; accepted only the written Law and denied resurrection."]];
+const PROPHETS=[["Elijah, Elisha","800s BC","Israel (north)","Reject Baal worship"],["Jonah","700s BC","Nineveh","God’s mercy reaches enemies"],["Amos, Hosea","700s BC","Israel (north)","Injustice and unfaithfulness bring judgment"],["Isaiah, Micah","700s BC","Judah","Judgment, then a coming king"],["Nahum","c. 620s BC","About Nineveh","Assyria will fall"],["Zephaniah, Habakkuk","Late 600s BC","Judah","Babylon is coming; live by faith"],["Jeremiah","627–580s BC","Judah, exiles","A new covenant is coming"],["Ezekiel, Daniel","590s–530s BC","Exiles","God is present in exile"],["Obadiah","c. 586 BC","About Edom","Judgment on Edom"],["Haggai, Zechariah","520 BC","Returned exiles","Rebuild the Temple"],["Malachi","c. 450 BC","Returned exiles","Renew faithfulness"],["Joel","Uncertain","Judah","The Spirit poured out"]];
+
+/* ---------- state ---------- */
+const KEY="bible-journey-v1";
+let S={done:[],learned:[]};
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);S.done=o.done||[];S.learned=o.learned||[]}}catch(e){}
+let done=new Set(S.done),learned=new Set(S.learned);
+let dbRef=null,saveT=null;
+function save(){
+  const o={done:[...done],learned:[...learned],updated:Date.now()};
+  try{localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}
+  if(dbRef){clearTimeout(saveT);saveT=setTimeout(()=>{dbRef.set(o).catch(()=>{})},700)}
+}
+async function connect(){
+  if(!window.claude||!window.claude.use)return;
+  try{
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(db&&user){const id=await user.id();if(id){dbRef=db.doc("data/users/"+id+"/progress");
+      const snap=await dbRef.get();
+      if(snap.exists){const d=snap.data()||{};(d.done||[]).forEach(x=>done.add(x));(d.learned||[]).forEach(x=>learned.add(x));render()}
+      save();}}
+  }catch(e){}
+  try{const sample=await claude.use("sample");if(sample){window.__sample=sample;document.getElementById("askCard").hidden=false}}catch(e){}
+}
+const curIdx=()=>{for(let i=0;i<DAYS.length;i++)if(!done.has(i))return i;return -1};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const bg=r=>"https://www.biblegateway.com/passage/?search="+encodeURIComponent(r.replace(/–/g,"-"))+"&version=NIV";
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),1800)}
+function firstLetters(t){return t.replace(/[A-Za-z’']+/g,w=>w[0])}
+function toggleDay(i,on){on?done.add(i):done.delete(i);save();render()}
+
+/* ---------- river ---------- */
+function river(){
+  const c=curIdx(),cw=c<0?53:DAYS[c].w;const W=52*10,H=46;
+  let r="";
+  for(let w=1;w<=52;w++){
+    const p=PHASES[phaseOf(w)],x=(w-1)*10;
+    const n=[0,1,2,3,4,5].filter(i=>done.has((w-1)*6+i)).length;
+    const full=n===6,part=n>0&&!full;
+    r+=`<rect x="${x+1}" y="10" width="8" height="26" rx="2" fill="${p.c}" opacity="${full?1:part?.55:.18}"${w===cw?' class="curtick"':''}><title>Week ${w}: ${esc(WEEKS[w-1].t)}</title></rect>`;
+  }
+  if(cw<=52){const x=(cw-1)*10+5;r+=`<path d="M${x-5} 0 L${x+5} 0 L${x} 7 Z" fill="var(--ink)"/>`}
+  $("#river").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Progress across 52 weeks"><title>You are in week ${Math.min(cw,52)} of 52</title>${r}</svg>
+  <div class="legend">${PHASES.map(p=>`<span><b style="color:${p.c}">${p.a}–${p.b}</b>${esc(p.n)}</span>`).join("")}</div>`;
+}
+
+/* ---------- today ---------- */
+let vMode="ref";
+function renderToday(){
+  river();
+  const doneC=[...done].reduce((s,i)=>s+(DAYS[i]?DAYS[i].c:0),0);
+  $("#stats").innerHTML=`<div class="stat"><strong>${Math.round(doneC/TOTALC*100)}%</strong><span>of the Bible read</span></div><div class="stat"><strong>${done.size}<span class="muted" style="font-size:18px"> / 312</span></strong><span>reading days</span></div><div class="stat"><strong>${learned.size}<span class="muted" style="font-size:18px"> / 52</span></strong><span>verses learned</span></div>`;
+  const c=curIdx();
+  if(c<0){$("#todayCard").innerHTML=`<div class="panel"><p class="passage">You read the whole Bible.</p><p>All 1,189 chapters in order. Review your verses, or start a second pass in a different translation.</p></div>`;renderVerseCard(52);return}
+  const d=DAYS[c],w=WEEKS[d.w-1],p=PHASES[phaseOf(d.w)];
+  $("#todayCard").innerHTML=`<div class="panel reading" style="--pc:${p.c}">
+    <div class="where">Week ${d.w} · ${DAYN[d.i]} · ${esc(p.n)}</div>
+    <div class="passage">${esc(d.r)}</div>
+    <div class="muted small">${d.c} chapter${d.c>1?"s":""} · about ${Math.max(10,Math.round(d.c*5))} minutes</div>
+    <div class="row"><button class="btn primary" id="markRead">Mark as read</button><a class="btn" href="${bg(d.r)}" target="_blank" rel="noopener">Read it online</a></div>
+    <h3 style="margin-top:20px">${esc(w.t)}</h3>
+    <ul class="weekdays">${w.days.map((x,i)=>{const k=(d.w-1)*6+i;return `<li class="${k===c?"now":""}"><input type="checkbox" class="chk" id="td${k}" data-k="${k}" ${done.has(k)?"checked":""}><label for="td${k}"><span class="d">${DAYN[i].slice(0,3)}</span><span class="${done.has(k)?"done-txt":""}">${esc(x.r)}</span></label></li>`}).join("")}</ul>
+    <p class="dd"><strong>Sunday deep dive:</strong> ${esc(w.dd)}</p></div>`;
+  $("#markRead").onclick=()=>{toggleDay(c,true);toast("Marked as read");window.scrollTo({top:0,behavior:"smooth"})};
+  $("#todayCard").querySelectorAll(".chk").forEach(el=>el.onchange=()=>toggleDay(+el.dataset.k,el.checked));
+  renderVerseCard(d.w);
+}
+function renderVerseCard(wn){
+  const w=WEEKS[wn-1];
+  const txt=vMode==="full"?esc(w.vt):vMode==="hint"?esc(firstLetters(w.vt)):"Say it from memory, then reveal to check.";
+  $("#verseCard").innerHTML=`<div class="where">This week’s memory verse</div><div class="verse-ref">${esc(w.v)}</div>
+  <p class="verse-text ${vMode==="ref"?"hidden":""}">${txt}</p>
+  <div class="row"><div class="seg" role="group" aria-label="Show verse">
+    <button data-m="ref" aria-pressed="${vMode==="ref"}">Hide</button><button data-m="hint" aria-pressed="${vMode==="hint"}">First letters</button><button data-m="full" aria-pressed="${vMode==="full"}">Full text</button></div>
+    <label class="learned"><input type="checkbox" class="chk" id="lw" ${learned.has(wn)?"checked":""}> I know it</label></div>`;
+  $("#verseCard").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{vMode=b.dataset.m;renderVerseCard(wn)});
+  $("#lw").onchange=e=>{e.target.checked?learned.add(wn):learned.delete(wn);save();renderToday()};
+}
+
+/* ---------- ask ---------- */
+let askCtl=null;
+async function ask(kind,q){
+  const s=window.__sample;if(!s)return;
+  const c=curIdx(),d=DAYS[c<0?DAYS.length-1:c],w=WEEKS[d.w-1];
+  const base=`The reader is following a one-year chronological Bible reading plan to understand the Bible's history, geography and people well enough to discuss it with others. Today's reading: ${d.r} (week ${d.w}, theme: ${w.t}).`;
+  const asks={history:"Explain the historical setting of this reading: roughly when it takes place, which empire or powers were around, and what was happening.",map:"Explain where this reading takes place geographically. Name the regions, cities and landmarks, where they are today, and why the geography matters to the story.",people:"Introduce the key people and groups in this reading: who they are, how they connect to the wider biblical story, and anything a newcomer would get confused about."};
+  const task=q?`Answer this question about it: ${q}`:asks[kind];
+  const prompt=`${base}\n\n${task}\n\nWrite 150 to 250 words in plain, friendly prose for a curious adult newcomer. Be accurate and even-handed, noting where scholars disagree on dates or details. No markdown headings, bullet lists or bold.`;
+  const out=$("#answer");out.textContent="Thinking…";
+  if(askCtl)askCtl.abort();askCtl=new AbortController();
+  document.querySelectorAll("#askCard button").forEach(b=>b.disabled=true);
+  try{const r=await s(prompt,{signal:askCtl.signal,onText:({text})=>{out.textContent=text},cache:true});out.textContent=r.text}
+  catch(e){if(e&&e.code==="not_granted"){$("#askCard").hidden=true}else if(e&&e.name!=="AbortError"){out.textContent=e&&e.code==="rate_limited"?"Too many questions at once. Try again in a minute.":"That didn’t go through. Try again."}}
+  finally{document.querySelectorAll("#askCard button").forEach(b=>b.disabled=false)}
+}
+document.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>ask(b.dataset.ask));
+$("#askGo").onclick=()=>{const q=$("#askQ").value.trim();if(q)ask(null,q)};
+$("#askQ").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#askGo").click()}};
+
+/* ---------- plan ---------- */
+const openWeeks=new Set();
+function renderPlan(){
+  const c=curIdx(),cw=c<0?0:DAYS[c].w;
+  let h="";
+  PHASES.forEach(p=>{
+    h+=`<div class="phase-h" style="--pc:${p.c}"><span class="sw"></span><h3>${esc(p.n)}</h3><span class="muted small">Weeks ${p.a}–${p.b}</span></div>`;
+    for(let wn=p.a;wn<=p.b;wn++){const w=WEEKS[wn-1];
+      const ks=[0,1,2,3,4,5].map(i=>(wn-1)*6+i),n=ks.filter(k=>done.has(k)).length;
+      const isOpen=openWeeks.has(wn)||(wn===cw&&!openWeeks.has(-wn));
+      h+=`<details class="week ${wn===cw?"cur":""}" style="--pc:${p.c}" data-w="${wn}" ${isOpen?"open":""}><summary><span class="wnum">Wk ${wn}</span><span class="wt">${esc(w.t)}</span><span class="dots" aria-label="${n} of 6 read">${ks.map(k=>`<i class="${done.has(k)?"on":""}"></i>`).join("")}</span></summary>
+      <div class="inner"><ul class="weekdays">${w.days.map((x,i)=>{const k=(wn-1)*6+i;return `<li><input type="checkbox" class="chk" id="pd${k}" data-k="${k}" ${done.has(k)?"checked":""}><label for="pd${k}"><span class="d">${DAYN[i].slice(0,3)}</span><span class="${done.has(k)?"done-txt":""}">${esc(x.r)}</span></label></li>`}).join("")}</ul>
+      <p class="dd"><strong>Sunday:</strong> ${esc(w.dd)} <span class="muted">Verse: ${esc(w.v)}.</span></p></div></details>`}
+  });
+  $("#planList").innerHTML=h;
+  $("#planList").querySelectorAll(".chk").forEach(el=>el.onchange=()=>toggleDay(+el.dataset.k,el.checked));
+  $("#planList").querySelectorAll("details.week").forEach(d=>d.addEventListener("toggle",()=>{const wn=+d.dataset.w;if(d.open){openWeeks.add(wn);openWeeks.delete(-wn)}else{openWeeks.delete(wn);if(wn===cw)openWeeks.add(-wn)}}));
+}
+
+/* ---------- timeline ---------- */
+function renderTimeline(){
+  const c=curIdx(),cw=c<0?52:DAYS[c].w;
+  $("#tl").innerHTML=ERAS.map(e=>{const p=PHASES[phaseOf(e.wk[0])];const cur=cw>=e.wk[0]&&cw<=e.wk[1];
+    return `<div class="era ${cur?"cur":""}" style="--pc:${p.c}"><span class="node"></span>
+    <div class="when">${esc(e.when)}</div><h3>${esc(e.t)}</h3>
+    <span class="tag">${esc(e.emp)}</span><span class="tag">${e.wk[0]===e.wk[1]?"Week "+e.wk[0]+" deep dive":"Weeks "+e.wk[0]+"–"+e.wk[1]}</span>${cur?'<span class="tag" style="background:var(--pc);color:var(--surface)">You are here</span>':""}
+    <p>${esc(e.x)}</p><p class="small muted">Key people: ${esc(e.p)}</p>
+    <button class="btn small" data-go="${e.wk[0]}">Open week ${e.wk[0]}</button></div>`}).join("");
+  $("#tl").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{const wn=+b.dataset.go;openWeeks.add(wn);location.hash="#plan";setTimeout(()=>{const el=document.querySelector(`details[data-w="${wn}"]`);if(el)el.scrollIntoView({block:"start"})},30)});
+}
+
+/* ---------- verses ---------- */
+let quizW=null,quizShow=false;
+function renderVerses(){
+  const c=curIdx(),cw=c<0?52:DAYS[c].w;
+  const pool=WEEKS.filter(w=>w.w<=cw);
+  if(quizW===null||quizW>cw)quizW=cw;
+  const q=WEEKS[quizW-1];
+  $("#quiz").innerHTML=`<div class="where">Practice · ${pool.length} verse${pool.length>1?"s":""} unlocked</div><div class="verse-ref">${esc(q.v)}</div>
+  <p class="verse-text ${quizShow?"":"hidden"}">${quizShow?esc(q.vt):"Recite it, then reveal."}</p>
+  <div class="row"><button class="btn" id="qReveal">${quizShow?"Hide":"Reveal"}</button><button class="btn primary" id="qNext">Next verse</button></div>`;
+  $("#qReveal").onclick=()=>{quizShow=!quizShow;renderVerses()};
+  $("#qNext").onclick=()=>{if(pool.length>1){let n;do{n=pool[Math.floor(Math.random()*pool.length)].w}while(n===quizW);quizW=n}quizShow=false;renderVerses()};
+  $("#vlist").innerHTML=WEEKS.map(w=>`<div class="vcard ${w.w>cw?"future":""}"><div class="top"><span class="verse-ref" style="font-size:18px">${esc(w.v)}</span><span class="muted small">Week ${w.w}</span></div>
+    <p class="txt">${esc(w.vt)}</p><label class="learned"><input type="checkbox" class="chk" data-l="${w.w}" ${learned.has(w.w)?"checked":""}> I know it</label></div>`).join("");
+  $("#vlist").querySelectorAll("[data-l]").forEach(el=>el.onchange=()=>{const n=+el.dataset.l;el.checked?learned.add(n):learned.delete(n);save()});
+}
+
+/* ---------- people ---------- */
+function renderPeople(){
+  $("#people").innerHTML=`<h3 style="margin-top:18px">The peoples</h3><dl class="people">${PEOPLES.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl>
+  <h3 style="margin-top:28px">The prophets in their time</h3><div class="tbl"><table><thead><tr><th>Prophet</th><th>When</th><th>Spoke to</th><th>Message</th></tr></thead><tbody>${PROPHETS.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+/* ---------- routing ---------- */
+const VIEWS=["today","plan","timeline","verses","people"];
+function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"today";
+  VIEWS.forEach(x=>{$("#v-"+x).classList.toggle("on",x===v)});
+  document.querySelectorAll("nav a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  render(v);}
+function render(v){v=v||(VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"today");
+  if(v==="today")renderToday();if(v==="plan")renderPlan();if(v==="timeline")renderTimeline();if(v==="verses")renderVerses();if(v==="people")renderPeople()}
+window.addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
+route();connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# gatework config. Values are TOML basic strings, numbers, or string arrays.
+# project.branch_pattern must contain {id}, or every task gets the same branch.
+version = 1
+mode = "committed"
+harnesses = ["claude","codex","cursor"]
+
+[brain]
+dir = "docs/gatework"
+decisions = "docs/gatework/context.md"
+sources = ["README.md","docs/reference/build-brief.md"]
+
+[project]
+default_branch = "main"
+branch_pattern = "gw/{id}"
+test = "npm run test"
+typecheck = "npm run typecheck"
+lint = "npm run lint"
+
+# How the pipeline treats the tracker. Empty values mean "skip this step".
+[tracker]
+kind = "none"
+claim = ""
+done_state = ""
+write_skill = ""
+
+[pr]
+template = ""
+required_checks = ["Lint, typecheck, test, build"]
+human_artifacts = []

@@ -1,0 +1,113 @@
+{
+  "version": "0.1.0",
+  "files": {
+    ".agents/skills/gw-brief/SKILL.md": {
+      "kind": "managed",
+      "hash": "c5b74bc068955e985bae1a007b906d7706b7ae47523f68d37970d278415ca79a"
+    },
+    ".agents/skills/gw-build/SKILL.md": {
+      "kind": "managed",
+      "hash": "b242e577a83816fd4f8b8b6c17856d79ae47a1f08caf103039842f0e0212731c"
+    },
+    ".agents/skills/gw-implement/SKILL.md": {
+      "kind": "managed",
+      "hash": "ecc360b77f0ef5b76f0c493fbac976d13c216a024bb10819e14b87b8b592b370"
+    },
+    ".agents/skills/gw-intake/SKILL.md": {
+      "kind": "managed",
+      "hash": "28337e9eb8c184afb675251d1901f1b680d9037243839bba77bacaf729e73c3d"
+    },
+    ".agents/skills/gw-review/SKILL.md": {
+      "kind": "managed",
+      "hash": "c79e6d82f6d67a67b80ae8a559d118a82844e3290e766e96d4eb6f80c8c0e9fb"
+    },
+    ".agents/skills/gw-verify/SKILL.md": {
+      "kind": "managed",
+      "hash": "b58ad41df84fb467e39a64797ce6e898873ee18bf6b258a3bceb8fac6a0e3bf1"
+    },
+    ".claude/skills/gw-brief/SKILL.md": {
+      "kind": "managed",
+      "hash": "c5b74bc068955e985bae1a007b906d7706b7ae47523f68d37970d278415ca79a"
+    },
+    ".claude/skills/gw-build/SKILL.md": {
+      "kind": "managed",
+      "hash": "b242e577a83816fd4f8b8b6c17856d79ae47a1f08caf103039842f0e0212731c"
+    },
+    ".claude/skills/gw-implement/SKILL.md": {
+      "kind": "managed",
+      "hash": "ecc360b77f0ef5b76f0c493fbac976d13c216a024bb10819e14b87b8b592b370"
+    },
+    ".claude/skills/gw-intake/SKILL.md": {
+      "kind": "managed",
+      "hash": "28337e9eb8c184afb675251d1901f1b680d9037243839bba77bacaf729e73c3d"
+    },
+    ".claude/skills/gw-review/SKILL.md": {
+      "kind": "managed",
+      "hash": "c79e6d82f6d67a67b80ae8a559d118a82844e3290e766e96d4eb6f80c8c0e9fb"
+    },
+    ".claude/skills/gw-verify/SKILL.md": {
+      "kind": "managed",
+      "hash": "b58ad41df84fb467e39a64797ce6e898873ee18bf6b258a3bceb8fac6a0e3bf1"
+    },
+    ".cursor/skills/gw-brief/SKILL.md": {
+      "kind": "managed",
+      "hash": "c5b74bc068955e985bae1a007b906d7706b7ae47523f68d37970d278415ca79a"
+    },
+    ".cursor/skills/gw-build/SKILL.md": {
+      "kind": "managed",
+      "hash": "b242e577a83816fd4f8b8b6c17856d79ae47a1f08caf103039842f0e0212731c"
+    },
+    ".cursor/skills/gw-implement/SKILL.md": {
+      "kind": "managed",
+      "hash": "ecc360b77f0ef5b76f0c493fbac976d13c216a024bb10819e14b87b8b592b370"
+    },
+    ".cursor/skills/gw-intake/SKILL.md": {
+      "kind": "managed",
+      "hash": "28337e9eb8c184afb675251d1901f1b680d9037243839bba77bacaf729e73c3d"
+    },
+    ".cursor/skills/gw-review/SKILL.md": {
+      "kind": "managed",
+      "hash": "c79e6d82f6d67a67b80ae8a559d118a82844e3290e766e96d4eb6f80c8c0e9fb"
+    },
+    ".cursor/skills/gw-verify/SKILL.md": {
+      "kind": "managed",
+      "hash": "b58ad41df84fb467e39a64797ce6e898873ee18bf6b258a3bceb8fac6a0e3bf1"
+    },
+    ".gatework/config.toml": {
+      "kind": "config",
+      "hash": "e75edd511f57adaf9077b4b829be9d202585f4b8ec30e61466ed7980847ea8a6"
+    },
+    ".gatework/references/agent-briefs.md": {
+      "kind": "managed",
+      "hash": "2f34b709363dbc5ea72c04d13a7d6b1a91ea5007dbcb72c13e312cd734f46d1f"
+    },
+    ".gatework/references/contracts.md": {
+      "kind": "managed",
+      "hash": "49a6eb15cd930a6d5410c9ed3d3136f94589a02b31cf6f273ae6b304fcabf48f"
+    },
+    ".gatework/references/reviewer-briefs.md": {
+      "kind": "managed",
+      "hash": "a0241b86ba79cca3f6b1f7c725dbc3da649b6c9c4e67b1cf1abd573ab36d37e7"
+    },
+    "AGENTS.md": {
+      "kind": "block",
+      "hash": "d7a895fa9cba751304f85fcdb3f67ca8d7718302a9603e0d266891faf3d1fdb0"
+    },
+    "CLAUDE.md": {
+      "kind": "block",
+      "hash": "918b1c90559355ef78f33fdf3562f2b021ef8bdfd8a5c8415e5decd44934de55"
+    },
+    "docs/gatework/context.md": {
+      "kind": "seed",
+      "hash": "c16ac250fb1eab95cc69518516f957a69c21ab829e3de91ac9601efd07f7b65b"
+    },
+    "docs/gatework/tasks/.gitkeep": {
+      "kind": "seed",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs/gatework/traps.md": {
+      "kind": "seed",
+      "hash": "b39e40a50f2f772b9fc346daf09129649f8591a57f5b334a22c72f374d61e5b4"
+    }
+  }
+}

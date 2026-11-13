@@ -1,0 +1,2789 @@
+{
+ "meta": {
+  "title": "One-Year Bible Journey",
+  "readingDays": 312,
+  "totalChapters": 1189,
+  "order": "chronological",
+  "verseTextSource": "King James Version (public domain)",
+  "notes": "Sundays are deep-dive/catch-up days and have no reading."
+ },
+ "phases": [
+  {
+   "id": 1,
+   "name": "Origins and the Exodus",
+   "weeks": [
+    1,
+    12
+   ]
+  },
+  {
+   "id": 2,
+   "name": "Israel becomes a kingdom",
+   "weeks": [
+    13,
+    26
+   ]
+  },
+  {
+   "id": 3,
+   "name": "Divided kingdom, prophets, exile and return",
+   "weeks": [
+    27,
+    39
+   ]
+  },
+  {
+   "id": 4,
+   "name": "Jesus and the early church",
+   "weeks": [
+    40,
+    52
+   ]
+  }
+ ],
+ "weeks": [
+  {
+   "week": 1,
+   "phase": 1,
+   "title": "Creation and the early world",
+   "deepDive": "Find the Tigris and Euphrates on a map; this is the world of Genesis 1–11. Watch BibleProject’s Genesis 1–11 overview. Note: Job is placed here because its setting resembles the age of the patriarchs.",
+   "memoryVerse": {
+    "ref": "Genesis 1:1",
+    "textKJV": "In the beginning God created the heaven and the earth."
+   },
+   "days": [
+    {
+     "index": 0,
+     "weekday": "Mon",
+     "reading": "Genesis 1–4",
+     "chapters": 4
+    },
+    {
+     "index": 1,
+     "weekday": "Tue",
+     "reading": "Genesis 5–7",
+     "chapters": 3
+    },
+    {
+     "index": 2,
+     "weekday": "Wed",
+     "reading": "Genesis 8–11",
+     "chapters": 4
+    },
+    {
+     "index": 3,
+     "weekday": "Thu",
+     "reading": "Job 1–4",
+     "chapters": 4
+    },
+    {
+     "index": 4,
+     "weekday": "Fri",
+     "reading": "Job 5–8",
+     "chapters": 4
+    },
+    {
+     "index": 5,
+     "weekday": "Sat",
+     "reading": "Job 9–12",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 2,
+   "phase": 1,
+   "title": "The book of Job",
+   "deepDive": "Write one paragraph: what do Job’s friends get wrong about suffering, and how does God answer?",
+   "memoryVerse": {
+    "ref": "Job 19:25",
+    "textKJV": "For I know that my redeemer liveth, and that he shall stand at the latter day upon the earth."
+   },
+   "days": [
+    {
+     "index": 6,
+     "weekday": "Mon",
+     "reading": "Job 13–15",
+     "chapters": 3
+    },
+    {
+     "index": 7,
+     "weekday": "Tue",
+     "reading": "Job 16–19",
+     "chapters": 4
+    },
+    {
+     "index": 8,
+     "weekday": "Wed",
+     "reading": "Job 20–23",
+     "chapters": 4
+    },
+    {
+     "index": 9,
+     "weekday": "Thu",
+     "reading": "Job 24–28",
+     "chapters": 5
+    },
+    {
+     "index": 10,
+     "weekday": "Fri",
+     "reading": "Job 29–31",
+     "chapters": 3
+    },
+    {
+     "index": 11,
+     "weekday": "Sat",
+     "reading": "Job 32–34",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 3,
+   "phase": 1,
+   "title": "Abraham’s call",
+   "deepDive": "Trace Abraham’s journey: Ur to Harran to Canaan to Egypt and back. Note what God promises him; it drives the whole Bible.",
+   "memoryVerse": {
+    "ref": "Genesis 12:2–3",
+    "textKJV": "And I will make of thee a great nation, and I will bless thee, and make thy name great; and thou shalt be a blessing: And I will bless them that bless thee, and curse him that curseth thee: and in thee shall all families of the earth be blessed."
+   },
+   "days": [
+    {
+     "index": 12,
+     "weekday": "Mon",
+     "reading": "Job 35–38",
+     "chapters": 4
+    },
+    {
+     "index": 13,
+     "weekday": "Tue",
+     "reading": "Job 39–41",
+     "chapters": 3
+    },
+    {
+     "index": 14,
+     "weekday": "Wed",
+     "reading": "Job 42; Genesis 12–15",
+     "chapters": 5
+    },
+    {
+     "index": 15,
+     "weekday": "Thu",
+     "reading": "Genesis 16–18",
+     "chapters": 3
+    },
+    {
+     "index": 16,
+     "weekday": "Fri",
+     "reading": "Genesis 19–22",
+     "chapters": 4
+    },
+    {
+     "index": 17,
+     "weekday": "Sat",
+     "reading": "Genesis 23–24",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 4,
+   "phase": 1,
+   "title": "Isaac, Jacob, and the twelve sons",
+   "deepDive": "Draw a family tree from Abraham to Jacob’s 12 sons. These sons become the 12 tribes of Israel.",
+   "memoryVerse": {
+    "ref": "Genesis 28:15",
+    "textKJV": "And, behold, I am with thee, and will keep thee in all places whither thou goest, and will bring thee again into this land; for I will not leave thee, until I have done that which I have spoken to thee of."
+   },
+   "days": [
+    {
+     "index": 18,
+     "weekday": "Mon",
+     "reading": "Genesis 25–27",
+     "chapters": 3
+    },
+    {
+     "index": 19,
+     "weekday": "Tue",
+     "reading": "Genesis 28–30",
+     "chapters": 3
+    },
+    {
+     "index": 20,
+     "weekday": "Wed",
+     "reading": "Genesis 31–32",
+     "chapters": 2
+    },
+    {
+     "index": 21,
+     "weekday": "Thu",
+     "reading": "Genesis 33–35",
+     "chapters": 3
+    },
+    {
+     "index": 22,
+     "weekday": "Fri",
+     "reading": "Genesis 36–38",
+     "chapters": 3
+    },
+    {
+     "index": 23,
+     "weekday": "Sat",
+     "reading": "Genesis 39–41",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 5,
+   "phase": 1,
+   "title": "Joseph in Egypt; the Exodus begins",
+   "deepDive": "Locate Egypt, the Nile, and Goshen. Read about how Joseph’s family ends up enslaved generations later.",
+   "memoryVerse": {
+    "ref": "Genesis 50:20",
+    "textKJV": "But as for you, ye thought evil against me; but God meant it unto good, to bring to pass, as it is this day, to save much people alive."
+   },
+   "days": [
+    {
+     "index": 24,
+     "weekday": "Mon",
+     "reading": "Genesis 42–43",
+     "chapters": 2
+    },
+    {
+     "index": 25,
+     "weekday": "Tue",
+     "reading": "Genesis 44–46",
+     "chapters": 3
+    },
+    {
+     "index": 26,
+     "weekday": "Wed",
+     "reading": "Genesis 47–50",
+     "chapters": 4
+    },
+    {
+     "index": 27,
+     "weekday": "Thu",
+     "reading": "Exodus 1–4",
+     "chapters": 4
+    },
+    {
+     "index": 28,
+     "weekday": "Fri",
+     "reading": "Exodus 5–7",
+     "chapters": 3
+    },
+    {
+     "index": 29,
+     "weekday": "Sat",
+     "reading": "Exodus 8–11",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 6,
+   "phase": 1,
+   "title": "Passover, the Red Sea, and Sinai",
+   "deepDive": "Look at a map of possible Exodus routes and locations proposed for Mount Sinai. Learn the 10 Commandments in order.",
+   "memoryVerse": {
+    "ref": "Exodus 20:2–3",
+    "textKJV": "I am the LORD thy God, which have brought thee out of the land of Egypt, out of the house of bondage. Thou shalt have no other gods before me."
+   },
+   "days": [
+    {
+     "index": 30,
+     "weekday": "Mon",
+     "reading": "Exodus 12–14",
+     "chapters": 3
+    },
+    {
+     "index": 31,
+     "weekday": "Tue",
+     "reading": "Exodus 15–17",
+     "chapters": 3
+    },
+    {
+     "index": 32,
+     "weekday": "Wed",
+     "reading": "Exodus 18–21",
+     "chapters": 4
+    },
+    {
+     "index": 33,
+     "weekday": "Thu",
+     "reading": "Exodus 22–24",
+     "chapters": 3
+    },
+    {
+     "index": 34,
+     "weekday": "Fri",
+     "reading": "Exodus 25–27",
+     "chapters": 3
+    },
+    {
+     "index": 35,
+     "weekday": "Sat",
+     "reading": "Exodus 28–29",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 7,
+   "phase": 1,
+   "title": "The Tabernacle; Leviticus begins",
+   "deepDive": "Sketch the Tabernacle layout: courtyard, Holy Place, Most Holy Place. Watch BibleProject’s Leviticus overview.",
+   "memoryVerse": {
+    "ref": "Exodus 34:6",
+    "textKJV": "And the LORD passed by before him, and proclaimed, The LORD, The LORD God, merciful and gracious, longsuffering, and abundant in goodness and truth."
+   },
+   "days": [
+    {
+     "index": 36,
+     "weekday": "Mon",
+     "reading": "Exodus 30–33",
+     "chapters": 4
+    },
+    {
+     "index": 37,
+     "weekday": "Tue",
+     "reading": "Exodus 34–35",
+     "chapters": 2
+    },
+    {
+     "index": 38,
+     "weekday": "Wed",
+     "reading": "Exodus 36–38",
+     "chapters": 3
+    },
+    {
+     "index": 39,
+     "weekday": "Thu",
+     "reading": "Exodus 39–40; Leviticus 1–2",
+     "chapters": 4
+    },
+    {
+     "index": 40,
+     "weekday": "Fri",
+     "reading": "Leviticus 3–6",
+     "chapters": 4
+    },
+    {
+     "index": 41,
+     "weekday": "Sat",
+     "reading": "Leviticus 7–9",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 8,
+   "phase": 1,
+   "title": "Holiness and sacrifice",
+   "deepDive": "Study the Day of Atonement (Leviticus 16). What were clean/unclean laws for? You’ll meet these ideas again in Hebrews.",
+   "memoryVerse": {
+    "ref": "Leviticus 19:18",
+    "textKJV": "Thou shalt not avenge, nor bear any grudge against the children of thy people, but thou shalt love thy neighbour as thyself: I am the LORD."
+   },
+   "days": [
+    {
+     "index": 42,
+     "weekday": "Mon",
+     "reading": "Leviticus 10–12",
+     "chapters": 3
+    },
+    {
+     "index": 43,
+     "weekday": "Tue",
+     "reading": "Leviticus 13–14",
+     "chapters": 2
+    },
+    {
+     "index": 44,
+     "weekday": "Wed",
+     "reading": "Leviticus 15–17",
+     "chapters": 3
+    },
+    {
+     "index": 45,
+     "weekday": "Thu",
+     "reading": "Leviticus 18–20",
+     "chapters": 3
+    },
+    {
+     "index": 46,
+     "weekday": "Fri",
+     "reading": "Leviticus 21–23",
+     "chapters": 3
+    },
+    {
+     "index": 47,
+     "weekday": "Sat",
+     "reading": "Leviticus 24–25",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 9,
+   "phase": 1,
+   "title": "Numbers: Israel organized",
+   "deepDive": "Draw how the 12 tribes camped around the Tabernacle (Numbers 2).",
+   "memoryVerse": {
+    "ref": "Numbers 6:24–26",
+    "textKJV": "The LORD bless thee, and keep thee: The LORD make his face shine upon thee, and be gracious unto thee: The LORD lift up his countenance upon thee, and give thee peace."
+   },
+   "days": [
+    {
+     "index": 48,
+     "weekday": "Mon",
+     "reading": "Leviticus 26–27; Numbers 1",
+     "chapters": 3
+    },
+    {
+     "index": 49,
+     "weekday": "Tue",
+     "reading": "Numbers 2–3",
+     "chapters": 2
+    },
+    {
+     "index": 50,
+     "weekday": "Wed",
+     "reading": "Numbers 4–5",
+     "chapters": 2
+    },
+    {
+     "index": 51,
+     "weekday": "Thu",
+     "reading": "Numbers 6–7",
+     "chapters": 2
+    },
+    {
+     "index": 52,
+     "weekday": "Fri",
+     "reading": "Numbers 8–10",
+     "chapters": 3
+    },
+    {
+     "index": 53,
+     "weekday": "Sat",
+     "reading": "Numbers 11–13",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 10,
+   "phase": 1,
+   "title": "Forty years in the wilderness",
+   "deepDive": "Map Kadesh, Edom, and the plains of Moab. Why did Israel wander 40 years?",
+   "memoryVerse": {
+    "ref": "Numbers 23:19",
+    "textKJV": "God is not a man, that he should lie; neither the son of man, that he should repent: hath he said, and shall he not do it? or hath he spoken, and shall he not make it good?"
+   },
+   "days": [
+    {
+     "index": 54,
+     "weekday": "Mon",
+     "reading": "Numbers 14–15",
+     "chapters": 2
+    },
+    {
+     "index": 55,
+     "weekday": "Tue",
+     "reading": "Numbers 16–19",
+     "chapters": 4
+    },
+    {
+     "index": 56,
+     "weekday": "Wed",
+     "reading": "Numbers 20–22",
+     "chapters": 3
+    },
+    {
+     "index": 57,
+     "weekday": "Thu",
+     "reading": "Numbers 23–25",
+     "chapters": 3
+    },
+    {
+     "index": 58,
+     "weekday": "Fri",
+     "reading": "Numbers 26–28",
+     "chapters": 3
+    },
+    {
+     "index": 59,
+     "weekday": "Sat",
+     "reading": "Numbers 29–31",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 11,
+   "phase": 1,
+   "title": "Deuteronomy: Moses’ final speeches",
+   "deepDive": "Learn what a covenant is. Ancient Near Eastern treaties had a similar structure to Deuteronomy.",
+   "memoryVerse": {
+    "ref": "Deuteronomy 6:4–5",
+    "textKJV": "Hear, O Israel: The LORD our God is one LORD: And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might."
+   },
+   "days": [
+    {
+     "index": 60,
+     "weekday": "Mon",
+     "reading": "Numbers 32–33",
+     "chapters": 2
+    },
+    {
+     "index": 61,
+     "weekday": "Tue",
+     "reading": "Numbers 34–36",
+     "chapters": 3
+    },
+    {
+     "index": 62,
+     "weekday": "Wed",
+     "reading": "Deuteronomy 1–2",
+     "chapters": 2
+    },
+    {
+     "index": 63,
+     "weekday": "Thu",
+     "reading": "Deuteronomy 3–5",
+     "chapters": 3
+    },
+    {
+     "index": 64,
+     "weekday": "Fri",
+     "reading": "Deuteronomy 6–9",
+     "chapters": 4
+    },
+    {
+     "index": 65,
+     "weekday": "Sat",
+     "reading": "Deuteronomy 10–12",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 12,
+   "phase": 1,
+   "title": "Moses’ farewell",
+   "deepDive": "Phase 1 review: write the story from creation to Moses’ death in 10 sentences. Review verses 1–12.",
+   "memoryVerse": {
+    "ref": "Deuteronomy 31:6",
+    "textKJV": "Be strong and of a good courage, fear not, nor be afraid of them: for the LORD thy God, he it is that doth go with thee; he will not fail thee, nor forsake thee."
+   },
+   "days": [
+    {
+     "index": 66,
+     "weekday": "Mon",
+     "reading": "Deuteronomy 13–16",
+     "chapters": 4
+    },
+    {
+     "index": 67,
+     "weekday": "Tue",
+     "reading": "Deuteronomy 17–21",
+     "chapters": 5
+    },
+    {
+     "index": 68,
+     "weekday": "Wed",
+     "reading": "Deuteronomy 22–25",
+     "chapters": 4
+    },
+    {
+     "index": 69,
+     "weekday": "Thu",
+     "reading": "Deuteronomy 26–28",
+     "chapters": 3
+    },
+    {
+     "index": 70,
+     "weekday": "Fri",
+     "reading": "Deuteronomy 29–31",
+     "chapters": 3
+    },
+    {
+     "index": 71,
+     "weekday": "Sat",
+     "reading": "Deuteronomy 32–34",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 13,
+   "phase": 2,
+   "title": "Joshua and the conquest",
+   "deepDive": "Map the tribal territories (Joshua 13–21). Who were the Canaanites and what did they worship?",
+   "memoryVerse": {
+    "ref": "Joshua 1:9",
+    "textKJV": "Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest."
+   },
+   "days": [
+    {
+     "index": 72,
+     "weekday": "Mon",
+     "reading": "Joshua 1–5",
+     "chapters": 5
+    },
+    {
+     "index": 73,
+     "weekday": "Tue",
+     "reading": "Joshua 6–8",
+     "chapters": 3
+    },
+    {
+     "index": 74,
+     "weekday": "Wed",
+     "reading": "Joshua 9–12",
+     "chapters": 4
+    },
+    {
+     "index": 75,
+     "weekday": "Thu",
+     "reading": "Joshua 13–15",
+     "chapters": 3
+    },
+    {
+     "index": 76,
+     "weekday": "Fri",
+     "reading": "Joshua 16–18",
+     "chapters": 3
+    },
+    {
+     "index": 77,
+     "weekday": "Sat",
+     "reading": "Joshua 19–21",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 14,
+   "phase": 2,
+   "title": "The judges",
+   "deepDive": "Chart the repeating cycle in Judges: sin, oppression, cry for help, a judge rescues. Who were the Philistines?",
+   "memoryVerse": {
+    "ref": "Judges 21:25",
+    "textKJV": "In those days there was no king in Israel: every man did that which was right in his own eyes."
+   },
+   "days": [
+    {
+     "index": 78,
+     "weekday": "Mon",
+     "reading": "Joshua 22–24; Judges 1",
+     "chapters": 4
+    },
+    {
+     "index": 79,
+     "weekday": "Tue",
+     "reading": "Judges 2–4",
+     "chapters": 3
+    },
+    {
+     "index": 80,
+     "weekday": "Wed",
+     "reading": "Judges 5–7",
+     "chapters": 3
+    },
+    {
+     "index": 81,
+     "weekday": "Thu",
+     "reading": "Judges 8–10",
+     "chapters": 3
+    },
+    {
+     "index": 82,
+     "weekday": "Fri",
+     "reading": "Judges 11–14",
+     "chapters": 4
+    },
+    {
+     "index": 83,
+     "weekday": "Sat",
+     "reading": "Judges 15–18",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 15,
+   "phase": 2,
+   "title": "Ruth; Samuel; the Psalms begin",
+   "deepDive": "Ruth is a Moabite (a foreigner) who becomes David’s great-grandmother. Find Moab and Bethlehem on a map.",
+   "memoryVerse": {
+    "ref": "Ruth 1:16",
+    "textKJV": "And Ruth said, Intreat me not to leave thee, or to return from following after thee: for whither thou goest, I will go; and where thou lodgest, I will lodge: thy people shall be my people, and thy God my God."
+   },
+   "days": [
+    {
+     "index": 84,
+     "weekday": "Mon",
+     "reading": "Judges 19–20",
+     "chapters": 2
+    },
+    {
+     "index": 85,
+     "weekday": "Tue",
+     "reading": "Judges 21; Ruth 1–4",
+     "chapters": 5
+    },
+    {
+     "index": 86,
+     "weekday": "Wed",
+     "reading": "1 Samuel 1–2; Psalms 1–4",
+     "chapters": 6
+    },
+    {
+     "index": 87,
+     "weekday": "Thu",
+     "reading": "1 Samuel 3–4; Psalms 5–8",
+     "chapters": 6
+    },
+    {
+     "index": 88,
+     "weekday": "Fri",
+     "reading": "1 Samuel 5–7; Psalms 9–12",
+     "chapters": 7
+    },
+    {
+     "index": 89,
+     "weekday": "Sat",
+     "reading": "1 Samuel 8–9; Psalms 13–17",
+     "chapters": 7
+    }
+   ]
+  },
+  {
+   "week": 16,
+   "phase": 2,
+   "title": "Saul falls, David rises",
+   "deepDive": "Find the Valley of Elah, where David fought Goliath. Read Psalm 23 slowly as David’s song.",
+   "memoryVerse": {
+    "ref": "1 Samuel 16:7",
+    "textKJV": "But the LORD said unto Samuel, Look not on his countenance, or on the height of his stature; because I have refused him: for the Lord seeth not as man seeth; for man looketh on the outward appearance, but the LORD looketh on the heart."
+   },
+   "days": [
+    {
+     "index": 90,
+     "weekday": "Mon",
+     "reading": "1 Samuel 10–11; Psalms 18–19",
+     "chapters": 4
+    },
+    {
+     "index": 91,
+     "weekday": "Tue",
+     "reading": "1 Samuel 12–13; Psalms 20–22",
+     "chapters": 5
+    },
+    {
+     "index": 92,
+     "weekday": "Wed",
+     "reading": "1 Samuel 14; Psalms 23–25",
+     "chapters": 4
+    },
+    {
+     "index": 93,
+     "weekday": "Thu",
+     "reading": "1 Samuel 15–16; Psalms 26–28",
+     "chapters": 5
+    },
+    {
+     "index": 94,
+     "weekday": "Fri",
+     "reading": "1 Samuel 17; Psalms 29–31",
+     "chapters": 4
+    },
+    {
+     "index": 95,
+     "weekday": "Sat",
+     "reading": "1 Samuel 18–19; Psalms 32–33",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 17,
+   "phase": 2,
+   "title": "David on the run",
+   "deepDive": "Map David’s hideouts (En Gedi, the wilderness of Judah). Many psalms’ headings tie them to these events; look for them.",
+   "memoryVerse": {
+    "ref": "Psalm 51:10",
+    "textKJV": "Create in me a clean heart, O God; and renew a right spirit within me."
+   },
+   "days": [
+    {
+     "index": 96,
+     "weekday": "Mon",
+     "reading": "1 Samuel 20; Psalms 34–36",
+     "chapters": 4
+    },
+    {
+     "index": 97,
+     "weekday": "Tue",
+     "reading": "1 Samuel 21–22; Psalms 37–38",
+     "chapters": 4
+    },
+    {
+     "index": 98,
+     "weekday": "Wed",
+     "reading": "1 Samuel 23; Psalms 39–42",
+     "chapters": 5
+    },
+    {
+     "index": 99,
+     "weekday": "Thu",
+     "reading": "1 Samuel 24–25; Psalms 43–44",
+     "chapters": 4
+    },
+    {
+     "index": 100,
+     "weekday": "Fri",
+     "reading": "1 Samuel 26–27; Psalms 45–49",
+     "chapters": 7
+    },
+    {
+     "index": 101,
+     "weekday": "Sat",
+     "reading": "1 Samuel 28–29; Psalms 50–52",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 18,
+   "phase": 2,
+   "title": "Saul’s death; Chronicles’ family trees",
+   "deepDive": "Learn why Chronicles retells Samuel–Kings: it was written after the exile to remind the returned Jews of their roots. Skim the genealogies.",
+   "memoryVerse": {
+    "ref": "Psalm 56:3",
+    "textKJV": "What time I am afraid, I will trust in thee."
+   },
+   "days": [
+    {
+     "index": 102,
+     "weekday": "Mon",
+     "reading": "1 Samuel 30–31; Psalms 53–56",
+     "chapters": 6
+    },
+    {
+     "index": 103,
+     "weekday": "Tue",
+     "reading": "1 Chronicles 1–2; Psalms 57–58",
+     "chapters": 4
+    },
+    {
+     "index": 104,
+     "weekday": "Wed",
+     "reading": "1 Chronicles 3; Psalms 59–61",
+     "chapters": 4
+    },
+    {
+     "index": 105,
+     "weekday": "Thu",
+     "reading": "1 Chronicles 4–5; Psalms 62–65",
+     "chapters": 6
+    },
+    {
+     "index": 106,
+     "weekday": "Fri",
+     "reading": "1 Chronicles 6; Psalms 66",
+     "chapters": 2
+    },
+    {
+     "index": 107,
+     "weekday": "Sat",
+     "reading": "1 Chronicles 7; Psalms 67–68",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 19,
+   "phase": 2,
+   "title": "David becomes king; Jerusalem",
+   "deepDive": "Look at a map of Jerusalem’s City of David. Why did David choose Jerusalem as his capital?",
+   "memoryVerse": {
+    "ref": "Psalm 73:26",
+    "textKJV": "My flesh and my heart faileth: but God is the strength of my heart, and my portion for ever."
+   },
+   "days": [
+    {
+     "index": 108,
+     "weekday": "Mon",
+     "reading": "1 Chronicles 8–9; Psalms 69–70",
+     "chapters": 4
+    },
+    {
+     "index": 109,
+     "weekday": "Tue",
+     "reading": "1 Chronicles 10; Psalms 71–73",
+     "chapters": 4
+    },
+    {
+     "index": 110,
+     "weekday": "Wed",
+     "reading": "2 Samuel 1–2; Psalms 74–75",
+     "chapters": 4
+    },
+    {
+     "index": 111,
+     "weekday": "Thu",
+     "reading": "2 Samuel 3; Psalms 76–77",
+     "chapters": 3
+    },
+    {
+     "index": 112,
+     "weekday": "Fri",
+     "reading": "2 Samuel 4; Psalms 78–80",
+     "chapters": 4
+    },
+    {
+     "index": 113,
+     "weekday": "Sat",
+     "reading": "2 Samuel 5–6; Psalms 81–84",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 20,
+   "phase": 2,
+   "title": "God’s promise to David",
+   "deepDive": "Study the Davidic covenant (2 Samuel 7). This is why Jesus is called “Son of David” in the Gospels.",
+   "memoryVerse": {
+    "ref": "2 Samuel 7:16",
+    "textKJV": "And thine house and thy kingdom shall be established for ever before thee: thy throne shall be established for ever."
+   },
+   "days": [
+    {
+     "index": 114,
+     "weekday": "Mon",
+     "reading": "2 Samuel 7–8; Psalms 85–88",
+     "chapters": 6
+    },
+    {
+     "index": 115,
+     "weekday": "Tue",
+     "reading": "2 Samuel 9; Psalms 89–90",
+     "chapters": 3
+    },
+    {
+     "index": 116,
+     "weekday": "Wed",
+     "reading": "2 Samuel 10; 1 Chronicles 11; Psalms 91–93",
+     "chapters": 5
+    },
+    {
+     "index": 117,
+     "weekday": "Thu",
+     "reading": "1 Chronicles 12–13; Psalms 94–96",
+     "chapters": 5
+    },
+    {
+     "index": 118,
+     "weekday": "Fri",
+     "reading": "1 Chronicles 14–15; Psalms 97–100",
+     "chapters": 6
+    },
+    {
+     "index": 119,
+     "weekday": "Sat",
+     "reading": "1 Chronicles 16–17; Psalms 101–102",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 21,
+   "phase": 2,
+   "title": "David’s sin and its fallout",
+   "deepDive": "Read 2 Samuel 11–12 again with Psalm 51. How does the Bible treat its heroes’ failures?",
+   "memoryVerse": {
+    "ref": "Psalm 103:12",
+    "textKJV": "As far as the east is from the west, so far hath he removed our transgressions from us."
+   },
+   "days": [
+    {
+     "index": 120,
+     "weekday": "Mon",
+     "reading": "1 Chronicles 18; Psalms 103–105",
+     "chapters": 4
+    },
+    {
+     "index": 121,
+     "weekday": "Tue",
+     "reading": "1 Chronicles 19; Psalms 106",
+     "chapters": 2
+    },
+    {
+     "index": 122,
+     "weekday": "Wed",
+     "reading": "1 Chronicles 20; 2 Samuel 11; Psalms 107–109",
+     "chapters": 5
+    },
+    {
+     "index": 123,
+     "weekday": "Thu",
+     "reading": "2 Samuel 12; Psalms 110–113",
+     "chapters": 5
+    },
+    {
+     "index": 124,
+     "weekday": "Fri",
+     "reading": "2 Samuel 13–14; Psalms 114–116",
+     "chapters": 5
+    },
+    {
+     "index": 125,
+     "weekday": "Sat",
+     "reading": "2 Samuel 15–16; Psalms 117–118",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 22,
+   "phase": 2,
+   "title": "Absalom’s revolt; the Songs of Ascent",
+   "deepDive": "Psalms 120–134 are “Songs of Ascent,” sung by pilgrims walking up to Jerusalem for festivals. Read a few aloud.",
+   "memoryVerse": {
+    "ref": "Psalm 119:105",
+    "textKJV": "Thy word is a lamp unto my feet, and a light unto my path."
+   },
+   "days": [
+    {
+     "index": 126,
+     "weekday": "Mon",
+     "reading": "Psalms 119",
+     "chapters": 1
+    },
+    {
+     "index": 127,
+     "weekday": "Tue",
+     "reading": "2 Samuel 17; Psalms 120",
+     "chapters": 2
+    },
+    {
+     "index": 128,
+     "weekday": "Wed",
+     "reading": "2 Samuel 18–19; Psalms 121–124",
+     "chapters": 6
+    },
+    {
+     "index": 129,
+     "weekday": "Thu",
+     "reading": "2 Samuel 20–21; Psalms 125–129",
+     "chapters": 7
+    },
+    {
+     "index": 130,
+     "weekday": "Fri",
+     "reading": "2 Samuel 22–23; Psalms 130–131",
+     "chapters": 4
+    },
+    {
+     "index": 131,
+     "weekday": "Sat",
+     "reading": "2 Samuel 24; 1 Chronicles 21; Psalms 132–135",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 23,
+   "phase": 2,
+   "title": "David’s last days; Proverbs begins",
+   "deepDive": "Map the extent of the kingdom under David and Solomon, its largest ever.",
+   "memoryVerse": {
+    "ref": "Psalm 139:14",
+    "textKJV": "I will praise thee; for I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well."
+   },
+   "days": [
+    {
+     "index": 132,
+     "weekday": "Mon",
+     "reading": "1 Chronicles 22–23; Psalms 136–138",
+     "chapters": 5
+    },
+    {
+     "index": 133,
+     "weekday": "Tue",
+     "reading": "1 Chronicles 24; Psalms 139–142",
+     "chapters": 5
+    },
+    {
+     "index": 134,
+     "weekday": "Wed",
+     "reading": "1 Chronicles 25–26; Psalms 143–145",
+     "chapters": 5
+    },
+    {
+     "index": 135,
+     "weekday": "Thu",
+     "reading": "1 Chronicles 27–28; Psalms 146–147",
+     "chapters": 4
+    },
+    {
+     "index": 136,
+     "weekday": "Fri",
+     "reading": "1 Chronicles 29; 1 Kings 1; Psalms 148–150",
+     "chapters": 5
+    },
+    {
+     "index": 137,
+     "weekday": "Sat",
+     "reading": "Proverbs 1–3",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 24,
+   "phase": 2,
+   "title": "Solomon’s wisdom and Temple",
+   "deepDive": "Look up a diagram of Solomon’s Temple and compare it with your Tabernacle sketch from Week 7.",
+   "memoryVerse": {
+    "ref": "Proverbs 3:5–6",
+    "textKJV": "Trust in the LORD with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths."
+   },
+   "days": [
+    {
+     "index": 138,
+     "weekday": "Mon",
+     "reading": "1 Kings 2; Proverbs 4–5",
+     "chapters": 3
+    },
+    {
+     "index": 139,
+     "weekday": "Tue",
+     "reading": "1 Kings 3; Proverbs 6–7",
+     "chapters": 3
+    },
+    {
+     "index": 140,
+     "weekday": "Wed",
+     "reading": "1 Kings 4; Proverbs 8–9",
+     "chapters": 3
+    },
+    {
+     "index": 141,
+     "weekday": "Thu",
+     "reading": "1 Kings 5; Proverbs 10–12",
+     "chapters": 4
+    },
+    {
+     "index": 142,
+     "weekday": "Fri",
+     "reading": "1 Kings 6; Proverbs 13–14",
+     "chapters": 3
+    },
+    {
+     "index": 143,
+     "weekday": "Sat",
+     "reading": "1 Kings 7; Proverbs 15–16",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 25,
+   "phase": 2,
+   "title": "Solomon’s peak and decline",
+   "deepDive": "Read 1 Kings 11 again: how did Solomon’s foreign alliances and wives set up the kingdom’s split?",
+   "memoryVerse": {
+    "ref": "Proverbs 27:17",
+    "textKJV": "Iron sharpeneth iron; so a man sharpeneth the countenance of his friend."
+   },
+   "days": [
+    {
+     "index": 144,
+     "weekday": "Mon",
+     "reading": "Proverbs 17–18",
+     "chapters": 2
+    },
+    {
+     "index": 145,
+     "weekday": "Tue",
+     "reading": "1 Kings 8; Proverbs 19–20",
+     "chapters": 3
+    },
+    {
+     "index": 146,
+     "weekday": "Wed",
+     "reading": "1 Kings 9; Proverbs 21–22",
+     "chapters": 3
+    },
+    {
+     "index": 147,
+     "weekday": "Thu",
+     "reading": "1 Kings 10; Proverbs 23–24",
+     "chapters": 3
+    },
+    {
+     "index": 148,
+     "weekday": "Fri",
+     "reading": "1 Kings 11; Proverbs 25–26",
+     "chapters": 3
+    },
+    {
+     "index": 149,
+     "weekday": "Sat",
+     "reading": "2 Chronicles 1; Proverbs 27–29",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 26,
+   "phase": 2,
+   "title": "Song of Songs and Ecclesiastes",
+   "deepDive": "Phase 2 review: list the kings Saul, David, Solomon and one key event for each. Review verses 13–26.",
+   "memoryVerse": {
+    "ref": "Ecclesiastes 3:1",
+    "textKJV": "To every thing there is a season, and a time to every purpose under the heaven."
+   },
+   "days": [
+    {
+     "index": 150,
+     "weekday": "Mon",
+     "reading": "2 Chronicles 2; Proverbs 30–31; Song of Songs 1",
+     "chapters": 4
+    },
+    {
+     "index": 151,
+     "weekday": "Tue",
+     "reading": "2 Chronicles 3–4; Song of Songs 2–5",
+     "chapters": 6
+    },
+    {
+     "index": 152,
+     "weekday": "Wed",
+     "reading": "2 Chronicles 5; Song of Songs 6–8; Ecclesiastes 1–2",
+     "chapters": 6
+    },
+    {
+     "index": 153,
+     "weekday": "Thu",
+     "reading": "2 Chronicles 6; Ecclesiastes 3–5",
+     "chapters": 4
+    },
+    {
+     "index": 154,
+     "weekday": "Fri",
+     "reading": "2 Chronicles 7–8; Ecclesiastes 6–8",
+     "chapters": 5
+    },
+    {
+     "index": 155,
+     "weekday": "Sat",
+     "reading": "2 Chronicles 9; Ecclesiastes 9–12",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 27,
+   "phase": 3,
+   "title": "The kingdom splits; Elijah",
+   "deepDive": "Map the two kingdoms: Israel (north, capital Samaria) and Judah (south, capital Jerusalem). Who was Baal?",
+   "memoryVerse": {
+    "ref": "1 Kings 18:21",
+    "textKJV": "And Elijah came unto all the people, and said, How long halt ye between two opinions? if the LORD be God, follow him: but if Baal, then follow him. And the people answered him not a word."
+   },
+   "days": [
+    {
+     "index": 156,
+     "weekday": "Mon",
+     "reading": "1 Kings 12–14",
+     "chapters": 3
+    },
+    {
+     "index": 157,
+     "weekday": "Tue",
+     "reading": "1 Kings 15–17",
+     "chapters": 3
+    },
+    {
+     "index": 158,
+     "weekday": "Wed",
+     "reading": "1 Kings 18–20",
+     "chapters": 3
+    },
+    {
+     "index": 159,
+     "weekday": "Thu",
+     "reading": "1 Kings 21–22; 2 Chronicles 10–11",
+     "chapters": 4
+    },
+    {
+     "index": 160,
+     "weekday": "Fri",
+     "reading": "2 Chronicles 12–16",
+     "chapters": 5
+    },
+    {
+     "index": 161,
+     "weekday": "Sat",
+     "reading": "2 Chronicles 17–20; 2 Kings 1",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 28,
+   "phase": 3,
+   "title": "Elisha; Joel; Jonah",
+   "deepDive": "Find Nineveh, Assyria’s capital, on a map. Assyria is the superpower rising in this period.",
+   "memoryVerse": {
+    "ref": "Joel 2:28",
+    "textKJV": "And it shall come to pass afterward, that I will pour out my spirit upon all flesh; and your sons and your daughters shall prophesy, your old men shall dream dreams, your young men shall see visions."
+   },
+   "days": [
+    {
+     "index": 162,
+     "weekday": "Mon",
+     "reading": "2 Kings 2–4",
+     "chapters": 3
+    },
+    {
+     "index": 163,
+     "weekday": "Tue",
+     "reading": "2 Kings 5–8",
+     "chapters": 4
+    },
+    {
+     "index": 164,
+     "weekday": "Wed",
+     "reading": "2 Kings 9–11",
+     "chapters": 3
+    },
+    {
+     "index": 165,
+     "weekday": "Thu",
+     "reading": "2 Kings 12–13; 2 Chronicles 21–23",
+     "chapters": 5
+    },
+    {
+     "index": 166,
+     "weekday": "Fri",
+     "reading": "2 Chronicles 24; Joel 1–3",
+     "chapters": 4
+    },
+    {
+     "index": 167,
+     "weekday": "Sat",
+     "reading": "2 Kings 14; Jonah 1–4; 2 Kings 15",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 29,
+   "phase": 3,
+   "title": "Amos, Hosea, Micah; the north falls",
+   "deepDive": "Read 2 Kings 17: Assyria destroys Israel in 722 BC and resettles foreigners there. This is where the Samaritans come from.",
+   "memoryVerse": {
+    "ref": "Micah 6:8",
+    "textKJV": "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?"
+   },
+   "days": [
+    {
+     "index": 168,
+     "weekday": "Mon",
+     "reading": "2 Chronicles 25–27; Amos 1–3",
+     "chapters": 6
+    },
+    {
+     "index": 169,
+     "weekday": "Tue",
+     "reading": "Amos 4–9",
+     "chapters": 6
+    },
+    {
+     "index": 170,
+     "weekday": "Wed",
+     "reading": "Hosea 1–7",
+     "chapters": 7
+    },
+    {
+     "index": 171,
+     "weekday": "Thu",
+     "reading": "Hosea 8–14",
+     "chapters": 7
+    },
+    {
+     "index": 172,
+     "weekday": "Fri",
+     "reading": "2 Kings 16–17; 2 Chronicles 28; Micah 1–2",
+     "chapters": 5
+    },
+    {
+     "index": 173,
+     "weekday": "Sat",
+     "reading": "Micah 3–7; 2 Kings 18",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 30,
+   "phase": 3,
+   "title": "Hezekiah; Isaiah begins",
+   "deepDive": "Look up Hezekiah’s tunnel and Sennacherib’s prism, real archaeological finds tied to 2 Kings 18–20.",
+   "memoryVerse": {
+    "ref": "Isaiah 6:8",
+    "textKJV": "Also I heard the voice of the Lord, saying, Whom shall I send, and who will go for us? Then said I, Here am I; send me."
+   },
+   "days": [
+    {
+     "index": 174,
+     "weekday": "Mon",
+     "reading": "2 Kings 19–20; 2 Chronicles 29",
+     "chapters": 3
+    },
+    {
+     "index": 175,
+     "weekday": "Tue",
+     "reading": "2 Chronicles 30–32; Isaiah 1",
+     "chapters": 4
+    },
+    {
+     "index": 176,
+     "weekday": "Wed",
+     "reading": "Isaiah 2–5",
+     "chapters": 4
+    },
+    {
+     "index": 177,
+     "weekday": "Thu",
+     "reading": "Isaiah 6–10",
+     "chapters": 5
+    },
+    {
+     "index": 178,
+     "weekday": "Fri",
+     "reading": "Isaiah 11–16",
+     "chapters": 6
+    },
+    {
+     "index": 179,
+     "weekday": "Sat",
+     "reading": "Isaiah 17–22",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 31,
+   "phase": 3,
+   "title": "Isaiah: judgment and comfort",
+   "deepDive": "Isaiah 40 onward speaks to exiles in Babylon. Learn why some scholars think later authors wrote these chapters, and why others disagree.",
+   "memoryVerse": {
+    "ref": "Isaiah 40:31",
+    "textKJV": "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint."
+   },
+   "days": [
+    {
+     "index": 180,
+     "weekday": "Mon",
+     "reading": "Isaiah 23–28",
+     "chapters": 6
+    },
+    {
+     "index": 181,
+     "weekday": "Tue",
+     "reading": "Isaiah 29–33",
+     "chapters": 5
+    },
+    {
+     "index": 182,
+     "weekday": "Wed",
+     "reading": "Isaiah 34–37",
+     "chapters": 4
+    },
+    {
+     "index": 183,
+     "weekday": "Thu",
+     "reading": "Isaiah 38–42",
+     "chapters": 5
+    },
+    {
+     "index": 184,
+     "weekday": "Fri",
+     "reading": "Isaiah 43–46",
+     "chapters": 4
+    },
+    {
+     "index": 185,
+     "weekday": "Sat",
+     "reading": "Isaiah 47–52",
+     "chapters": 6
+    }
+   ]
+  },
+  {
+   "week": 32,
+   "phase": 3,
+   "title": "Isaiah ends; Josiah; Babylon rises",
+   "deepDive": "Nineveh falls in 612 BC (Nahum) and Babylon becomes the new superpower. Read Isaiah 53 and note how the New Testament uses it.",
+   "memoryVerse": {
+    "ref": "Isaiah 53:5",
+    "textKJV": "But he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed."
+   },
+   "days": [
+    {
+     "index": 186,
+     "weekday": "Mon",
+     "reading": "Isaiah 53–58",
+     "chapters": 6
+    },
+    {
+     "index": 187,
+     "weekday": "Tue",
+     "reading": "Isaiah 59–65",
+     "chapters": 7
+    },
+    {
+     "index": 188,
+     "weekday": "Wed",
+     "reading": "Isaiah 66; 2 Kings 21–23",
+     "chapters": 4
+    },
+    {
+     "index": 189,
+     "weekday": "Thu",
+     "reading": "2 Chronicles 33–35",
+     "chapters": 3
+    },
+    {
+     "index": 190,
+     "weekday": "Fri",
+     "reading": "Nahum 1–3; Zephaniah 1–3; Habakkuk 1",
+     "chapters": 7
+    },
+    {
+     "index": 191,
+     "weekday": "Sat",
+     "reading": "Habakkuk 2–3; Jeremiah 1–2",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 33,
+   "phase": 3,
+   "title": "Jeremiah warns Judah",
+   "deepDive": "List the last kings of Judah (Josiah, Jehoiakim, Jehoiachin, Zedekiah) and how Jeremiah dealt with each.",
+   "memoryVerse": {
+    "ref": "Jeremiah 17:7",
+    "textKJV": "Blessed is the man that trusteth in the LORD, and whose hope the LORD is."
+   },
+   "days": [
+    {
+     "index": 192,
+     "weekday": "Mon",
+     "reading": "Jeremiah 3–6",
+     "chapters": 4
+    },
+    {
+     "index": 193,
+     "weekday": "Tue",
+     "reading": "Jeremiah 7–9",
+     "chapters": 3
+    },
+    {
+     "index": 194,
+     "weekday": "Wed",
+     "reading": "Jeremiah 10–14",
+     "chapters": 5
+    },
+    {
+     "index": 195,
+     "weekday": "Thu",
+     "reading": "Jeremiah 15–19",
+     "chapters": 5
+    },
+    {
+     "index": 196,
+     "weekday": "Fri",
+     "reading": "Jeremiah 20–23",
+     "chapters": 4
+    },
+    {
+     "index": 197,
+     "weekday": "Sat",
+     "reading": "Jeremiah 24–27",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 34,
+   "phase": 3,
+   "title": "Jeremiah: the new covenant",
+   "deepDive": "Read Jeremiah 29 in full: this famous verse was a letter to exiles told to settle in Babylon for 70 years. Then read 31:31–34.",
+   "memoryVerse": {
+    "ref": "Jeremiah 29:11",
+    "textKJV": "For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end."
+   },
+   "days": [
+    {
+     "index": 198,
+     "weekday": "Mon",
+     "reading": "Jeremiah 28–31",
+     "chapters": 4
+    },
+    {
+     "index": 199,
+     "weekday": "Tue",
+     "reading": "Jeremiah 32–34",
+     "chapters": 3
+    },
+    {
+     "index": 200,
+     "weekday": "Wed",
+     "reading": "Jeremiah 35–39",
+     "chapters": 5
+    },
+    {
+     "index": 201,
+     "weekday": "Thu",
+     "reading": "Jeremiah 40–44",
+     "chapters": 5
+    },
+    {
+     "index": 202,
+     "weekday": "Fri",
+     "reading": "Jeremiah 45–48",
+     "chapters": 4
+    },
+    {
+     "index": 203,
+     "weekday": "Sat",
+     "reading": "Jeremiah 49–50",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 35,
+   "phase": 3,
+   "title": "Jerusalem falls; Ezekiel begins",
+   "deepDive": "Map the route from Jerusalem to Babylon. Imagine losing the Temple: how does Lamentations express that grief?",
+   "memoryVerse": {
+    "ref": "Lamentations 3:22–23",
+    "textKJV": "It is of the LORD’s mercies that we are not consumed, because his compassions fail not. They are new every morning: great is thy faithfulness."
+   },
+   "days": [
+    {
+     "index": 204,
+     "weekday": "Mon",
+     "reading": "Jeremiah 51–52; 2 Kings 24–25",
+     "chapters": 4
+    },
+    {
+     "index": 205,
+     "weekday": "Tue",
+     "reading": "2 Chronicles 36; Lamentations 1–2",
+     "chapters": 3
+    },
+    {
+     "index": 206,
+     "weekday": "Wed",
+     "reading": "Lamentations 3–5; Obadiah",
+     "chapters": 4
+    },
+    {
+     "index": 207,
+     "weekday": "Thu",
+     "reading": "Ezekiel 1–5",
+     "chapters": 5
+    },
+    {
+     "index": 208,
+     "weekday": "Fri",
+     "reading": "Ezekiel 6–10",
+     "chapters": 5
+    },
+    {
+     "index": 209,
+     "weekday": "Sat",
+     "reading": "Ezekiel 11–15",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 36,
+   "phase": 3,
+   "title": "Ezekiel’s visions",
+   "deepDive": "Find Tyre on a map (Ezekiel 26–28). Watch BibleProject’s Ezekiel overview.",
+   "memoryVerse": {
+    "ref": "Ezekiel 36:26",
+    "textKJV": "A new heart also will I give you, and a new spirit will I put within you: and I will take away the stony heart out of your flesh, and I will give you an heart of flesh."
+   },
+   "days": [
+    {
+     "index": 210,
+     "weekday": "Mon",
+     "reading": "Ezekiel 16–18",
+     "chapters": 3
+    },
+    {
+     "index": 211,
+     "weekday": "Tue",
+     "reading": "Ezekiel 19–21",
+     "chapters": 3
+    },
+    {
+     "index": 212,
+     "weekday": "Wed",
+     "reading": "Ezekiel 22–24",
+     "chapters": 3
+    },
+    {
+     "index": 213,
+     "weekday": "Thu",
+     "reading": "Ezekiel 25–28",
+     "chapters": 4
+    },
+    {
+     "index": 214,
+     "weekday": "Fri",
+     "reading": "Ezekiel 29–32",
+     "chapters": 4
+    },
+    {
+     "index": 215,
+     "weekday": "Sat",
+     "reading": "Ezekiel 33–36",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 37,
+   "phase": 3,
+   "title": "Dry bones; Daniel",
+   "deepDive": "Read Daniel 2 and 7: the sequence of empires (Babylon, Medo-Persia, Greece, and a fourth). Persia conquers Babylon in 539 BC.",
+   "memoryVerse": {
+    "ref": "Daniel 3:17–18",
+    "textKJV": "If it be so, our God whom we serve is able to deliver us from the burning fiery furnace, and he will deliver us out of thine hand, O king. But if not, be it known unto thee, O king, that we will not serve thy gods, nor worship the golden image which thou hast set up."
+   },
+   "days": [
+    {
+     "index": 216,
+     "weekday": "Mon",
+     "reading": "Ezekiel 37–39",
+     "chapters": 3
+    },
+    {
+     "index": 217,
+     "weekday": "Tue",
+     "reading": "Ezekiel 40–43",
+     "chapters": 4
+    },
+    {
+     "index": 218,
+     "weekday": "Wed",
+     "reading": "Ezekiel 44–47",
+     "chapters": 4
+    },
+    {
+     "index": 219,
+     "weekday": "Thu",
+     "reading": "Ezekiel 48; Daniel 1–2",
+     "chapters": 3
+    },
+    {
+     "index": 220,
+     "weekday": "Fri",
+     "reading": "Daniel 3–5",
+     "chapters": 3
+    },
+    {
+     "index": 221,
+     "weekday": "Sat",
+     "reading": "Daniel 6–9",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 38,
+   "phase": 3,
+   "title": "The return; Temple rebuilt; Esther",
+   "deepDive": "Look up the Cyrus Cylinder and a map of the Persian Empire. Learn the story behind the Jewish festival of Purim (Esther).",
+   "memoryVerse": {
+    "ref": "Zechariah 4:6",
+    "textKJV": "Then he answered and spake unto me, saying, This is the word of the LORD unto Zerubbabel, saying, Not by might, nor by power, but by my spirit, saith the LORD of hosts."
+   },
+   "days": [
+    {
+     "index": 222,
+     "weekday": "Mon",
+     "reading": "Daniel 10–12; Ezra 1",
+     "chapters": 4
+    },
+    {
+     "index": 223,
+     "weekday": "Tue",
+     "reading": "Ezra 2–4",
+     "chapters": 3
+    },
+    {
+     "index": 224,
+     "weekday": "Wed",
+     "reading": "Ezra 5–6; Haggai 1–2; Zechariah 1–2",
+     "chapters": 6
+    },
+    {
+     "index": 225,
+     "weekday": "Thu",
+     "reading": "Zechariah 3–9",
+     "chapters": 7
+    },
+    {
+     "index": 226,
+     "weekday": "Fri",
+     "reading": "Zechariah 10–14; Esther 1",
+     "chapters": 6
+    },
+    {
+     "index": 227,
+     "weekday": "Sat",
+     "reading": "Esther 2–8",
+     "chapters": 7
+    }
+   ]
+  },
+  {
+   "week": 39,
+   "phase": 3,
+   "title": "Ezra, Nehemiah, Malachi",
+   "deepDive": "Study the 400 years between the Testaments: Alexander, the Maccabees and Hanukkah, Rome’s arrival, and the rise of Pharisees and Sadducees. Review verses 27–39.",
+   "memoryVerse": {
+    "ref": "Nehemiah 8:10",
+    "textKJV": "Then he said unto them, Go your way, eat the fat, and drink the sweet, and send portions unto them for whom nothing is prepared: for this day is holy unto our Lord: neither be ye sorry; for the joy of the LORD is your strength."
+   },
+   "days": [
+    {
+     "index": 228,
+     "weekday": "Mon",
+     "reading": "Esther 9–10; Ezra 7–8",
+     "chapters": 4
+    },
+    {
+     "index": 229,
+     "weekday": "Tue",
+     "reading": "Ezra 9–10; Nehemiah 1–3",
+     "chapters": 5
+    },
+    {
+     "index": 230,
+     "weekday": "Wed",
+     "reading": "Nehemiah 4–6",
+     "chapters": 3
+    },
+    {
+     "index": 231,
+     "weekday": "Thu",
+     "reading": "Nehemiah 7–9",
+     "chapters": 3
+    },
+    {
+     "index": 232,
+     "weekday": "Fri",
+     "reading": "Nehemiah 10–12",
+     "chapters": 3
+    },
+    {
+     "index": 233,
+     "weekday": "Sat",
+     "reading": "Nehemiah 13; Malachi 1–4",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 40,
+   "phase": 4,
+   "title": "The Gospel of Mark",
+   "deepDive": "Map Galilee, Samaria, and Judea in Jesus’ day. Learn the Herod family: who ruled what.",
+   "memoryVerse": {
+    "ref": "Mark 1:15",
+    "textKJV": "And saying, The time is fulfilled, and the kingdom of God is at hand: repent ye, and believe the gospel."
+   },
+   "days": [
+    {
+     "index": 234,
+     "weekday": "Mon",
+     "reading": "Mark 1–3",
+     "chapters": 3
+    },
+    {
+     "index": 235,
+     "weekday": "Tue",
+     "reading": "Mark 4–5",
+     "chapters": 2
+    },
+    {
+     "index": 236,
+     "weekday": "Wed",
+     "reading": "Mark 6–8",
+     "chapters": 3
+    },
+    {
+     "index": 237,
+     "weekday": "Thu",
+     "reading": "Mark 9–10",
+     "chapters": 2
+    },
+    {
+     "index": 238,
+     "weekday": "Fri",
+     "reading": "Mark 11–12",
+     "chapters": 2
+    },
+    {
+     "index": 239,
+     "weekday": "Sat",
+     "reading": "Mark 13–14",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 41,
+   "phase": 4,
+   "title": "Matthew: the Sermon on the Mount",
+   "deepDive": "Matthew was written with Jewish readers in mind. Count how often he says a prophecy was “fulfilled.”",
+   "memoryVerse": {
+    "ref": "Matthew 6:33",
+    "textKJV": "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you."
+   },
+   "days": [
+    {
+     "index": 240,
+     "weekday": "Mon",
+     "reading": "Mark 15–16; Matthew 1",
+     "chapters": 3
+    },
+    {
+     "index": 241,
+     "weekday": "Tue",
+     "reading": "Matthew 2–5",
+     "chapters": 4
+    },
+    {
+     "index": 242,
+     "weekday": "Wed",
+     "reading": "Matthew 6–8",
+     "chapters": 3
+    },
+    {
+     "index": 243,
+     "weekday": "Thu",
+     "reading": "Matthew 9–11",
+     "chapters": 3
+    },
+    {
+     "index": 244,
+     "weekday": "Fri",
+     "reading": "Matthew 12–13",
+     "chapters": 2
+    },
+    {
+     "index": 245,
+     "weekday": "Sat",
+     "reading": "Matthew 14–16",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 42,
+   "phase": 4,
+   "title": "Matthew: the final week",
+   "deepDive": "Jesus quotes Deuteronomy 6:5 and Leviticus 19:18, both verses you’ve memorized. Make a day-by-day timeline of Holy Week.",
+   "memoryVerse": {
+    "ref": "Matthew 22:37–39",
+    "textKJV": "Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, and with all thy soul, and with all thy mind. This is the first and great commandment. And the second is like unto it, Thou shalt love thy neighbour as thyself."
+   },
+   "days": [
+    {
+     "index": 246,
+     "weekday": "Mon",
+     "reading": "Matthew 17–19",
+     "chapters": 3
+    },
+    {
+     "index": 247,
+     "weekday": "Tue",
+     "reading": "Matthew 20–21",
+     "chapters": 2
+    },
+    {
+     "index": 248,
+     "weekday": "Wed",
+     "reading": "Matthew 22–24",
+     "chapters": 3
+    },
+    {
+     "index": 249,
+     "weekday": "Thu",
+     "reading": "Matthew 25–26",
+     "chapters": 2
+    },
+    {
+     "index": 250,
+     "weekday": "Fri",
+     "reading": "Matthew 27",
+     "chapters": 1
+    },
+    {
+     "index": 251,
+     "weekday": "Sat",
+     "reading": "Matthew 28; Luke 1",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 43,
+   "phase": 4,
+   "title": "Luke: Jesus and the outsiders",
+   "deepDive": "Read the Good Samaritan (Luke 10) again knowing who Samaritans were. Jesus’ hearers would have been shocked.",
+   "memoryVerse": {
+    "ref": "Luke 4:18",
+    "textKJV": "The Spirit of the Lord is upon me, because he hath anointed me to preach the gospel to the poor; he hath sent me to heal the brokenhearted, to preach deliverance to the captives, and recovering of sight to the blind, to set at liberty them that are bruised."
+   },
+   "days": [
+    {
+     "index": 252,
+     "weekday": "Mon",
+     "reading": "Luke 2–3",
+     "chapters": 2
+    },
+    {
+     "index": 253,
+     "weekday": "Tue",
+     "reading": "Luke 4–6",
+     "chapters": 3
+    },
+    {
+     "index": 254,
+     "weekday": "Wed",
+     "reading": "Luke 7–8",
+     "chapters": 2
+    },
+    {
+     "index": 255,
+     "weekday": "Thu",
+     "reading": "Luke 9–10",
+     "chapters": 2
+    },
+    {
+     "index": 256,
+     "weekday": "Fri",
+     "reading": "Luke 11–12",
+     "chapters": 2
+    },
+    {
+     "index": 257,
+     "weekday": "Sat",
+     "reading": "Luke 13–14",
+     "chapters": 2
+    }
+   ]
+  },
+  {
+   "week": 44,
+   "phase": 4,
+   "title": "Luke ends; John begins",
+   "deepDive": "Compare one event (like the feeding of the 5,000) across all four Gospels. What does each emphasize?",
+   "memoryVerse": {
+    "ref": "John 3:16",
+    "textKJV": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
+   },
+   "days": [
+    {
+     "index": 258,
+     "weekday": "Mon",
+     "reading": "Luke 15–17",
+     "chapters": 3
+    },
+    {
+     "index": 259,
+     "weekday": "Tue",
+     "reading": "Luke 18–19",
+     "chapters": 2
+    },
+    {
+     "index": 260,
+     "weekday": "Wed",
+     "reading": "Luke 20–21",
+     "chapters": 2
+    },
+    {
+     "index": 261,
+     "weekday": "Thu",
+     "reading": "Luke 22–23",
+     "chapters": 2
+    },
+    {
+     "index": 262,
+     "weekday": "Fri",
+     "reading": "Luke 24; John 1",
+     "chapters": 2
+    },
+    {
+     "index": 263,
+     "weekday": "Sat",
+     "reading": "John 2–4",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 45,
+   "phase": 4,
+   "title": "John: the “I am” sayings",
+   "deepDive": "List John’s seven “I am” statements. Learn about the Feast of Tabernacles (John 7).",
+   "memoryVerse": {
+    "ref": "John 14:6",
+    "textKJV": "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me."
+   },
+   "days": [
+    {
+     "index": 264,
+     "weekday": "Mon",
+     "reading": "John 5–6",
+     "chapters": 2
+    },
+    {
+     "index": 265,
+     "weekday": "Tue",
+     "reading": "John 7",
+     "chapters": 1
+    },
+    {
+     "index": 266,
+     "weekday": "Wed",
+     "reading": "John 8–10",
+     "chapters": 3
+    },
+    {
+     "index": 267,
+     "weekday": "Thu",
+     "reading": "John 11–12",
+     "chapters": 2
+    },
+    {
+     "index": 268,
+     "weekday": "Fri",
+     "reading": "John 13–15",
+     "chapters": 3
+    },
+    {
+     "index": 269,
+     "weekday": "Sat",
+     "reading": "John 16–18",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 46,
+   "phase": 4,
+   "title": "The church is born",
+   "deepDive": "Acts 1:8 is the map of the book: Jerusalem, Judea and Samaria, the ends of the earth. Read Acts 10: the first Gentile convert.",
+   "memoryVerse": {
+    "ref": "Acts 1:8",
+    "textKJV": "But ye shall receive power, after that the Holy Ghost is come upon you: and ye shall be witnesses unto me both in Jerusalem, and in all Judæa, and in Samaria, and unto the uttermost part of the earth."
+   },
+   "days": [
+    {
+     "index": 270,
+     "weekday": "Mon",
+     "reading": "John 19–21",
+     "chapters": 3
+    },
+    {
+     "index": 271,
+     "weekday": "Tue",
+     "reading": "Acts 1–3",
+     "chapters": 3
+    },
+    {
+     "index": 272,
+     "weekday": "Wed",
+     "reading": "Acts 4–6",
+     "chapters": 3
+    },
+    {
+     "index": 273,
+     "weekday": "Thu",
+     "reading": "Acts 7–8",
+     "chapters": 2
+    },
+    {
+     "index": 274,
+     "weekday": "Fri",
+     "reading": "Acts 9–11",
+     "chapters": 3
+    },
+    {
+     "index": 275,
+     "weekday": "Sat",
+     "reading": "Acts 12–14",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 47,
+   "phase": 4,
+   "title": "Jerusalem Council; Paul’s journeys",
+   "deepDive": "Map Paul’s first and second journeys. Acts 15 settles whether Gentiles must follow Jewish law.",
+   "memoryVerse": {
+    "ref": "Galatians 3:28",
+    "textKJV": "There is neither Jew nor Greek, there is neither bond nor free, there is neither male nor female: for ye are all one in Christ Jesus."
+   },
+   "days": [
+    {
+     "index": 276,
+     "weekday": "Mon",
+     "reading": "James 1–4",
+     "chapters": 4
+    },
+    {
+     "index": 277,
+     "weekday": "Tue",
+     "reading": "James 5; Galatians 1–3",
+     "chapters": 4
+    },
+    {
+     "index": 278,
+     "weekday": "Wed",
+     "reading": "Galatians 4–6; Acts 15",
+     "chapters": 4
+    },
+    {
+     "index": 279,
+     "weekday": "Thu",
+     "reading": "Acts 16–17; 1 Thessalonians 1–2",
+     "chapters": 4
+    },
+    {
+     "index": 280,
+     "weekday": "Fri",
+     "reading": "1 Thessalonians 3–5; 2 Thessalonians 1–2",
+     "chapters": 5
+    },
+    {
+     "index": 281,
+     "weekday": "Sat",
+     "reading": "2 Thessalonians 3; Acts 18–19; 1 Corinthians 1",
+     "chapters": 4
+    }
+   ]
+  },
+  {
+   "week": 48,
+   "phase": 4,
+   "title": "Corinth",
+   "deepDive": "Learn about Corinth: a wealthy, diverse Roman port city. How does that explain the church’s problems?",
+   "memoryVerse": {
+    "ref": "1 Corinthians 13:4–5",
+    "textKJV": "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up, Doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil."
+   },
+   "days": [
+    {
+     "index": 282,
+     "weekday": "Mon",
+     "reading": "1 Corinthians 2–6",
+     "chapters": 5
+    },
+    {
+     "index": 283,
+     "weekday": "Tue",
+     "reading": "1 Corinthians 7–10",
+     "chapters": 4
+    },
+    {
+     "index": 284,
+     "weekday": "Wed",
+     "reading": "1 Corinthians 11–13",
+     "chapters": 3
+    },
+    {
+     "index": 285,
+     "weekday": "Thu",
+     "reading": "1 Corinthians 14–16",
+     "chapters": 3
+    },
+    {
+     "index": 286,
+     "weekday": "Fri",
+     "reading": "2 Corinthians 1–5",
+     "chapters": 5
+    },
+    {
+     "index": 287,
+     "weekday": "Sat",
+     "reading": "2 Corinthians 6–10",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 49,
+   "phase": 4,
+   "title": "Romans",
+   "deepDive": "Read Romans 9–11: Paul’s answer to how Jews and Gentiles fit into God’s plan.",
+   "memoryVerse": {
+    "ref": "Romans 8:28",
+    "textKJV": "And we know that all things work together for good to them that love God, to them who are the called according to his purpose."
+   },
+   "days": [
+    {
+     "index": 288,
+     "weekday": "Mon",
+     "reading": "2 Corinthians 11–13; Romans 1",
+     "chapters": 4
+    },
+    {
+     "index": 289,
+     "weekday": "Tue",
+     "reading": "Romans 2–5",
+     "chapters": 4
+    },
+    {
+     "index": 290,
+     "weekday": "Wed",
+     "reading": "Romans 6–9",
+     "chapters": 4
+    },
+    {
+     "index": 291,
+     "weekday": "Thu",
+     "reading": "Romans 10–13",
+     "chapters": 4
+    },
+    {
+     "index": 292,
+     "weekday": "Fri",
+     "reading": "Romans 14–16",
+     "chapters": 3
+    },
+    {
+     "index": 293,
+     "weekday": "Sat",
+     "reading": "Acts 20–22",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 50,
+   "phase": 4,
+   "title": "Paul’s arrest; letters from prison",
+   "deepDive": "Map Paul’s voyage to Rome (Acts 27). Why did his Roman citizenship matter?",
+   "memoryVerse": {
+    "ref": "Philippians 4:13",
+    "textKJV": "I can do all things through Christ which strengtheneth me."
+   },
+   "days": [
+    {
+     "index": 294,
+     "weekday": "Mon",
+     "reading": "Acts 23–26",
+     "chapters": 4
+    },
+    {
+     "index": 295,
+     "weekday": "Tue",
+     "reading": "Acts 27–28; Ephesians 1",
+     "chapters": 3
+    },
+    {
+     "index": 296,
+     "weekday": "Wed",
+     "reading": "Ephesians 2–5",
+     "chapters": 4
+    },
+    {
+     "index": 297,
+     "weekday": "Thu",
+     "reading": "Ephesians 6; Philippians 1–2",
+     "chapters": 3
+    },
+    {
+     "index": 298,
+     "weekday": "Fri",
+     "reading": "Philippians 3–4; Colossians 1–3",
+     "chapters": 5
+    },
+    {
+     "index": 299,
+     "weekday": "Sat",
+     "reading": "Colossians 4; Philemon; 1 Timothy 1–3",
+     "chapters": 5
+    }
+   ]
+  },
+  {
+   "week": 51,
+   "phase": 4,
+   "title": "Letters to churches and leaders",
+   "deepDive": "Learn about Nero’s persecution, the traditional deaths of Peter and Paul, and Rome’s destruction of Jerusalem in AD 70.",
+   "memoryVerse": {
+    "ref": "2 Timothy 3:16",
+    "textKJV": "All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness."
+   },
+   "days": [
+    {
+     "index": 300,
+     "weekday": "Mon",
+     "reading": "1 Timothy 4–6; Titus 1–2",
+     "chapters": 5
+    },
+    {
+     "index": 301,
+     "weekday": "Tue",
+     "reading": "Titus 3; 1 Peter 1–4",
+     "chapters": 5
+    },
+    {
+     "index": 302,
+     "weekday": "Wed",
+     "reading": "1 Peter 5; 2 Timothy 1–4",
+     "chapters": 5
+    },
+    {
+     "index": 303,
+     "weekday": "Thu",
+     "reading": "2 Peter 1–3; Jude; Hebrews 1",
+     "chapters": 5
+    },
+    {
+     "index": 304,
+     "weekday": "Fri",
+     "reading": "Hebrews 2–7",
+     "chapters": 6
+    },
+    {
+     "index": 305,
+     "weekday": "Sat",
+     "reading": "Hebrews 8–10",
+     "chapters": 3
+    }
+   ]
+  },
+  {
+   "week": 52,
+   "phase": 4,
+   "title": "Hebrews, John’s letters, Revelation",
+   "deepDive": "Map the seven churches of Revelation (modern Turkey). Notice how Revelation borrows images from Daniel and Ezekiel. Final review: all 52 verses.",
+   "memoryVerse": {
+    "ref": "Hebrews 11:1",
+    "textKJV": "Now faith is the substance of things hoped for, the evidence of things not seen."
+   },
+   "days": [
+    {
+     "index": 306,
+     "weekday": "Mon",
+     "reading": "Hebrews 11–13; 1 John 1–2",
+     "chapters": 5
+    },
+    {
+     "index": 307,
+     "weekday": "Tue",
+     "reading": "1 John 3–5; 2 John; 3 John",
+     "chapters": 5
+    },
+    {
+     "index": 308,
+     "weekday": "Wed",
+     "reading": "Revelation 1–5",
+     "chapters": 5
+    },
+    {
+     "index": 309,
+     "weekday": "Thu",
+     "reading": "Revelation 6–11",
+     "chapters": 6
+    },
+    {
+     "index": 310,
+     "weekday": "Fri",
+     "reading": "Revelation 12–17",
+     "chapters": 6
+    },
+    {
+     "index": 311,
+     "weekday": "Sat",
+     "reading": "Revelation 18–22",
+     "chapters": 5
+    }
+   ]
+  }
+ ],
+ "eras": [
+  {
+   "title": "Creation and the patriarchs",
+   "when": "Before c. 1800 BC",
+   "empire": "Mesopotamian city-states",
+   "weeks": [
+    1,
+    5
+   ],
+   "keyPeople": "Adam, Noah, Abraham, Sarah, Isaac, Jacob, Joseph",
+   "summary": "From the garden to Abraham’s call out of Ur. God promises Abraham a land, many descendants, and blessing for all nations."
+  },
+  {
+   "title": "Egypt and the Exodus",
+   "when": "c. 1446 or 1250 BC (debated)",
+   "empire": "Egypt",
+   "weeks": [
+    5,
+    12
+   ],
+   "keyPeople": "Moses, Aaron, Miriam, Pharaoh, Joshua",
+   "summary": "Jacob’s family grows into a nation enslaved in Egypt. Moses leads them out, God gives the Law at Sinai, and they wander 40 years."
+  },
+  {
+   "title": "Conquest and the judges",
+   "when": "c. 1400/1200–1050 BC",
+   "empire": "Canaanite kingdoms; Philistines",
+   "weeks": [
+    13,
+    15
+   ],
+   "keyPeople": "Joshua, Deborah, Gideon, Samson, Ruth",
+   "summary": "Israel settles Canaan tribe by tribe, then cycles through unfaithfulness and rescue by local leaders called judges."
+  },
+  {
+   "title": "The united kingdom",
+   "when": "c. 1050–930 BC",
+   "empire": "Israel at its height",
+   "weeks": [
+    15,
+    26
+   ],
+   "keyPeople": "Samuel, Saul, David, Solomon",
+   "summary": "Israel asks for a king. David makes Jerusalem the capital and receives God’s promise of an everlasting dynasty. Solomon builds the Temple."
+  },
+  {
+   "title": "Two kingdoms",
+   "when": "930–722 BC",
+   "empire": "Assyria rising",
+   "weeks": [
+    27,
+    29
+   ],
+   "keyPeople": "Elijah, Elisha, Ahab, Jezebel, Jonah, Amos, Hosea",
+   "summary": "The kingdom splits: Israel in the north, Judah in the south. Prophets confront Baal worship and injustice. Assyria destroys the north in 722 BC."
+  },
+  {
+   "title": "Judah alone",
+   "when": "722–586 BC",
+   "empire": "Assyria, then Babylon",
+   "weeks": [
+    29,
+    35
+   ],
+   "keyPeople": "Hezekiah, Isaiah, Micah, Josiah, Jeremiah, Habakkuk",
+   "summary": "Judah survives Assyria’s siege of Jerusalem, then falls to Babylon. The Temple is destroyed in 586 BC."
+  },
+  {
+   "title": "Exile in Babylon",
+   "when": "586–539 BC",
+   "empire": "Babylon",
+   "weeks": [
+    35,
+    37
+   ],
+   "keyPeople": "Ezekiel, Daniel, Nebuchadnezzar",
+   "summary": "Jews live as captives in Babylon, wrestling with how God can be present without the Temple."
+  },
+  {
+   "title": "Return and rebuilding",
+   "when": "539–430 BC",
+   "empire": "Persia",
+   "weeks": [
+    38,
+    39
+   ],
+   "keyPeople": "Cyrus, Zerubbabel, Haggai, Zechariah, Esther, Ezra, Nehemiah, Malachi",
+   "summary": "Persia conquers Babylon and lets the exiles go home. They rebuild the Temple and Jerusalem’s walls."
+  },
+  {
+   "title": "Between the Testaments",
+   "when": "430–5 BC",
+   "empire": "Persia, Greece, then Rome",
+   "weeks": [
+    39,
+    39
+   ],
+   "keyPeople": "Alexander the Great, the Maccabees, Herod the Great",
+   "summary": "No biblical books cover these centuries in most Protestant Bibles. Greek culture spreads, the Maccabees revolt (the origin of Hanukkah), and Rome takes over in 63 BC. Pharisees and Sadducees emerge."
+  },
+  {
+   "title": "The life of Jesus",
+   "when": "c. 4 BC–AD 30",
+   "empire": "Rome",
+   "weeks": [
+    40,
+    46
+   ],
+   "keyPeople": "Mary, John the Baptist, the Twelve, Pontius Pilate, Herod Antipas",
+   "summary": "Jesus teaches in Galilee and Judea, announcing God’s kingdom, and is crucified in Jerusalem under Roman rule."
+  },
+  {
+   "title": "The early church",
+   "when": "AD 30–95",
+   "empire": "Rome",
+   "weeks": [
+    46,
+    52
+   ],
+   "keyPeople": "Peter, Paul, Barnabas, James, Timothy, John",
+   "summary": "The movement spreads from Jerusalem across the Roman world. Gentiles join in large numbers. Rome destroys Jerusalem in AD 70."
+  }
+ ],
+ "peoples": [
+  {
+   "name": "Hebrews",
+   "desc": "Abraham’s descendants; the oldest name for the people, often used by outsiders."
+  },
+  {
+   "name": "Israelites",
+   "desc": "The 12 tribes descended from Jacob, who was renamed Israel."
+  },
+  {
+   "name": "Israel (northern kingdom)",
+   "desc": "Ten tribes that split off after Solomon, capital Samaria. Conquered by Assyria in 722 BC."
+  },
+  {
+   "name": "Judah (southern kingdom)",
+   "desc": "The tribes of Judah and Benjamin, capital Jerusalem, ruled by David’s descendants."
+  },
+  {
+   "name": "Jews",
+   "desc": "From “Judah”: those who survived the Babylonian exile. The main name by New Testament times."
+  },
+  {
+   "name": "Gentiles",
+   "desc": "Everyone who isn’t Jewish (“the nations”). How Gentiles join God’s people is a central New Testament question."
+  },
+  {
+   "name": "Samaritans",
+   "desc": "Descendants of northern Israelites mixed with peoples Assyria resettled there. Bitter rivals of the Jews."
+  },
+  {
+   "name": "Canaanites",
+   "desc": "Inhabitants of the land before Israel; worshipped Baal and Asherah."
+  },
+  {
+   "name": "Philistines",
+   "desc": "Seafaring people on the southwest coast; Israel’s rival under Saul and David (Goliath)."
+  },
+  {
+   "name": "Moabites, Edomites, Ammonites",
+   "desc": "Neighbors east of the Jordan, related by ancestry (Lot, Esau). Ruth was a Moabite."
+  },
+  {
+   "name": "Pharisees",
+   "desc": "A popular Jewish movement devoted to careful keeping of the Law, including oral tradition."
+  },
+  {
+   "name": "Sadducees",
+   "desc": "The priestly elite who ran the Temple; accepted only the written Law and denied resurrection."
+  }
+ ],
+ "prophets": [
+  {
+   "name": "Elijah, Elisha",
+   "when": "800s BC",
+   "audience": "Israel (north)",
+   "message": "Reject Baal worship"
+  },
+  {
+   "name": "Jonah",
+   "when": "700s BC",
+   "audience": "Nineveh",
+   "message": "God’s mercy reaches enemies"
+  },
+  {
+   "name": "Amos, Hosea",
+   "when": "700s BC",
+   "audience": "Israel (north)",
+   "message": "Injustice and unfaithfulness bring judgment"
+  },
+  {
+   "name": "Isaiah, Micah",
+   "when": "700s BC",
+   "audience": "Judah",
+   "message": "Judgment, then a coming king"
+  },
+  {
+   "name": "Nahum",
+   "when": "c. 620s BC",
+   "audience": "About Nineveh",
+   "message": "Assyria will fall"
+  },
+  {
+   "name": "Zephaniah, Habakkuk",
+   "when": "Late 600s BC",
+   "audience": "Judah",
+   "message": "Babylon is coming; live by faith"
+  },
+  {
+   "name": "Jeremiah",
+   "when": "627–580s BC",
+   "audience": "Judah, exiles",
+   "message": "A new covenant is coming"
+  },
+  {
+   "name": "Ezekiel, Daniel",
+   "when": "590s–530s BC",
+   "audience": "Exiles",
+   "message": "God is present in exile"
+  },
+  {
+   "name": "Obadiah",
+   "when": "c. 586 BC",
+   "audience": "About Edom",
+   "message": "Judgment on Edom"
+  },
+  {
+   "name": "Haggai, Zechariah",
+   "when": "520 BC",
+   "audience": "Returned exiles",
+   "message": "Rebuild the Temple"
+  },
+  {
+   "name": "Malachi",
+   "when": "c. 450 BC",
+   "audience": "Returned exiles",
+   "message": "Renew faithfulness"
+  },
+  {
+   "name": "Joel",
+   "when": "Uncertain",
+   "audience": "Judah",
+   "message": "The Spirit poured out"
+  }
+ ]
+}

@@ -4,7 +4,7 @@ Bible Journey is a mobile-first web app that takes one reader through the whole 
 
 Today always shows the first unread day, not a calendar date. Missing a day is never treated as failure.
 
-The plan content lives in [`content/bible-journey-seed.json`](content/bible-journey-seed.json). The original build brief and the single-file prototype are in [`docs/reference/`](docs/reference/).
+The plan content lives in [`content/bible-journey-seed.json`](content/bible-journey-seed.json). It is built into the app, so there is no database seeding step. `npm test` validates it against the schema in `src/content/schema.ts` (`src/content/seed.test.ts`); run that after editing the file. The original build brief and the single-file prototype are in [`docs/reference/`](docs/reference/).
 
 ## Run it locally
 

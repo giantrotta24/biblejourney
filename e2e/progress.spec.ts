@@ -216,3 +216,9 @@ test("the verse controls stay put when the verse text changes height", async ({ 
   await reveal.click();
   expect((await reveal.boundingBox())!.y).toBe(revealTop);
 });
+
+test("the plan page does not serialize week objects into client props", async ({ request }) => {
+  const html = await (await request.get("/plan")).text();
+  expect(html).not.toContain("textKJV");
+  expect(html).not.toContain("deepDive");
+});

@@ -8,8 +8,8 @@ import {
   AccordionTrigger,
   createAccordionController,
 } from "@ui-sdk/react/accordion";
-import { memo, useEffect, useState } from "react";
-import { DAYS_PER_WEEK, type Week } from "@/content/plan";
+import { memo, useEffect, useMemo, useState } from "react";
+import { DAYS_PER_WEEK, getWeek, type Week } from "@/content/plan";
 import { weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useWeekMask } from "@/progress/client";
 import { WeekDays } from "./week-days";
@@ -67,7 +67,8 @@ const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: W
   );
 });
 
-export function PlanWeeks({ weeks, phaseColor }: { weeks: readonly Week[]; phaseColor: string }) {
+export function PlanWeeks({ first, last, phaseColor }: { first: number; last: number; phaseColor: string }) {
+  const weeks = useMemo(() => Array.from({ length: last - first + 1 }, (_, i) => getWeek(first + i)), [first, last]);
   const [accordion] = useState(() => createAccordionController());
   const [open, setOpen] = useState<string[]>([]);
   const currentWeek = useCurrentWeek();

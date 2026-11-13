@@ -62,7 +62,9 @@ function indexedDbPersistence(db: IDBDatabase): ProgressPersistence {
   async function write(storeName: string, apply: (store: IDBObjectStore) => void) {
     const transaction = db.transaction(storeName, "readwrite");
     apply(transaction.objectStore(storeName));
-    await transactionDone(transaction);
+    const done = transactionDone(transaction);
+    transaction.commit?.();
+    await done;
   }
 
   return {

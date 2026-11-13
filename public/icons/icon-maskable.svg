@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#1e4fa3"/>
+  <rect width="512" height="512" fill="#2f6b4f"/>
   <g transform="translate(256 270) scale(0.84) translate(-256 -270)">
-    <path d="M92 170Q178 146 248 180V382Q178 350 92 374Z" fill="#f3f5f9"/>
-    <path d="M420 170Q334 146 264 180V382Q334 350 420 374Z" fill="#f3f5f9"/>
+    <path d="M92 170Q178 146 248 180V382Q178 350 92 374Z" fill="#f4f6f1"/>
+    <path d="M420 170Q334 146 264 180V382Q334 350 420 374Z" fill="#f4f6f1"/>
     <g stroke-width="10" stroke-linecap="round" fill="none">
-      <path d="M124 214Q174 202 220 220" stroke="#a87d22"/>
-      <path d="M124 252Q174 240 220 258M124 290Q174 278 220 296M124 328Q160 318 192 328M292 220Q338 202 388 214M292 258Q338 240 388 252M292 296Q338 278 388 290M320 330Q356 318 388 328" stroke="#1e4fa3"/>
+      <path d="M124 214Q174 202 220 220" stroke="#2f6b4f"/>
+      <path d="M124 252Q174 240 220 258M124 290Q174 278 220 296M124 328Q160 318 192 328M292 220Q338 202 388 214M292 258Q338 240 388 252M292 296Q338 278 388 290M320 330Q356 318 388 328" stroke="#2f6b4f"/>
     </g>
   </g>
 </svg>

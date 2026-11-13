@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ui-sdk/react/alert-dialog";
-import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
+import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useAccount } from "@/account/session";
@@ -29,14 +29,14 @@ import { THEMES, TRANSLATIONS, type Theme, type TranslationCode } from "@/settin
 
 const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 const body = "m-0 max-w-[65ch]";
-const note = "mt-2 mb-0 max-w-[65ch] text-[0.9375rem] text-muted";
+const note = "mt-2 mb-0 max-w-[65ch] font-sans text-sm text-muted";
 const field = "field";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const id = useId();
   return (
     <section aria-labelledby={id} className="border-t border-line py-6">
-      <h2 id={id} className="m-0 mb-3 text-[1.3rem] leading-tight">
+      <h2 id={id} className="m-0 mb-3 text-[1.3125rem] leading-tight">
         {title}
       </h2>
       {children}
@@ -167,7 +167,6 @@ function ThemeSetting() {
   const { theme } = useSettings();
   return (
     <SegmentedControl aria-label="Theme" value={theme} onValueChange={(next) => next && changeSettings({ theme: next as Theme })}>
-      <SegmentedControlIndicator />
       {THEMES.map((value) => (
         <SegmentedControlItem key={value} value={value}>
           {THEME_LABELS[value]}
@@ -234,7 +233,7 @@ function ResetSetting() {
         <AlertDialogTrigger className="btn mt-4">Reset progress…</AlertDialogTrigger>
         <AlertDialogBackdrop className="dialog-backdrop" />
         <AlertDialogContent className="dialog" initialFocus={() => inputRef.current}>
-          <AlertDialogTitle className="m-0 text-[1.3rem] leading-tight">Reset your progress?</AlertDialogTitle>
+          <AlertDialogTitle className="m-0 text-[1.3125rem] leading-tight">Reset your progress?</AlertDialogTitle>
           <AlertDialogDescription className="mt-2 mb-0">
             This clears every day and memory verse you’ve marked, on this device and on your account if you’re signed in. It can’t be undone.
           </AlertDialogDescription>
@@ -254,7 +253,7 @@ function ResetSetting() {
                 className={field}
               />
             </p>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <div className="mt-5 flex flex-wrap justify-end gap-5">
               <AlertDialogClose type="button" className="btn">
                 Cancel
               </AlertDialogClose>

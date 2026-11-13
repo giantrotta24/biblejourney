@@ -1,10 +1,9 @@
 "use client";
 
-import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
+import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
 import { useId, useState } from "react";
 import type { Week } from "@/content/plan";
 import { firstLetters } from "@/lib/reading";
-import { Figures } from "./figures";
 import { setVerseLearned, useProgressReady, useVerseLearned } from "@/progress/client";
 
 type Mode = "hidden" | "letters" | "full";
@@ -21,7 +20,7 @@ export function KnowItToggle({ week, reference }: { week: number; reference: str
   const learned = useVerseLearned(week);
 
   return (
-    <label htmlFor={id} className="inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.9375rem]">
+    <label htmlFor={id} className="inline-flex min-h-11 cursor-pointer items-center gap-2.5 font-sans text-sm">
       <input
         id={id}
         type="checkbox"
@@ -46,14 +45,13 @@ export function VersePractice({
   const { ref, textKJV } = week.memoryVerse;
 
   return (
-    <section aria-label={label} className="rounded-2xl border border-line bg-surface p-5">
-      <h2 className="m-0 text-[1.375rem] leading-tight">
-        <Figures text={ref} />
+    <section aria-label={label}>
+      <h2 className="m-0 text-[1.3125rem] leading-tight">
+        {ref}
       </h2>
-      <p className="m-0 mt-0.5 text-sm text-muted">{label}</p>
+      <p className="m-0 mt-1 font-sans text-sm text-muted">{label}</p>
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <SegmentedControl aria-label="Show the verse as" value={mode} onValueChange={(next) => next && setMode(next)}>
-          <SegmentedControlIndicator />
           {MODES.map(({ value, label: modeLabel }) => (
             <SegmentedControlItem key={value} value={value}>
               {modeLabel}
@@ -62,7 +60,7 @@ export function VersePractice({
         </SegmentedControl>
         <KnowItToggle week={week.week} reference={ref} />
       </div>
-      <p aria-live="polite" className={`mt-4 mb-0 max-w-[65ch] min-h-[3.2em] ${mode === "hidden" ? "text-base text-muted italic" : "text-lg leading-relaxed"}`}>
+      <p aria-live="polite" className={`mt-3 mb-0 max-w-[65ch] min-h-[3.2em] ${mode === "hidden" ? "text-base text-muted italic" : "text-[1.375rem] leading-[1.45] tracking-[-0.005em]"}`}>
         {mode === "hidden" ? "Say it from memory, then reveal to check." : mode === "letters" ? firstLetters(textKJV) : textKJV}
       </p>
     </section>

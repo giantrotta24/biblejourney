@@ -1,17 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Literata, Marcellus } from "next/font/google";
+import { Literata } from "next/font/google";
 import { AccountLink } from "@/components/account-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SettingsLink } from "@/components/settings-link";
 import { SiteNav } from "@/components/site-nav";
 import { THEME_COLORS, THEME_SCRIPT } from "@/settings/settings";
 import "./globals.css";
-
-const marcellus = Marcellus({
-  variable: "--font-marcellus",
-  weight: "400",
-  subsets: ["latin"],
-});
 
 const literata = Literata({
   variable: "--font-literata",
@@ -41,30 +35,30 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${marcellus.variable} ${literata.variable}`} suppressHydrationWarning>
+    <html lang="en" className={literata.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-dvh">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-bg focus:px-4 focus:py-3 font-sans"
         >
           Skip to content
         </a>
-        <header className="sticky top-0 z-10 border-b border-line bg-bg pt-[env(safe-area-inset-top)]">
-          <div className="mx-auto max-w-190 px-4 pt-1">
-            <div className="flex items-center justify-between gap-3">
-              <p className="m-0 font-display text-lg tracking-wide">One-Year Bible Journey</p>
-              <div className="-mr-2 flex items-center">
-                <SettingsLink />
+        <header className="sticky top-0 z-10 bg-bg pt-[env(safe-area-inset-top)]">
+          <div className="page-width">
+            <div className="flex min-h-14 items-center justify-between gap-1">
+              <p className="m-0 text-[0.9375rem] font-medium leading-tight">One-Year Bible Journey</p>
+              <div className="-mr-3 flex shrink-0 items-center">
                 <AccountLink />
+                <SettingsLink />
               </div>
             </div>
             <SiteNav />
           </div>
         </header>
-        <main id="main" className="mx-auto max-w-190 px-4 pt-6 pb-16">
+        <main id="main" className="page-width pt-[30px] pb-14">
           {children}
         </main>
         <ServiceWorkerRegistration />

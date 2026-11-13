@@ -13,8 +13,8 @@ const DayCheckbox = memo(function DayCheckbox({ day, idPrefix, withWeek }: { day
   const id = `${idPrefix}-${day.index}`;
 
   return (
-    <li className="border-t border-line first:border-t-0">
-      <label htmlFor={id} className="flex min-h-11 cursor-pointer items-center gap-3 py-1.5">
+    <li className="day-row border-b border-line last:border-b-0" data-current={current || undefined}>
+      <label htmlFor={id} className="flex min-h-[52px] cursor-pointer items-center gap-3 py-1.5">
         <input
           id={id}
           type="checkbox"
@@ -23,13 +23,13 @@ const DayCheckbox = memo(function DayCheckbox({ day, idPrefix, withWeek }: { day
           disabled={!ready}
           onChange={(event) => void setDayDone(day.index, event.currentTarget.checked)}
         />
-        <span className={`shrink-0 text-sm text-muted tabular-nums ${withWeek ? "w-[5.5rem]" : "w-10"}`}>
+        <span className={`shrink-0 font-sans text-[0.8125rem] tracking-[0.04em] tabular-nums ${current ? "font-semibold text-accent" : "text-muted"} ${withWeek ? "w-[5.5rem]" : "w-11 uppercase"}`}>
           {withWeek && <>Week {day.week} </>}
           <abbr title={WEEKDAY_NAMES[day.weekday]} className="no-underline">
             {day.weekday}
           </abbr>
         </span>
-        <span className={current ? "font-semibold" : done ? "text-muted" : undefined}>
+        <span className={`min-w-0 font-body ${current ? "font-semibold" : done ? "text-muted" : ""}`}>
           {day.reading}
           {current && <span className="sr-only"> (today’s reading)</span>}
         </span>

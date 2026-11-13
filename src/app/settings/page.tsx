@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Settings" };
 export default function SettingsPage() {
   return (
     <>
-      <h1 className="m-0 text-[1.75rem] leading-tight">Settings</h1>
+      <h1 className="m-0 text-[2rem] leading-tight">Settings</h1>
       <SettingsView />
     </>
   );

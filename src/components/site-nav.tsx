@@ -37,8 +37,8 @@ export function SiteNav() {
   }, []);
 
   return (
-    <nav ref={navRef} aria-label="Sections" data-more={more} className="site-nav -mx-1.5 mt-0.5 overflow-x-auto px-0.5 pt-1 sm:-mx-3">
-      <ul className="m-0 flex w-max min-w-full list-none justify-between p-0 sm:justify-start sm:gap-2">
+    <nav ref={navRef} aria-label="Sections" data-more={more} className="site-nav -mx-0.5 overflow-x-auto border-b border-line font-sans">
+      <ul className="m-0 flex w-max min-w-full list-none justify-between gap-3 p-0">
         {SECTIONS.map(({ href, label }) => {
           const current = pathname === href;
           return (
@@ -47,8 +47,8 @@ export function SiteNav() {
                 href={href}
                 onFocus={(event) => event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })}
                 aria-current={current ? "page" : undefined}
-                className={`flex min-h-11 items-center border-b-2 px-1.5 text-[0.9375rem] whitespace-nowrap no-underline transition-colors duration-150 focus-visible:outline-offset-[-2px] min-[400px]:px-2 sm:px-3 ${
-                  current ? "border-lapis text-ink" : "border-transparent text-muted hover:text-ink"
+                className={`relative flex min-h-[46px] items-center px-0.5 text-[0.9375rem] tracking-[-0.005em] whitespace-nowrap no-underline transition-colors duration-150 focus-visible:outline-offset-[-2px] ${
+                  current ? "nav-current font-semibold text-ink" : "text-muted hover:text-ink"
                 }`}
               >
                 {label}

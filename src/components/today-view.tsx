@@ -8,7 +8,6 @@ import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";
 import { markSundaySeen, useSundaySeen } from "@/progress/sunday-seen";
 import { useLinkTranslation } from "@/settings/client";
-import { Figures } from "./figures";
 import { StudyAssistant } from "./study-assistant";
 import { VersePractice } from "./verse-practice";
 import { WeekDays } from "./week-days";
@@ -73,7 +72,7 @@ export function TodayView() {
       )}
       <div
         role="status"
-        className={`toast pointer-events-none fixed left-1/2 z-20 -translate-x-1/2 rounded-full bg-ink px-4.5 py-2.5 text-[0.9375rem] text-bg ${toast ? "opacity-100" : "opacity-0"}`}
+        className={`toast pointer-events-none fixed left-1/2 z-20 w-full max-w-[390px] -translate-x-1/2 border-t border-line bg-bg px-6 py-3 font-sans text-[0.9375rem] text-ink ${toast ? "opacity-100" : "opacity-0"}`}
       >
         {toast}
       </div>
@@ -92,19 +91,19 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
   return (
     <>
       <section aria-labelledby="reading-heading" className="mb-10">
-        {resuming && <p className="mt-0 mb-2 text-[0.9375rem] text-muted">Picking up where you left off.</p>}
-        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1]">
+        {resuming && <p className="mt-0 mb-2 font-sans text-[0.9375rem] text-muted">Picking up where you left off.</p>}
+        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,11.8vw,2.875rem)] leading-[1.05] tracking-[-0.025em]">
           <span className="sr-only">Today’s reading: </span>
-          <Figures text={day.reading} />
+          {day.reading}
         </h2>
-        <p className="mt-3 mb-0 text-ink">
+        <p className="mt-3.5 mb-0 leading-[1.4] text-ink">
           {WEEKDAY_NAMES[day.weekday]} of week {day.week} · {week.title}
         </p>
-        <p className="mt-0.5 mb-0 text-[0.9375rem] text-muted">
+        <p className="mt-1 mb-0 font-sans text-sm text-muted">
           {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes
         </p>
-        <p className="mt-5 mb-0 flex flex-wrap gap-3">
-          <button type="button" className="btn btn-primary" onClick={onMarkRead}>
+        <p className="mt-7 mb-0 flex flex-col items-start gap-1.5">
+          <button type="button" className="btn btn-primary w-full" onClick={onMarkRead}>
             Mark as read
           </button>
           <a className="btn" href={bibleGatewayUrl(day.reading, translation)} target="_blank" rel="noopener noreferrer">
@@ -116,16 +115,16 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
         </p>
       </section>
 
-      <section aria-labelledby="week-heading" className="mb-10 border-t border-line pt-6">
-        <h2 id="week-heading" className="m-0 mb-2 text-2xl leading-tight">
+      <section aria-labelledby="week-heading" className="mb-11">
+        <h2 id="week-heading" className="m-0 mb-1.5 text-[1.3125rem] leading-tight">
           This week’s readings
         </h2>
         <WeekDays days={week.days} idPrefix="today-day" label="This week’s readings" />
-        <h3 className="mt-6 mb-1 text-lg">This Sunday’s deep dive</h3>
-        <p className="m-0 max-w-[65ch]">{week.deepDive}</p>
+        <h3 className="mt-11 mb-2.5 text-[1.3125rem] leading-tight">This Sunday’s deep dive</h3>
+        <p className="m-0 max-w-[65ch] leading-[1.55]">{week.deepDive}</p>
       </section>
 
-      <div className="mb-10">
+      <div className="mb-11">
         <VersePractice key={week.week} week={week} />
       </div>
 
@@ -145,28 +144,28 @@ function SundayView({ week: weekNumber, next, headingRef, onContinue }: { week: 
   return (
     <>
       <section aria-labelledby="sunday-heading" className="mb-10">
-        <p className="mt-0 mb-1 text-muted">
+        <p className="mt-0 mb-3 font-sans text-sm text-muted">
           Sunday, week {weekNumber} of {WEEK_COUNT} · {phase.name}
         </p>
-        <h2 id="sunday-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1] focus-heading">
+        <h2 id="sunday-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,11.8vw,2.875rem)] leading-[1.1] focus-heading">
           <span className="sr-only">Sunday deep dive: </span>
           {week.title}
         </h2>
         <p className="mt-4 mb-0 max-w-[65ch]">{week.deepDive}</p>
         <p className="mt-5 mb-0">
-          <button type="button" className="btn btn-primary" onClick={onContinue}>
+          <button type="button" className="btn btn-primary w-full" onClick={onContinue}>
             {nextIsNewWeek && moreWeeks ? `Start week ${next.week}` : "Continue reading"}
           </button>
         </p>
-        <p className="mt-2 mb-0 text-[0.9375rem] text-muted">Next up: {next.reading}</p>
+        <p className="mt-2 mb-0 font-sans text-sm text-muted">Next up: {next.reading}</p>
       </section>
 
       {openDays.length > 0 && (
         <section aria-labelledby="catch-up-heading" className="mb-10">
-          <h2 id="catch-up-heading" className="m-0 text-2xl leading-tight">
+          <h2 id="catch-up-heading" className="m-0 text-[1.3125rem] leading-tight">
             Pick up where you left off
           </h2>
-          <p className="mt-1 mb-3 max-w-[65ch] text-sm text-muted">Sunday is a good day to read any of these. Tick them off as you go; there’s no rush.</p>
+          <p className="mt-1 mb-3 max-w-[65ch] font-sans text-sm text-muted">Sunday is a good day to read any of these. Tick them off as you go; there’s no rush.</p>
           <WeekDays days={openDays} idPrefix="catch-up-day" label="Readings to pick up" withWeek />
         </section>
       )}
@@ -181,22 +180,22 @@ function Finished({ headingRef }: { headingRef: HeadingRef }) {
   return (
     <>
       <section aria-labelledby="finished-heading" className="mb-10">
-        <h2 id="finished-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1]">
+        <h2 id="finished-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,11.8vw,2.875rem)] leading-[1.1]">
           You read the whole Bible.
         </h2>
         <p className="mt-4 mb-0 max-w-[65ch]">
           All 1,189 chapters, in the order events happened. Keep your verses fresh, or start a second pass in a different translation.
         </p>
         <p className="mt-5 mb-0">
-          <Link className="btn btn-primary" href="/verses">
+          <Link className="btn btn-primary w-full" href="/verses">
             Practice your verses
           </Link>
         </p>
       </section>
 
       <section aria-labelledby="last-dive-heading" className="mb-10">
-        <p className="mt-0 mb-1 text-muted">Sunday deep dive, week {WEEK_COUNT}</p>
-        <h2 id="last-dive-heading" className="m-0 text-2xl leading-tight">
+        <p className="mt-0 mb-1 font-sans text-sm text-muted">Sunday deep dive, week {WEEK_COUNT}</p>
+        <h2 id="last-dive-heading" className="m-0 text-[1.3125rem] leading-tight">
           <span className="sr-only">Sunday deep dive: </span>
           {last.title}
         </h2>

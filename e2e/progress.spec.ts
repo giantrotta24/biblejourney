@@ -248,10 +248,10 @@ test("the strip’s text alternative names each phase and its weeks", async ({ p
   await expect(summary).toContainText(/You are in week 1 of 52/);
   await expect(summary).toContainText("Origins and the Exodus, weeks 1–12");
   await expect(summary).toContainText("Jesus and the early church, weeks 40–52");
-  await expect(page.locator("section[aria-labelledby=journey-heading] ul")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.getByRole("group", { name: /Weeks of the plan/ }).getByRole("link")).toHaveCount(52);
 });
 
-test("strip segments never use faded fills and the pulse respects reduced motion", async ({ page }) => {
+test("year marks distinguish read, partly read and unread by shape, with a taller current week and no pulse", async ({ page }) => {
   await page.goto("/");
   await expect(reading(page)).toBeVisible();
   await seedDays(page, 9);
@@ -261,21 +261,26 @@ test("strip segments never use faded fills and the pulse respects reduced motion
   await expect(page.locator('svg a[data-week="3"]')).toHaveAttribute("data-state", "empty");
 
   expect(await page.locator("svg [fill-opacity], svg [opacity]").count()).toBe(0);
-  for (const week of [1, 2, 3]) {
-    const outline = page.locator(`svg a[data-week="${week}"] [data-part="outline"]`);
-    await expect(outline).toHaveAttribute("vector-effect", "non-scaling-stroke");
-    await expect(outline).toHaveAttribute("stroke-width", "1.5");
-  }
-  await expect(page.locator('svg a[data-week="2"] [data-part="bar"]')).toHaveCount(1);
+  const full = page.locator('svg a[data-week="1"] [data-part="outline"]');
+  const partialTop = page.locator('svg a[data-week="2"] [data-part="outline"]');
+  const partialBottom = page.locator('svg a[data-week="2"] [data-part="bar"]');
+  const empty = page.locator('svg a[data-week="3"] [data-part="outline"]');
+  await expect(partialBottom).toHaveCount(1);
   await expect(page.locator('svg a[data-week="3"] [data-part="bar"]')).toHaveCount(0);
-  await expect(page.locator('svg a[data-week="1"] [data-part="outline"]')).not.toHaveAttribute("fill", "none");
-  await expect(page.locator('svg a[data-week="3"] [data-part="outline"]')).toHaveAttribute("fill", "none");
+  await expect(full).toHaveAttribute("fill", "var(--accent)");
+  await expect(partialTop).toHaveAttribute("fill", "var(--accent)");
+  await expect(empty).toHaveAttribute("fill", "var(--track)");
+  expect(Number(await full.getAttribute("width"))).toBeGreaterThan(Number(await empty.getAttribute("width")));
+  expect(Number(await partialBottom.getAttribute("y"))).toBeGreaterThan(Number(await partialTop.getAttribute("y")) + Number(await partialTop.getAttribute("height")));
+  const current = await page.locator(".current-week").boundingBox();
+  expect(current!.height).toBeGreaterThan((await full.boundingBox())!.height);
 
   const animation = () => page.locator(".current-week").evaluate((el) => getComputedStyle(el).animationName);
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  expect(await animation()).toBe("current-week");
+  expect(await animation()).toBe("none");
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(await animation()).toBe("none");
+  await expect(page.locator(".btn").first()).toHaveCSS("transition-duration", "0s");
 });
 
 test("says so when progress is not being saved on this device", async ({ page }) => {
@@ -380,7 +385,7 @@ test("the caption keeps the inspected week when the pointer moves onto it", asyn
   const caption = page.getByTestId("strip-caption");
   await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
   await expect(caption).toHaveText(/Week 2 of 52/);
-  await page.locator("section[aria-labelledby=journey-heading] ul").hover();
+  await caption.locator("..").hover({ position: { x: 2, y: 1 } });
   await expect(caption).toHaveText(/Week 2 of 52/);
   await caption.hover();
   await expect(caption).toHaveText(/Week 2 of 52/);

@@ -1,7 +1,3 @@
-export function phaseColor(phaseId: number): string {
-  return `var(--phase-${phaseId})`;
-}
-
 export function weekRangeLabel([first, last]: readonly [number, number]): string {
   return first === last ? `Week ${first}` : `Weeks ${first}–${last}`;
 }

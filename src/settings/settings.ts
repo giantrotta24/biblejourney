@@ -26,7 +26,7 @@ const fields = {
   reminderTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
 };
 
-export const THEME_COLORS = { light: "#f3f5f9", dark: "#0e1424" } as const;
+export const THEME_COLORS = { light: "#f4f6f1", dark: "#141a16" } as const;
 
 export const THEME_SCRIPT = `try{var t=JSON.parse(localStorage.getItem(${JSON.stringify(SETTINGS_KEY)})||"{}").theme;if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;var c=${JSON.stringify(THEME_COLORS)}[t];document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",c)})}}catch(e){}`;
 

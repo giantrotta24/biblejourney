@@ -44,25 +44,25 @@ test("the theme persists across a reload and is applied before the page paints",
   await page.goto("/settings");
   const theme = page.getByRole("radiogroup", { name: "Theme" });
   await expect(theme.getByRole("radio", { name: "System" })).toBeChecked();
-  expect(await background()).toBe("rgb(243, 245, 249)");
+  expect(await background()).toBe("rgb(244, 246, 241)");
 
   await theme.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await background()).toBe("rgb(14, 20, 36)");
+  expect(await background()).toBe("rgb(20, 26, 22)");
 
   await page.reload();
   expect(await themeAtBody()).toBe("dark");
   await expect(page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Dark" })).toBeChecked();
   await page.goto("/");
   expect(await themeAtBody()).toBe("dark");
-  expect(await background()).toBe("rgb(14, 20, 36)");
+  expect(await background()).toBe("rgb(20, 26, 22)");
 
   await page.goto("/settings");
   await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "System" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
   await page.reload();
   expect(await themeAtBody()).toBeNull();
-  expect(await background()).toBe("rgb(243, 245, 249)");
+  expect(await background()).toBe("rgb(244, 246, 241)");
 });
 
 test("Read online links use the chosen translation", async ({ page }) => {
@@ -162,15 +162,21 @@ test("the selected theme is clearly marked", async ({ page }) => {
         const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
         return (x + 0.05) / (y + 0.05);
       };
-      const indicator = group.querySelector("[data-slot=segmented-control-indicator]")!;
       const checked = group.querySelector("[data-checked]")!;
-      const pill = rgb(getComputedStyle(indicator).backgroundColor);
+      const unchecked = group.querySelector("[data-slot=segmented-control-item]:not([data-checked])")!;
+      const underline = getComputedStyle(checked, "::after");
+      const ground = rgb(getComputedStyle(document.body).backgroundColor);
       return {
-        pill: contrast(pill, rgb(getComputedStyle(group).backgroundColor)),
-        label: contrast(rgb(getComputedStyle(checked).color), pill),
+        underline: contrast(rgb(underline.backgroundColor), ground),
+        underlineHeight: parseFloat(underline.height),
+        weight: Number(getComputedStyle(checked).fontWeight),
+        neighbourWeight: Number(getComputedStyle(unchecked).fontWeight),
+        label: contrast(rgb(getComputedStyle(checked).color), ground),
       };
     });
-    expect(ratio.pill, scheme).toBeGreaterThanOrEqual(3);
+    expect(ratio.underline, scheme).toBeGreaterThanOrEqual(3);
+    expect(ratio.underlineHeight, scheme).toBeGreaterThan(0);
+    expect(ratio.weight, scheme).toBeGreaterThan(ratio.neighbourWeight);
     expect(ratio.label, scheme).toBeGreaterThanOrEqual(4.5);
   }
 });
@@ -180,11 +186,11 @@ test("browser chrome follows the chosen theme", async ({ page }) => {
   await page.goto("/settings");
   const color = () => page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map((meta) => meta.getAttribute("content")));
   await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Dark" }).click();
-  expect(new Set(await color())).toEqual(new Set(["#0e1424"]));
+  expect(new Set(await color())).toEqual(new Set(["#141a16"]));
   await page.reload();
-  expect(new Set(await color())).toEqual(new Set(["#0e1424"]));
+  expect(new Set(await color())).toEqual(new Set(["#141a16"]));
   await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "System" }).click();
-  expect(new Set(await color())).toEqual(new Set(["#f3f5f9", "#0e1424"]));
+  expect(new Set(await color())).toEqual(new Set(["#f4f6f1", "#141a16"]));
 });
 
 test("a long translation name never widens the page", async ({ page }) => {

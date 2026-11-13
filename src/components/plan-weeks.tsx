@@ -27,24 +27,23 @@ function WeekDots({ week }: { week: number }) {
   return (
     <span className="flex shrink-0 gap-[3px]" role="img" aria-label={`${read} of ${DAYS_PER_WEEK} days read`}>
       {dots.map((on, i) => (
-        <i key={i} className={`block size-[7px] rounded-full border ${on ? "border-done bg-done" : "border-muted"}`} />
+        <i key={i} className={`block h-2 w-[2px] ${on ? "bg-accent" : "bg-track"}`} />
       ))}
     </span>
   );
 }
 
-const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: Week; current: boolean; phaseColor: string }) {
+const PlanWeek = memo(function PlanWeek({ week, current }: { week: Week; current: boolean }) {
   return (
     <AccordionItem
       value={weekAnchor(week.week)}
       id={weekAnchor(week.week)}
-      className="rounded-xl border bg-surface"
-      style={{ borderColor: current ? phaseColor : "var(--line)" }}
+      className="border-t border-line"
     >
-      <AccordionHeader className="m-0 font-body text-base">
-        <AccordionTrigger className="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-xl border-0 bg-transparent px-3.5 py-2.5 text-left text-ink">
-          <span className="w-12 shrink-0 text-[0.9375rem] text-muted tabular-nums">Wk {week.week}</span>
-          <span className="min-w-0 flex-1">
+      <AccordionHeader className="m-0 text-base">
+        <AccordionTrigger className="flex min-h-14 w-full cursor-pointer items-center gap-2 border-0 bg-transparent py-3 text-left font-body text-ink">
+          <span className="w-9 shrink-0 font-sans text-[0.8125rem] font-normal text-muted tabular-nums">Wk {week.week}</span>
+          <span className={`min-w-0 flex-1 ${current ? "font-semibold" : ""}`}>
             {week.title}
             {current && <span className="sr-only"> (current week)</span>}
           </span>
@@ -55,19 +54,19 @@ const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: W
         </AccordionTrigger>
       </AccordionHeader>
       <AccordionPanel>
-        <div className="px-3.5 pb-4">
+        <div className="pb-6">
           <WeekDays days={week.days} idPrefix="plan-day" label={`Week ${week.week} readings`} />
           <p className="mt-3 mb-0 max-w-[65ch] text-[0.9375rem]">
             <strong className="font-semibold">Sunday:</strong> {week.deepDive}
           </p>
-          <p className="mt-2 mb-0 text-[0.9375rem] text-muted">Memory verse: {week.memoryVerse.ref}</p>
+          <p className="mt-2 mb-0 font-sans text-sm text-muted">Memory verse: {week.memoryVerse.ref}</p>
         </div>
       </AccordionPanel>
     </AccordionItem>
   );
 });
 
-export function PlanWeeks({ first, last, phaseColor }: { first: number; last: number; phaseColor: string }) {
+export function PlanWeeks({ first, last }: { first: number; last: number }) {
   const weeks = useMemo(() => Array.from({ length: last - first + 1 }, (_, i) => getWeek(first + i)), [first, last]);
   const [accordion] = useState(() => createAccordionController());
   const firstWeek = weekAnchor(1);
@@ -112,9 +111,9 @@ export function PlanWeeks({ first, last, phaseColor }: { first: number; last: nu
   }, [accordion, weeks]);
 
   return (
-    <Accordion multiple value={open} onValueChange={onValueChange} controller={accordion} className="flex flex-col gap-2">
+    <Accordion multiple value={open} onValueChange={onValueChange} controller={accordion}>
       {weeks.map((week) => (
-        <PlanWeek key={week.week} week={week} current={week.week === currentWeek} phaseColor={phaseColor} />
+        <PlanWeek key={week.week} week={week} current={week.week === currentWeek} />
       ))}
     </Accordion>
   );

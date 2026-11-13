@@ -81,6 +81,8 @@ test("marking a day read shows the next day and survives a reload", async ({ pag
   await page.getByRole("button", { name: "Mark as read" }).click();
   await expect(page.getByRole("status")).toHaveText("Marked as read");
   await expect(reading(page)).toHaveText(/Genesis 5–7/);
+  await expect(reading(page)).toBeFocused();
+  expect(await reading(page).evaluate((heading) => getComputedStyle(heading).outlineStyle)).not.toBe("none");
   await expect(weekList(page).getByRole("checkbox", { name: /Genesis 1–4/ })).toBeChecked();
   await expect(stats(page)).toContainText("1 of 312 days");
   await savedDays(page, [0]);
@@ -341,4 +343,15 @@ test("the strip’s hit area is taller than its drawing", async ({ page }) => {
   const hit = await page.locator('svg a[data-week="7"] [data-part="hit"]').boundingBox();
   const drawn = await page.locator('svg a[data-week="7"] [data-part="outline"]').boundingBox();
   expect(hit!.height).toBeGreaterThanOrEqual(drawn!.height + 12);
+});
+
+test("the finished screen keeps the last week’s deep dive", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 312);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 2, name: "You read the whole Bible." })).toBeVisible();
+  const dive = page.getByRole("region", { name: /Sunday deep dive/ });
+  await expect(dive.getByRole("heading", { name: /Hebrews, John’s letters, Revelation/ })).toBeVisible();
+  await expect(dive.getByText(/seven churches of Revelation/)).toBeVisible();
 });

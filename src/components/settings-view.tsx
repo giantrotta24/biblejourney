@@ -31,7 +31,7 @@ import { THEMES, TRANSLATIONS, type Theme, type TranslationCode } from "@/settin
 const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 const body = "m-0 max-w-[65ch]";
 const note = "mt-2 mb-0 max-w-[65ch] text-[0.9375rem] text-muted";
-const field = "min-h-11 rounded-lg border border-line bg-surface px-3 text-ink";
+const field = "field";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const id = useId();

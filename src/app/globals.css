@@ -121,6 +121,24 @@
     border-color: transparent;
   }
 
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    border-style: dashed;
+    border-color: var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  .field {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--muted);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
   .check {
     appearance: none;
     display: grid;
@@ -198,11 +216,6 @@
   .dialog:is([data-starting-style], [data-ending-style]) {
     opacity: 0;
     translate: 0 12px;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   [data-slot="segmented-control"] {

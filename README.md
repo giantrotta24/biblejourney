@@ -74,9 +74,13 @@ Signing in is optional. To turn accounts on:
 
 1. Create a project at [supabase.com](https://supabase.com) and run the migrations above.
 2. In Authentication → URL Configuration, set the Site URL to your production address. Add each address you sign in from to Redirect URLs, ending in `/account`, for example `http://localhost:3000/account` and `https://your-app.vercel.app/account`. A wildcard such as `https://*-your-team.vercel.app/account` covers preview deploys.
-3. Email magic links work with no more setup. To offer Google, enable it in Authentication → Sign In / Providers and paste a client ID and secret from a Google Cloud OAuth client (type Web application). In Google Cloud, add the callback URL that Supabase shows on that page as an authorized redirect URI.
+3. In Authentication → Email Templates, update both **Magic Link** and **Confirm signup** to include the code, `{{ .Token }}`, alongside the existing link, `{{ .ConfirmationURL }}`. Readers enter the 6–10 digit code in the app; on a phone’s home-screen app, this keeps sign-in there because the link opens in the browser. The link still works for browser sign-in.
 4. In Realtime → Settings, turn off “Allow public access”. The app only uses private channels.
 5. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, then restart `npm run dev` or redeploy.
+
+Supabase’s built-in email service allows only a few emails an hour. Configure a custom SMTP sender in Authentication to lift that built-in limit; resend cooldowns and your sender’s limits still apply. If an email was sent recently, the app explains the wait and keeps the code field available.
+
+To offer Google, enable it in Authentication → Sign In / Providers and paste a client ID and secret from a Google Cloud OAuth client (type Web application). In Google Cloud, add the callback URL that Supabase shows on that page as an authorized redirect URI.
 
 On first sign-in, anything already marked on the device is merged into the account. The merge keeps everything from both, with the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns. A change the server refuses outright is dropped, and the Account screen says how many. Signing out keeps progress on the device. If a live update is missed, the app pulls the account again when the connection returns or the tab comes back into view.
 

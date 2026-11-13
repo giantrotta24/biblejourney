@@ -69,6 +69,25 @@ export async function signInWithEmail(email: string) {
   if (error) throw error;
 }
 
+export async function verifyEmailCode(email: string, code: string) {
+  const { error } = await (await requireClient()).auth.verifyOtp({ email, token: code, type: "email" });
+  if (error) throw error;
+}
+
+export function emailSignInError(error: unknown, online = true): { kind: "rate-limit" | "invalid-code" | "network" | "other"; message: string } {
+  const details = error && typeof error === "object" ? error as { status?: unknown; code?: unknown; name?: unknown } : {};
+  if (details.status === 429 || details.code === "over_email_send_rate_limit" || details.code === "over_request_rate_limit") {
+    return { kind: "rate-limit", message: "An email was sent recently. Please wait before asking for another code." };
+  }
+  if (details.code === "otp_expired" || details.code === "invalid_credentials") {
+    return { kind: "invalid-code", message: "That code is incorrect or has expired. Check it or send a new code." };
+  }
+  if (!online || error instanceof TypeError || (details.name === "AuthRetryableFetchError" && details.status === 0)) {
+    return { kind: "network", message: "You may be offline. Check your connection and try again." };
+  }
+  return { kind: "other", message: "Sign-in didn’t go through. Please try again." };
+}
+
 export async function signInWithGoogle() {
   const { error } = await (await requireClient()).auth.signInWithOAuth({ provider: "google", options: { redirectTo: authRedirectUrl() } });
   if (error) throw error;

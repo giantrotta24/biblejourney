@@ -10,6 +10,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    serviceWorkers: "block",
   },
   projects: [{ name: "mobile", use: { ...devices["Pixel 7"], viewport: { width: 360, height: 780 } } }],
   webServer: {

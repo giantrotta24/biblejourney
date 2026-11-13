@@ -2,8 +2,9 @@
 id: BJ-5
 title: PWA, reminders and settings
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-5: PWA, reminders and settings
@@ -29,3 +30,4 @@ Intent: the app installs to a phone home screen, Today, Plan and Verses work in 
 
 - 2026-11-13: opened
 - 2026-11-13: implemented on gw/BJ-5: versioned hand-rolled service worker (network-first pages, cache-first static assets, /api never cached), manifest and icons, settings screen with pre-paint theme, link translation, typed-word reset, web push reminders sent by a GitHub Actions cron through POST /api/reminders/send
+- 2026-11-13: closed. PWA, reminders and settings shipped in PR 9

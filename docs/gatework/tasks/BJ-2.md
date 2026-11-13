@@ -2,8 +2,9 @@
 id: BJ-2
 title: Local progress: ticking, current day, strip and stats, IndexedDB
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-2: Local progress: ticking, current day, strip and stats, IndexedDB
@@ -31,3 +32,4 @@ Acceptance: lint, typecheck, vitest, build, e2e pass; a Playwright test marks a 
 
 - 2026-11-13: opened
 - 2026-11-13: implemented on gw/BJ-2: IndexedDB progress store behind ProgressPersistence; Sunday view rule taken from the brief because the prototype has none
+- 2026-11-13: closed. Local progress shipped in PR 6

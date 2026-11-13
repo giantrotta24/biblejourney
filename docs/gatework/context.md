@@ -51,3 +51,9 @@ Record decisions here, newest last: the date, the decision, and the reason.
 - 2026-11-13: the owner changed the review panel to two Codex slots and one Cursor slot with no Claude reviewer, and dev now alternates per task between Claude and Codex starting with the next task.
 - 2026-11-13: BJ-6: Impeccable critique (dual-agent: design review plus detector and browser overlay) and polish ran on the production build. Today now reads strip, a caption naming the current week and phase (linked to the plan, follows hover and focus), one quiet stats line, then the passage with weekday, week title and length directly under it. Strip bars are narrower with a 1.5px stroke so empty weeks read as separate weeks, the strip is 56px tall at every width, and the current-week pulse runs three times instead of forever. Digits inside Marcellus headings use Literata (Marcellus 1 and 0 read as l and O). Literata loads without the opsz axis (preloaded file 110 KB to 53 KB). Accordion height transition kept as a library-driven exception to the detector's layout-transition rule.
 - 2026-11-13: BJ-6: Lighthouse 12.8.2 mobile on a local production build: performance 91-97, accessibility 100, best practices 100, SEO 100 on all seven routes; Lighthouse 12 no longer has a PWA category. axe (e2e/a11y.spec.ts) finds no serious or critical violations on any route or Today state in light or dark.
+- 2026-11-13: closed task BJ-2: Local progress shipped in PR 6
+- 2026-11-13: closed task BJ-3: Accounts and sync shipped in PR 7
+- 2026-11-13: closed task BJ-4: Study assistant shipped in PR 8
+- 2026-11-13: closed task BJ-5: PWA, reminders and settings shipped in PR 9
+- 2026-11-13: closed task BJ-6: Polish, design critique and accessibility shipped in PR 10
+- 2026-11-13: BJ-7: removed the Actions deploy workflow; Vercel's GitHub integration deploys previews and production

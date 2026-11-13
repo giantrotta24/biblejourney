@@ -2,8 +2,9 @@
 id: BJ-6
 title: Polish and launch: carried review findings, design critique, accessibility, README
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-6: Polish and launch: carried review findings, design critique, accessibility, README
@@ -64,3 +65,4 @@ Third-reviewer pass: (1) current-week marker has pointer-events none; e2e click 
 
 - 2026-11-13: opened
 - 2026-11-13: implemented at a4a253e; merged origin/feature/mvp
+- 2026-11-13: closed. Polish, design critique and accessibility shipped in PR 10

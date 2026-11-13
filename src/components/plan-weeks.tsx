@@ -77,7 +77,8 @@ export function PlanWeeks({ first, last, phaseColor }: { first: number; last: nu
   if (currentWeek !== openedCurrent) {
     setOpenedCurrent(currentWeek);
     const value = currentWeek && weeks.some((week) => week.week === currentWeek) ? weekAnchor(currentWeek) : null;
-    const linkedToWeek = openedCurrent === null && weekFromHash(window.location.hash) !== null;
+    const linked = weekFromHash(window.location.hash);
+    const linkedToWeek = openedCurrent === null && linked !== null && weeks.some((week) => weekAnchor(week.week) === linked);
     if (value && !linkedToWeek && !open.includes(value)) setOpen([...open, value]);
   }
 

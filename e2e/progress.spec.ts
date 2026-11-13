@@ -288,3 +288,13 @@ test("says so when progress is not being saved on this device", async ({ page })
   await blocked.getByRole("button", { name: "Mark as read" }).click();
   await expect(blocked.getByText("Progress isn’t being saved on this device right now.")).toBeVisible();
 });
+
+test("a week hash only holds back the current-week auto-open in its own phase", async ({ page }) => {
+  await page.goto("/plan#week-30");
+  await expect(page.getByRole("button", { name: /Wk 30 / })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: /Wk 1 / })).toHaveAttribute("aria-expanded", "true");
+
+  await page.goto("/plan#week-1");
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Wk 1 / })).toHaveAttribute("aria-expanded", "true");
+});

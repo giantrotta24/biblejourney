@@ -109,7 +109,10 @@ describe("handleAsk", () => {
     }
     const response = await handleAsk(ask({ dayIndex: 0, question: "One more" }), d);
     expect(response.status).toBe(429);
-    expect(await response.json()).toMatchObject({ code: "rate_limited", error: expect.stringMatching(/30/) });
+    expect(await response.json()).toEqual({
+      code: "rate_limited",
+      error: "You’ve asked 30 questions today. The assistant will be ready again tomorrow.",
+    });
     expect(prompts).toHaveLength(DAILY_QUESTION_LIMIT);
   });
 
@@ -153,6 +156,43 @@ describe("handleAsk", () => {
     expect(logged).not.toContain("Ur");
     expect(logged).not.toContain("aaaa");
     expect(log.info).toHaveBeenCalled();
+  });
+});
+
+describe("logging", () => {
+  const QUESTION = "Was Melchizedek a priest of Salem?";
+  const ANSWER = ["Salem is ", "usually read as ", "early Jerusalem."];
+
+  function logged(log: { info: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> }) {
+    return JSON.stringify([...log.info.mock.calls, ...log.error.mock.calls]);
+  }
+
+  function expectClean(text: string) {
+    expect(text).not.toContain("Melchizedek");
+    for (const part of ANSWER) expect(text).not.toContain(part.trim());
+  }
+
+  it("keeps question and answer text out of every log line on the error paths", async () => {
+    const log = { info: vi.fn(), error: vi.fn() };
+    const body = { dayIndex: 0, question: QUESTION };
+
+    expect((await handleAsk(ask(body, "forged"), deps({ log }))).status).toBe(401);
+
+    const limited = deps({ log, limiter: memoryLimiter(1), model: fakeModel(ANSWER).model });
+    await (await handleAsk(ask(body), limited)).text();
+    expect((await handleAsk(ask(body), limited)).status).toBe(429);
+
+    expect((await handleAsk(ask(body), deps({ log, model: fakeModel([], 0).model }))).status).toBe(502);
+
+    const broken = await handleAsk(ask({ dayIndex: 0, type: "people" }), deps({ log, model: fakeModel(ANSWER, 2).model }));
+    await expect(broken.text()).rejects.toThrow();
+
+    const failingAuth = deps({ log, auth: { userId: async () => Promise.reject(new Error(QUESTION)) } });
+    expect((await handleAsk(ask(body), failingAuth)).status).toBe(502);
+
+    expect(log.error).toHaveBeenCalled();
+    expect(log.info).toHaveBeenCalled();
+    expectClean(logged(log));
   });
 });
 

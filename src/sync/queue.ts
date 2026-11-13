@@ -87,7 +87,8 @@ function indexedDbQueue(db: IDBDatabase): PendingQueue {
       return typeof value === "string" ? value : null;
     },
     async setLinkedUser(userId) {
-      await run(db, "readwrite", (store) => (userId === null ? store.delete(LINKED) : store.put(userId, LINKED)), META);
+      if (userId === null) await run(db, "readwrite", (store) => store.delete(LINKED), META);
+      else await run(db, "readwrite", (store) => store.put(userId, LINKED), META);
     },
   };
 }

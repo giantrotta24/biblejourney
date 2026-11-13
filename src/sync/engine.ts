@@ -187,7 +187,7 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       try {
         do {
           again = false;
-          const s = session;
+          const s: Session | null = session;
           if (!s) break;
           setStatus("syncing");
           let ok: boolean;

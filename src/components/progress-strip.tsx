@@ -5,7 +5,7 @@ import type { MouseEvent } from "react";
 import { DAY_COUNT, phases, weeks, WEEK_COUNT } from "@/content/plan";
 import { progressStats, weekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
-import { useCurrentWeek, useProgress } from "@/progress/client";
+import { useCurrentWeek, useProgress, useProgressUnsaved } from "@/progress/client";
 
 const phaseSummary = phases.map((phase) => `${phase.name}, weeks ${phase.weeks[0]}–${phase.weeks[1]}`).join("; ");
 
@@ -21,6 +21,7 @@ export function ProgressStrip() {
   const router = useRouter();
   const progress = useProgress();
   const currentWeek = useCurrentWeek();
+  const unsaved = useProgressUnsaved();
   const { percentLabel, daysDone, versesLearned } = progressStats(progress);
   const statsClass = progress.ready ? undefined : "invisible";
 
@@ -122,6 +123,9 @@ export function ProgressStrip() {
         <span className="whitespace-nowrap">
           <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{versesLearned}</span> of {WEEK_COUNT} verses
         </span>
+      </p>
+      <p aria-live="polite" className="mt-3 mb-0 text-[0.9375rem] text-muted">
+        {unsaved && "Progress isn’t being saved on this device right now."}
       </p>
     </section>
   );

@@ -1,6 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it, vi } from "vitest";
 import { localPersistence, memoryPersistence } from "./persistence";
+import type { ProgressPersistence } from "./rows";
 import { createProgressStore } from "./store";
 
 function clock() {
@@ -121,5 +122,112 @@ describe("progress store", () => {
     await store.addVerse(3);
     expect(store.getSnapshot()).toMatchObject({ ready: true });
     expect(store.getSnapshot().verses.has(3)).toBe(true);
+  });
+
+  it("reports unsaved progress for a durable store only after a failed write", async () => {
+    const store = await freshStore();
+    expect(store.getSnapshot().saved).toBe(true);
+    await store.addDay(0);
+    expect(store.getSnapshot().saved).toBe(true);
+  });
+
+  it("reports progress as not saved when storage fell back to memory", async () => {
+    const store = await freshStore(null);
+    expect(store.getSnapshot().saved).toBe(false);
+  });
+});
+
+function flaky() {
+  const inner = memoryPersistence();
+  const control = { failing: false };
+  const guard = <A extends unknown[]>(fn: (...args: A) => Promise<void>) => async (...args: A) => {
+    if (control.failing) throw new DOMException("QuotaExceededError", "QuotaExceededError");
+    return fn(...args);
+  };
+  const persistence: ProgressPersistence = {
+    load: () => inner.load(),
+    putDays: guard(inner.putDays),
+    deleteDay: guard(inner.deleteDay),
+    putVerses: guard(inner.putVerses),
+    deleteVerse: guard(inner.deleteVerse),
+  };
+  return { persistence, control, inner };
+}
+
+describe("failed writes", () => {
+  it("keeps a failed insert, flags it unsaved, and retries it on the next write", async () => {
+    const { persistence, control, inner } = flaky();
+    const store = createProgressStore(persistence, clock());
+    await store.load();
+    control.failing = true;
+    await store.addDay(0);
+    expect(store.getSnapshot().saved).toBe(false);
+    expect(store.getSnapshot().days.has(0)).toBe(true);
+
+    control.failing = false;
+    await store.addDay(1);
+    expect(store.getSnapshot().saved).toBe(true);
+    expect((await inner.load()).days.map((row) => row.day_index).sort()).toEqual([0, 1]);
+
+    const reloaded = createProgressStore(persistence, clock());
+    await reloaded.load();
+    expect([...reloaded.getSnapshot().days].sort()).toEqual([0, 1]);
+  });
+
+  it("keeps a failed delete and replays it on flush", async () => {
+    const { persistence, control, inner } = flaky();
+    const store = createProgressStore(persistence, clock());
+    await store.load();
+    await store.addDay(4);
+    await store.addVerse(2);
+    control.failing = true;
+    await store.removeDay(4);
+    await store.removeVerse(2);
+    expect(store.getSnapshot().saved).toBe(false);
+    expect((await inner.load()).days).toHaveLength(1);
+
+    control.failing = false;
+    await store.flush();
+    expect(store.getSnapshot().saved).toBe(true);
+    expect(await inner.load()).toEqual({ days: [], verses: [] });
+  });
+
+  it("keeps only the latest intent for a day that was ticked then unticked while failing", async () => {
+    const { persistence, control, inner } = flaky();
+    const store = createProgressStore(persistence, clock());
+    await store.load();
+    control.failing = true;
+    await store.addDay(9);
+    await store.removeDay(9);
+    control.failing = false;
+    await store.flush();
+    expect((await inner.load()).days).toEqual([]);
+    expect(store.getSnapshot().saved).toBe(true);
+  });
+
+  it("retries on load when something is still pending", async () => {
+    const { persistence, control } = flaky();
+    const store = createProgressStore(persistence, clock());
+    control.failing = true;
+    await store.addDay(2);
+    control.failing = false;
+    await store.load();
+    expect(store.getSnapshot().saved).toBe(true);
+  });
+});
+
+describe("IndexedDB connection", () => {
+  it("closes on a version change so an upgrade is never blocked", async () => {
+    const factory = new IDBFactory();
+    const persistence = localPersistence(factory);
+    await persistence.load();
+    const upgraded = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = factory.open("bible-journey", 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("blocked"));
+    });
+    upgraded.close();
+    await expect(persistence.putDays([{ day_index: 0, completed_at: "2026-11-13T12:00:00.000Z" }])).rejects.toThrow();
   });
 });

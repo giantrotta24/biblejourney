@@ -275,3 +275,16 @@ test("strip segments never use faded fills and the pulse respects reduced motion
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(await animation()).toBe("none");
 });
+
+test("says so when progress is not being saved on this device", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await expect(page.getByText("Progress isn’t being saved on this device right now.")).toHaveCount(0);
+
+  const blocked = await page.context().newPage();
+  await blocked.addInitScript(() => Object.defineProperty(window, "indexedDB", { value: undefined }));
+  await blocked.goto("/");
+  await expect(blocked.getByText("Progress isn’t being saved on this device right now.")).toBeVisible();
+  await blocked.getByRole("button", { name: "Mark as read" }).click();
+  await expect(blocked.getByText("Progress isn’t being saved on this device right now.")).toBeVisible();
+});

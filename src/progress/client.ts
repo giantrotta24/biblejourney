@@ -13,6 +13,11 @@ export function progressStore(): ProgressStore {
   if (!store) {
     store = createProgressStore(localPersistence(typeof indexedDB === "undefined" ? null : indexedDB));
     void store.load();
+    if (typeof window !== "undefined") {
+      const retry = () => void store?.flush();
+      window.addEventListener("online", retry);
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && retry());
+    }
   }
   return store;
 }
@@ -44,6 +49,7 @@ export function useProgress(): ProgressSnapshot {
   return useSyncExternalStore(subscribe, () => progressStore().getSnapshot(), () => LOADING_SNAPSHOT);
 }
 
+export const useProgressUnsaved = () => useSelect((s) => s.ready && !s.saved, false);
 export const useProgressReady = () => useSelect((s) => s.ready, false);
 export const useDayDone = (dayIndex: number) => useSelect((s) => s.days.has(dayIndex), false);
 export const useVerseLearned = (week: number) => useSelect((s) => s.verses.has(week), false);
@@ -52,7 +58,18 @@ export const useCurrentDayIndex = () => useSelect((s) => derived(s).currentIndex
 export const useCurrentEraIndex = () => useSelect((s) => (s.ready ? currentEraIndex(s.days, eras) : null), null);
 export const useCurrentWeek = () => useSelect((s) => derived(s).currentWeek, null);
 
+let persistRequested = false;
+
+function requestPersistentStorage() {
+  if (persistRequested) return;
+  persistRequested = true;
+  try {
+    void navigator.storage?.persist?.().catch(() => undefined);
+  } catch {}
+}
+
 export function setDayDone(dayIndex: number, done: boolean) {
+  if (done) requestPersistentStorage();
   return done ? progressStore().addDay(dayIndex) : progressStore().removeDay(dayIndex);
 }
 

@@ -83,7 +83,10 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     await queue.setRejectedCount(rejected).catch(() => {});
   }
 
-  function notifyRemote() {
+  async function fromRemote(apply: () => Promise<void>) {
+    const before = attachedStore().getSnapshot();
+    await apply();
+    if (attachedStore().getSnapshot() === before) return;
     for (const listener of remoteListeners) listener();
   }
 
@@ -182,36 +185,37 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     const remoteDays = new Map(remote.days.map((row) => [row.day_index, row]));
     const remoteVerses = new Map(remote.verses.map((row) => [row.week, row]));
 
-    if (linked === s.userId) {
-      const local = target.rows();
-      for (const row of local.days) {
-        if (!remoteDays.has(row.day_index) && !pending.has(`day:${row.day_index}`)) await applyDelete("day", row.day_index);
-      }
-      for (const row of local.verses) {
-        if (!remoteVerses.has(row.week) && !pending.has(`verse:${row.week}`)) await applyDelete("verse", row.week);
-      }
-      await applyRows(incoming);
-    } else {
-      await applyRows(incoming);
-      const local = target.rows();
-      for (const row of local.days) {
-        const theirs = remoteDays.get(row.day_index);
-        if (!theirs || theirs.completed_at > row.completed_at) {
-          await queue.push({ kind: "put-day", row, user_id: s.userId });
-          recorded.set(`day:${row.day_index}`, row);
+    await fromRemote(async () => {
+      if (linked === s.userId) {
+        const local = target.rows();
+        for (const row of local.days) {
+          if (!remoteDays.has(row.day_index) && !pending.has(`day:${row.day_index}`)) await applyDelete("day", row.day_index);
         }
-      }
-      for (const row of local.verses) {
-        const theirs = remoteVerses.get(row.week);
-        if (!theirs || theirs.learned_at > row.learned_at) {
-          await queue.push({ kind: "put-verse", row, user_id: s.userId });
-          recorded.set(`verse:${row.week}`, row);
+        for (const row of local.verses) {
+          if (!remoteVerses.has(row.week) && !pending.has(`verse:${row.week}`)) await applyDelete("verse", row.week);
         }
+        await applyRows(incoming);
+      } else {
+        await applyRows(incoming);
+        const local = target.rows();
+        for (const row of local.days) {
+          const theirs = remoteDays.get(row.day_index);
+          if (!theirs || theirs.completed_at > row.completed_at) {
+            await queue.push({ kind: "put-day", row, user_id: s.userId });
+            recorded.set(`day:${row.day_index}`, row);
+          }
+        }
+        for (const row of local.verses) {
+          const theirs = remoteVerses.get(row.week);
+          if (!theirs || theirs.learned_at > row.learned_at) {
+            await queue.push({ kind: "put-verse", row, user_id: s.userId });
+            recorded.set(`verse:${row.week}`, row);
+          }
+        }
+        linked = s.userId;
+        await queue.setLinkedUser(s.userId);
       }
-      linked = s.userId;
-      await queue.setLinkedUser(s.userId);
-    }
-    notifyRemote();
+    });
 
     s.reconciled = true;
     return drain(s);
@@ -222,21 +226,18 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     if (session !== s) return;
     const pendingKind = (await pendingKinds(s.userId)).get(changeKey(change));
     if (pendingKind !== undefined && isDelete(pendingKind) !== isDelete(change.kind)) return;
-    switch (change.kind) {
-      case "put-day":
-        await applyRows({ days: [change.row], verses: [] });
-        break;
-      case "put-verse":
-        await applyRows({ days: [], verses: [change.row] });
-        break;
-      case "delete-day":
-        await applyDelete("day", change.day_index);
-        break;
-      case "delete-verse":
-        await applyDelete("verse", change.week);
-        break;
-    }
-    notifyRemote();
+    await fromRemote(() => {
+      switch (change.kind) {
+        case "put-day":
+          return applyRows({ days: [change.row], verses: [] });
+        case "put-verse":
+          return applyRows({ days: [], verses: [change.row] });
+        case "delete-day":
+          return applyDelete("day", change.day_index);
+        case "delete-verse":
+          return applyDelete("verse", change.week);
+      }
+    });
   }
 
   function flush(): Promise<void> {

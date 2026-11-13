@@ -2,12 +2,13 @@
 
 import { useSyncExternalStore } from "react";
 import { currentDay, eras } from "@/content/plan";
-import { currentEraIndex, weekMask } from "@/lib/progress";
+import { currentEraIndex, sundayPassedWeek, weekMask } from "@/lib/progress";
 import { createProgressSync, type ProgressSync } from "@/sync/engine";
 import { localQueue } from "@/sync/queue";
 import { localPersistence } from "./persistence";
 import type { ProgressSnapshot } from "./rows";
 import { createProgressStore, LOADING_SNAPSHOT, type ProgressStore } from "./store";
+import { markSundaySeen, sundaySeen } from "./sunday-seen";
 
 let store: ProgressStore | null = null;
 let sync: ProgressSync | null = null;
@@ -15,9 +16,15 @@ let sync: ProgressSync | null = null;
 function boot(): { store: ProgressStore; sync: ProgressSync } {
   if (!store || !sync) {
     const factory = typeof indexedDB === "undefined" ? null : indexedDB;
-    sync = createProgressSync(localPersistence(factory), localQueue(factory));
-    store = createProgressStore(sync.persistence);
-    sync.attach(store);
+    const synced = createProgressSync(localPersistence(factory), localQueue(factory));
+    const created = createProgressStore(synced.persistence);
+    synced.attach(created);
+    synced.subscribeRemote(() => {
+      const week = sundayPassedWeek(created.getSnapshot().days, sundaySeen());
+      if (week !== null) markSundaySeen(week);
+    });
+    sync = synced;
+    store = created;
     void store.load();
     if (typeof window !== "undefined") {
       const retry = () => void store?.flush();

@@ -441,10 +441,13 @@ describe("progress sync", () => {
     await settle(phone, laptop);
     let arrivals = 0;
     laptop.sync.subscribeRemote(() => arrivals++);
+    let echoes = 0;
+    phone.sync.subscribeRemote(() => echoes++);
 
     await phone.store.addDay(1);
     await settle(phone, laptop);
     expect(arrivals).toBeGreaterThan(0);
+    expect(echoes).toBe(0);
 
     laptop.remote.refuseNext("putDays");
     await laptop.store.addDay(9);

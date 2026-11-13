@@ -8,6 +8,7 @@ import {
   nextVerseWeek,
   progressStats,
   sundayWeek,
+  sundayPassedWeek,
   unlockedWeeks,
   weekMask,
   weekState,
@@ -164,5 +165,24 @@ describe("currentEraIndex", () => {
 
   it("holds the previous era across a gap between ranges", () => {
     expect(currentEraIndex(range(0, 6 * 5 + 1), [{ weeks: [1, 3] as const }, { weeks: [8, 10] as const }])).toBe(0);
+  });
+});
+
+describe("sundayPassedWeek", () => {
+  it("is the Sunday week when progress from another device already reads past it", () => {
+    expect(sundayPassedWeek(range(0, 7), null)).toBe(1);
+    expect(sundayPassedWeek(new Set([...range(0, 12), 13]), null)).toBe(2);
+    expect(sundayPassedWeek(new Set([...range(0, 12), 13]), 2)).toBeNull();
+  });
+
+  it("is null when no day after that week is read yet, so a freshly finished week still gets its Sunday", () => {
+    expect(sundayPassedWeek(range(0, 6), null)).toBeNull();
+    expect(sundayPassedWeek(range(0, 12), 1)).toBeNull();
+  });
+
+  it("is null when there is no Sunday view to show", () => {
+    expect(sundayPassedWeek(new Set(), null)).toBeNull();
+    expect(sundayPassedWeek(range(0, 4), null)).toBeNull();
+    expect(sundayPassedWeek(range(0, 6), 1)).toBeNull();
   });
 });

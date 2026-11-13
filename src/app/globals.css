@@ -123,7 +123,6 @@
 
   .btn:disabled,
   .btn[aria-disabled="true"] {
-    border-style: dashed;
     border-color: var(--line);
     background: var(--surface-2);
     color: var(--muted);
@@ -137,6 +136,12 @@
     border-radius: 0.5rem;
     background: var(--surface);
     color: var(--ink);
+  }
+
+  .figures {
+    font-family: var(--font-body);
+    font-size: 0.94em;
+    white-space: nowrap;
   }
 
   .focus-heading:focus {
@@ -284,7 +289,7 @@ svg a[data-week]:focus-visible [data-part="focus"] {
 .current-week {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: current-week 2.4s ease-in-out infinite;
+  animation: current-week 2.4s ease-in-out 3;
 }
 
 .toast {

@@ -264,7 +264,7 @@ test("strip segments never use faded fills and the pulse respects reduced motion
   for (const week of [1, 2, 3]) {
     const outline = page.locator(`svg a[data-week="${week}"] [data-part="outline"]`);
     await expect(outline).toHaveAttribute("vector-effect", "non-scaling-stroke");
-    await expect(outline).toHaveAttribute("stroke-width", "2");
+    await expect(outline).toHaveAttribute("stroke-width", "1.5");
   }
   await expect(page.locator('svg a[data-week="2"] [data-part="bar"]')).toHaveCount(1);
   await expect(page.locator('svg a[data-week="3"] [data-part="bar"]')).toHaveCount(0);
@@ -354,4 +354,22 @@ test("the finished screen keeps the last week’s deep dive", async ({ page }) =
   const dive = page.getByRole("region", { name: /Sunday deep dive/ });
   await expect(dive.getByRole("heading", { name: /Hebrews, John’s letters, Revelation/ })).toBeVisible();
   await expect(dive.getByText(/seven churches of Revelation/)).toBeVisible();
+});
+
+test("adjacent strip weeks keep a visible gap and the caption names the week under the pointer", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const first = await page.locator('svg a[data-week="20"] [data-part="outline"]').boundingBox();
+  const second = await page.locator('svg a[data-week="21"] [data-part="outline"]').boundingBox();
+  expect(second!.x - (first!.x + first!.width)).toBeGreaterThanOrEqual(1.5);
+  const hit = await page.locator('svg a[data-week="21"] [data-part="hit"]').boundingBox();
+  expect(hit!.height).toBeGreaterThanOrEqual(44);
+
+  const caption = page.getByTestId("strip-caption");
+  await expect(caption).toHaveText(/Week 1 of 52 · Creation and the early world/);
+  await expect(caption).toHaveAttribute("href", "/plan#week-1");
+  await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
+  await expect(caption).toHaveText(/Week 2 of 52 · The book of Job/);
+  await caption.click();
+  await expect(page).toHaveURL(/\/plan#week-2$/);
 });

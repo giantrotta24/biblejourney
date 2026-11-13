@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
-import { DAY_COUNT, DAYS_PER_WEEK, phases, weeks, WEEK_COUNT } from "@/content/plan";
+import { DAY_COUNT, DAYS_PER_WEEK, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
 import { progressStats, weekMask, weekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress, useProgressUnsaved } from "@/progress/client";
@@ -18,6 +19,8 @@ const HEIGHT = 64;
 const TOP = 12;
 const HIT_TOP = -14;
 const HIT_BOTTOM = 12;
+const BAR_INSET = 3;
+const BAR_WIDTH = SEGMENT - BAR_INSET * 2;
 
 function weekHref(week: number) {
   return `/plan#${weekAnchor(week)}`;
@@ -33,7 +36,10 @@ export function ProgressStrip() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [stop, setStop] = useState<number | null>(null);
+  const [pointed, setPointed] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
   const active = stop ?? currentWeek ?? 1;
+  const captionWeek = pointed ?? focused ?? currentWeek;
 
   function moveTo(week: number) {
     setStop(week);
@@ -74,10 +80,15 @@ export function ProgressStrip() {
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WEEK_COUNT * SEGMENT} ${HEIGHT}`}
-        className="block h-auto w-full overflow-visible"
+        preserveAspectRatio="none"
+        className="block h-14 w-full touch-manipulation overflow-visible"
         role="group"
         aria-label="Weeks of the plan. Use the left and right arrow keys to move between weeks."
         onKeyDown={onKeyDown}
+        onPointerLeave={() => setPointed(null)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(null);
+        }}
       >
         {weeks.map((week) => {
           const x = (week.week - 1) * SEGMENT;
@@ -89,7 +100,12 @@ export function ProgressStrip() {
               href={weekHref(week.week)}
               tabIndex={week.week === active ? 0 : -1}
               aria-label={`Week ${week.week}${progress.ready ? `, ${weekMaskCount(progress.days, week.week)} of ${DAYS_PER_WEEK} days read` : ""}, ${week.title}`}
-              onFocus={() => setStop(week.week)}
+              onFocus={() => {
+                setStop(week.week);
+                setFocused(week.week);
+              }}
+              onPointerEnter={() => setPointed(week.week)}
+              onPointerDown={() => setPointed(week.week)}
               onClick={(event) => openWeek(event, week.week)}
               data-week={week.week}
               data-state={state}
@@ -110,24 +126,24 @@ export function ProgressStrip() {
               <g className={week.week === currentWeek ? "current-week" : undefined}>
                 <rect
                   data-part="outline"
-                  x={x + 1.9}
+                  x={x + BAR_INSET}
                   y={TOP}
-                  width={SEGMENT - 3.8}
+                  width={BAR_WIDTH}
                   height={HEIGHT - TOP - 1}
-                  rx={2}
+                  rx={1.5}
                   fill={state === "full" ? color : "none"}
                   stroke={color}
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   vectorEffect="non-scaling-stroke"
                 />
                 {state === "partial" && (
                   <rect
                     data-part="bar"
-                    x={x + 1.9}
+                    x={x + BAR_INSET}
                     y={TOP + (HEIGHT - TOP - 1) / 2}
-                    width={SEGMENT - 3.8}
+                    width={BAR_WIDTH}
                     height={(HEIGHT - TOP - 1) / 2}
-                    rx={2}
+                    rx={1.5}
                     fill={color}
                   />
                 )}
@@ -156,9 +172,27 @@ export function ProgressStrip() {
           </li>
         ))}
       </ul>
-      <p className="mt-5 mb-0 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[0.9375rem] text-muted" aria-hidden="true" data-testid="journey-stats">
-        <span className="basis-full whitespace-nowrap sm:basis-auto">
-          <span className={`font-display text-[1.75rem] leading-none text-ink tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> of the Bible read
+      <p className="mt-1 mb-0 min-h-11" aria-hidden={!progress.ready || undefined}>
+        {progress.ready && (
+          <Link
+            href={captionWeek ? weekHref(captionWeek) : "/plan"}
+            className="inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] text-ink no-underline hover:underline"
+            data-testid="strip-caption"
+          >
+            {captionWeek ? (
+              <span>{`Week ${captionWeek} of ${WEEK_COUNT} · ${getWeek(captionWeek).title}`}</span>
+            ) : (
+              <span>All 52 weeks read · see the plan</span>
+            )}
+            <span aria-hidden="true" className="text-muted">
+              →
+            </span>
+          </Link>
+        )}
+      </p>
+      <p className="mt-1 mb-0 flex flex-wrap gap-x-4 gap-y-0.5 text-[0.9375rem] text-muted" aria-hidden="true" data-testid="journey-stats">
+        <span className="whitespace-nowrap">
+          <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> read
         </span>
         <span className="whitespace-nowrap">
           <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{daysDone}</span> of {DAY_COUNT} days
@@ -167,7 +201,7 @@ export function ProgressStrip() {
           <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{versesLearned}</span> of {WEEK_COUNT} verses
         </span>
       </p>
-      <p aria-live="polite" className="mt-3 mb-0 text-[0.9375rem] text-muted">
+      <p aria-live="polite" className="mt-2 mb-0 text-[0.9375rem] text-muted">
         {unsaved && "Progress isn’t being saved on this device right now."}
       </p>
     </section>

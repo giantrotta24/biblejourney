@@ -43,7 +43,7 @@ const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: W
     >
       <AccordionHeader className="m-0 font-body text-base">
         <AccordionTrigger className="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-xl border-0 bg-transparent px-3.5 py-2.5 text-left text-ink">
-          <span className="w-12 shrink-0 font-display text-[0.9375rem] text-muted tabular-nums">Wk {week.week}</span>
+          <span className="w-12 shrink-0 text-[0.9375rem] text-muted tabular-nums">Wk {week.week}</span>
           <span className="min-w-0 flex-1">
             {week.title}
             {current && <span className="sr-only"> (current week)</span>}

@@ -8,6 +8,7 @@ import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";
 import { markSundaySeen, useSundaySeen } from "@/progress/sunday-seen";
 import { useLinkTranslation } from "@/settings/client";
+import { Figures } from "./figures";
 import { StudyAssistant } from "./study-assistant";
 import { VersePractice } from "./verse-practice";
 import { WeekDays } from "./week-days";
@@ -93,15 +94,15 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
     <>
       <section aria-labelledby="reading-heading" className="mb-10">
         {resuming && <p className="mt-0 mb-2 text-[0.9375rem] text-muted">Picking up where you left off.</p>}
-        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1] focus-heading">
+        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1]">
           <span className="sr-only">Today’s reading: </span>
-          {day.reading}
+          <Figures text={day.reading} />
         </h2>
-        <p className="mt-2 mb-0 text-muted">
-          Week {day.week} of {WEEK_COUNT}, {WEEKDAY_NAMES[day.weekday]} · {phase.name}
+        <p className="mt-3 mb-0 text-ink">
+          {WEEKDAY_NAMES[day.weekday]} of week {day.week} · {week.title}
         </p>
-        <p className="mt-1 mb-0 text-muted">
-          {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes
+        <p className="mt-0.5 mb-0 text-[0.9375rem] text-muted">
+          {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes · {phase.name}
         </p>
         <p className="mt-5 mb-0 flex flex-wrap gap-3">
           <button type="button" className="btn btn-primary" onClick={onMarkRead}>
@@ -116,17 +117,18 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
         </p>
       </section>
 
-      <section aria-labelledby="week-heading" className="mb-10">
-        <h2 id="week-heading" className="m-0 text-2xl leading-tight">
-          {week.title}
+      <section aria-labelledby="week-heading" className="mb-10 border-t border-line pt-6">
+        <h2 id="week-heading" className="m-0 mb-2 text-2xl leading-tight">
+          This week’s readings
         </h2>
-        <p className="mt-1 mb-3 text-sm text-muted">This week’s readings</p>
         <WeekDays days={week.days} idPrefix="today-day" label="This week’s readings" />
-        <h3 className="mt-6 mb-1 text-lg">Sunday deep dive</h3>
+        <h3 className="mt-6 mb-1 text-lg">This Sunday’s deep dive</h3>
         <p className="m-0 max-w-[65ch]">{week.deepDive}</p>
       </section>
 
-      <VersePractice key={week.week} week={week} />
+      <div className="mb-10">
+        <VersePractice key={week.week} week={week} />
+      </div>
 
       <StudyAssistant key={day.index} dayIndex={day.index} />
     </>
@@ -157,7 +159,7 @@ function SundayView({ week: weekNumber, next, headingRef, onContinue }: { week: 
             {nextIsNewWeek && moreWeeks ? `Start week ${next.week}` : "Continue reading"}
           </button>
         </p>
-        <p className="mt-2 mb-0 text-sm text-muted">Next up: {next.reading}</p>
+        <p className="mt-2 mb-0 text-[0.9375rem] text-muted">Next up: {next.reading}</p>
       </section>
 
       {openDays.length > 0 && (

@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import { getWeek, WEEK_COUNT, weeks, type Week } from "@/content/plan";
 import { nextVerseWeek, unlockedWeeks } from "@/lib/progress";
 import { useCurrentWeek, useProgress, useProgressReady } from "@/progress/client";
+import { Figures } from "./figures";
 import { KnowItToggle, VersePractice } from "./verse-practice";
 
 function useVerseWeek(): number | null {
@@ -40,7 +41,7 @@ export function VerseQuiz() {
         Practice · {pool.length} {pool.length === 1 ? "verse" : "verses"} unlocked
       </h2>
       <p className="mt-1 mb-0 font-display text-[1.375rem] leading-tight" aria-live="polite">
-        {week.memoryVerse.ref}
+        <Figures text={week.memoryVerse.ref} />
       </p>
       <p className="mt-3 mb-0 flex flex-wrap gap-3">
         <button type="button" className="btn" aria-pressed={revealed} onClick={() => setRevealed(!revealed)}>
@@ -51,7 +52,7 @@ export function VerseQuiz() {
         </button>
       </p>
       <p aria-live="polite" className={`mt-4 mb-0 max-w-[65ch] min-h-[3.2em] ${revealed ? "text-lg leading-relaxed" : "text-base text-muted italic"}`}>
-        {revealed ? week.memoryVerse.textKJV : "Recite it, then reveal."}
+        {revealed ? week.memoryVerse.textKJV : "Say it from memory, then reveal to check."}
       </p>
     </section>
   );
@@ -61,7 +62,9 @@ const VerseItem = memo(function VerseItem({ week, upcoming }: { week: Week; upco
   return (
     <li className="border-t border-line py-4" data-upcoming={upcoming || undefined}>
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className={`m-0 text-lg ${upcoming ? "text-muted" : ""}`}>{week.memoryVerse.ref}</h3>
+        <h3 className={`m-0 text-lg ${upcoming ? "text-muted" : ""}`}>
+          <Figures text={week.memoryVerse.ref} />
+        </h3>
         <span className="shrink-0 text-sm text-muted tabular-nums">
           Week {week.week}
           {upcoming && <span className="sr-only">, upcoming</span>}

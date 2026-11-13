@@ -4,6 +4,7 @@ import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } fro
 import { useId, useState } from "react";
 import type { Week } from "@/content/plan";
 import { firstLetters } from "@/lib/reading";
+import { Figures } from "./figures";
 import { setVerseLearned, useProgressReady, useVerseLearned } from "@/progress/client";
 
 type Mode = "hidden" | "letters" | "full";
@@ -46,7 +47,9 @@ export function VersePractice({
 
   return (
     <section aria-label={label} className="rounded-2xl border border-line bg-surface p-5">
-      <h2 className="m-0 text-[1.375rem] leading-tight">{ref}</h2>
+      <h2 className="m-0 text-[1.375rem] leading-tight">
+        <Figures text={ref} />
+      </h2>
       <p className="m-0 mt-0.5 text-sm text-muted">{label}</p>
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <SegmentedControl aria-label="Show the verse as" value={mode} onValueChange={(next) => next && setMode(next)}>

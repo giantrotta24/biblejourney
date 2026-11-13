@@ -2,8 +2,9 @@
 id: BJ-9
 title: Redesign: simple and clean, sage
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-9: Redesign: simple and clean, sage
@@ -40,3 +41,4 @@ Codex restyled 32 files to the sage contract. Run by the orchestrator from a cle
 ## Log
 
 - 2026-11-13: opened
+- 2026-11-13: closed. Sage redesign shipped in PR 15

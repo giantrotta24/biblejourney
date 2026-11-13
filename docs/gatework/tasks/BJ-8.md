@@ -2,8 +2,9 @@
 id: BJ-8
 title: Ignore major TypeScript and @types/node bumps in Dependabot
 size: small
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-8: Ignore major TypeScript and @types/node bumps in Dependabot
@@ -25,3 +26,4 @@ ruby YAML.load_file parses the file and shows both ignore rules under the npm en
 ## Log
 
 - 2026-11-13: opened
+- 2026-11-13: closed. Dependabot ignore rules shipped in PR 13

@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <g fill="#fff">
-    <path d="M60 150Q170 118 246 160V412Q170 372 60 402Z"/>
-    <path d="M452 150Q342 118 266 160V412Q342 372 452 402Z"/>
-  </g>
+  <mask id="m">
+    <g transform="translate(256 259) scale(1.6) translate(-256 -259)">
+      <path d="M256 168c-34-22-78-30-132-26v208c54-4 98 4 132 26z" fill="#fff"/>
+      <path d="M256 168c34-22 78-30 132-26v208c-54-4-98 4-132 26z" fill="#fff"/>
+      <rect x="244" y="186" width="24" height="158" rx="4" fill="#000"/>
+      <rect x="198" y="226" width="116" height="24" rx="4" fill="#000"/>
+    </g>
+  </mask>
+  <rect width="512" height="512" fill="#fff" mask="url(#m)"/>
 </svg>

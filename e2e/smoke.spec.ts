@@ -103,3 +103,19 @@ test.describe("dark theme", () => {
     expect(await background()).toBe("rgb(244, 246, 241)");
   });
 });
+
+test("the header shows the logo mark beside the app name and the page declares its icons", async ({ page }) => {
+  await page.goto("/");
+  const brand = page.locator("header p").filter({ hasText: "One-Year Bible Journey" });
+  const mark = brand.locator("svg");
+  await expect(mark).toBeVisible();
+  await expect(mark).toHaveAttribute("aria-hidden", "true");
+  const box = await mark.boundingBox();
+  expect(box!.width).toBeGreaterThan(14);
+  expect(box!.height).toBeGreaterThan(14);
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", /\/icon\.svg/);
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", /apple-touch-icon\.png/);
+  for (const path of ["/icon.svg", "/icons/apple-touch-icon.png", "/icons/icon-512.png", "/icons/icon-maskable-512.png"]) {
+    expect((await page.request.get(path)).status(), path).toBe(200);
+  }
+});

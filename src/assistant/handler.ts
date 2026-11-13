@@ -1,7 +1,15 @@
-import type { AnswerCache } from "./cache";
+import type { AnswerCache, AnswerKey } from "./cache";
 import type { UsageLimiter } from "./limiter";
-import { buildPrompt, type Prompt } from "./prompt";
+import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
 import { askRequestSchema, DAILY_QUESTION_LIMIT, type AskErrorCode, type AskRequest } from "./types";
+import { endFrame, withoutMarker, type StreamEnd } from "./wire";
+
+export class AnswerStoppedError extends Error {
+  override name = "AnswerStoppedError";
+  constructor(readonly stopReason: string) {
+    super(`Answer stopped: ${stopReason}`);
+  }
+}
 
 export interface ModelClient {
   stream(prompt: Prompt, signal: AbortSignal): AsyncIterable<string>;
@@ -23,6 +31,7 @@ export type AskDeps = {
   limiter: UsageLimiter;
   anonymousLimiter: UsageLimiter;
   cache: AnswerCache;
+  modelId: string;
   now?: () => Date;
   log?: AssistantLog;
 };
@@ -31,7 +40,7 @@ export type AssistantStatus = { configured: boolean; signInRequired: boolean };
 
 const ANONYMOUS_USER = "local-anonymous";
 
-const consoleLog: AssistantLog = {
+export const consoleLog: AssistantLog = {
   info: (event) => console.info(JSON.stringify(event)),
   error: (event) => console.error(JSON.stringify(event)),
 };
@@ -54,6 +63,15 @@ const STATUS: Record<AskErrorCode, number> = {
 
 function fail(code: AskErrorCode): Response {
   return Response.json({ error: MESSAGES[code], code }, { status: STATUS[code], headers: { "cache-control": "no-store" } });
+}
+
+const CANCELLED_STATUS = 499;
+
+function stopEnd(error: unknown): StreamEnd {
+  if (!(error instanceof AnswerStoppedError)) return "error";
+  if (error.stopReason === "refusal") return "refused";
+  if (error.stopReason === "max_tokens" || error.stopReason === "model_context_window_exceeded") return "truncated";
+  return "error";
 }
 
 function textResponse(body: BodyInit, cache: "hit" | "miss"): Response {
@@ -85,14 +103,42 @@ async function readRequest(request: Request): Promise<AskRequest | null> {
 }
 
 export function assistantStatus(deps: AskDeps): AssistantStatus {
-  return { configured: deps.model !== null, signInRequired: !deps.allowAnonymous };
+  const reachable = deps.auth !== null || deps.allowAnonymous;
+  return { configured: deps.model !== null && reachable, signInRequired: !deps.allowAnonymous };
 }
 
 export async function handleAsk(request: Request, deps: AskDeps): Promise<Response> {
+  if (!assistantStatus(deps).configured) return fail("not_configured");
+
+  const upstream = new AbortController();
+  const abort = () => upstream.abort();
+  if (request.signal.aborted) upstream.abort();
+  else request.signal.addEventListener("abort", abort, { once: true });
+
+  const detach = () => request.signal.removeEventListener("abort", abort);
+  let streaming = false;
+  try {
+    return await answer(request, deps, upstream, detach, () => (streaming = true));
+  } finally {
+    if (!streaming) detach();
+  }
+}
+
+async function answer(
+  request: Request,
+  deps: AskDeps,
+  upstream: AbortController,
+  detach: () => void,
+  streamStarted: () => void,
+): Promise<Response> {
+  const signal = upstream.signal;
   const log = deps.log ?? consoleLog;
   const now = deps.now ?? (() => new Date());
-  const model = deps.model;
-  if (!model) return fail("not_configured");
+  const model = deps.model!;
+  const cancelled = (stage: string) => {
+    log.info({ event: "assistant.cancelled", stage });
+    return new Response(null, { status: CANCELLED_STATUS });
+  };
 
   let caller;
   try {
@@ -107,17 +153,20 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
   if (!ask) return fail("invalid");
   const quickType = "type" in ask ? ask.type : null;
   const kind = quickType ?? "question";
+  const key: AnswerKey | null = quickType ? { dayIndex: ask.dayIndex, type: quickType, model: deps.modelId, promptVersion: PROMPT_VERSION } : null;
 
-  if (quickType) {
-    const cached = await deps.cache.get(ask.dayIndex, quickType).catch((error) => {
+  if (key) {
+    const cached = await deps.cache.get(key).catch((error) => {
       log.error({ event: "assistant.error", stage: "cache-read", name: errorName(error) });
       return null;
     });
     if (cached) {
       log.info({ event: "assistant.answer", kind, cached: true, chars: cached.length });
-      return textResponse(cached, "hit");
+      return textResponse(cached + endFrame("complete"), "hit");
     }
   }
+
+  if (signal.aborted) return cancelled("before-limit");
 
   let limit;
   try {
@@ -132,60 +181,79 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
   }
   const used = limit.used;
 
-  const dayIndex = ask.dayIndex;
-  const upstream = new AbortController();
-  const abort = () => upstream.abort();
-  request.signal.addEventListener("abort", abort);
-  const chunks = model.stream(buildPrompt(ask), upstream.signal)[Symbol.asyncIterator]();
+  if (signal.aborted) {
+    await caller.limiter.release(caller.userId, now()).catch((error) => {
+      log.error({ event: "assistant.error", stage: "limit-release", name: errorName(error) });
+    });
+    return cancelled("before-model");
+  }
+
+  const chunks = model.stream(buildPrompt(ask), signal)[Symbol.asyncIterator]();
 
   let first: IteratorResult<string>;
   try {
     first = await chunks.next();
   } catch (error) {
-    request.signal.removeEventListener("abort", abort);
+    if (signal.aborted) return cancelled("first-chunk");
+    if (error instanceof AnswerStoppedError) {
+      const end = stopEnd(error);
+      log.info({ event: "assistant.answer", kind, cached: false, chars: 0, used, end });
+      return textResponse(endFrame(end), "miss");
+    }
     log.error({ event: "assistant.error", stage: "model", name: errorName(error) });
     return fail("upstream");
   }
 
   const encoder = new TextEncoder();
-  let answer = "";
-  const body = new ReadableStream<Uint8Array>({
-    start(controller) {
-      if (first.done) return;
-      answer += first.value;
-      controller.enqueue(encoder.encode(first.value));
-    },
-    async pull(controller) {
-      if (first.done) return finish(controller);
-      try {
-        const next = await chunks.next();
-        if (next.done) return finish(controller);
-        answer += next.value;
-        controller.enqueue(encoder.encode(next.value));
-      } catch (error) {
-        request.signal.removeEventListener("abort", abort);
-        if (!upstream.signal.aborted) log.error({ event: "assistant.error", stage: "stream", name: errorName(error), chars: answer.length });
-        controller.error(error);
-      }
-    },
-    cancel() {
-      request.signal.removeEventListener("abort", abort);
-      upstream.abort();
-      log.info({ event: "assistant.cancelled", kind, chars: answer.length });
-    },
-  });
+  let text = "";
+  const push = (controller: ReadableStreamDefaultController<Uint8Array>, chunk: string) => {
+    const clean = withoutMarker(chunk);
+    text += clean;
+    if (clean) controller.enqueue(encoder.encode(clean));
+  };
 
-  async function finish(controller: ReadableStreamDefaultController<Uint8Array>) {
-    request.signal.removeEventListener("abort", abort);
+  async function end(controller: ReadableStreamDefaultController<Uint8Array>, how: StreamEnd) {
+    detach();
+    controller.enqueue(encoder.encode(endFrame(how)));
     controller.close();
-    log.info({ event: "assistant.answer", kind, cached: false, chars: answer.length, used });
-    if (quickType && answer.trim()) {
-      await deps.cache.set(dayIndex, quickType, answer).catch((error) => {
+    log.info({ event: "assistant.answer", kind, cached: false, chars: text.length, used, end: how });
+    if (how === "complete" && key && text.trim()) {
+      await deps.cache.set(key, text).catch((error) => {
         log.error({ event: "assistant.error", stage: "cache-write", name: errorName(error) });
       });
     }
   }
 
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      if (!first.done) push(controller, first.value);
+    },
+    async pull(controller) {
+      if (first.done) return end(controller, "complete");
+      try {
+        const next = await chunks.next();
+        if (next.done) return end(controller, "complete");
+        push(controller, next.value);
+      } catch (error) {
+        if (signal.aborted) {
+          detach();
+          controller.error(error);
+          return;
+        }
+        if (!(error instanceof AnswerStoppedError)) {
+          log.error({ event: "assistant.error", stage: "stream", name: errorName(error), chars: text.length });
+        }
+        return end(controller, stopEnd(error));
+      }
+    },
+    cancel() {
+      detach();
+      upstream.abort();
+      log.info({ event: "assistant.cancelled", stage: "stream", kind, chars: text.length });
+    },
+  });
+
+  streamStarted();
   return textResponse(body, "miss");
 }
 

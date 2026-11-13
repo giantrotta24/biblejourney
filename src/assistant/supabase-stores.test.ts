@@ -34,15 +34,29 @@ describe("supabaseLimiter", () => {
   });
 });
 
+describe("supabaseLimiter release", () => {
+  it("gives a question back through the RPC", async () => {
+    const { client, calls } = fakeClient({ data: null, error: null });
+    await supabaseLimiter(client, 30).release("u1", new Date("2026-11-13T12:00:00Z"));
+    expect(calls).toEqual([["rpc", "assistant_release_question", { p_user_id: "u1", p_day: "2026-11-13" }]]);
+  });
+});
+
 describe("supabaseCache", () => {
-  it("reads and writes answers keyed by day index and prompt type", async () => {
+  it("reads and writes answers keyed by day index, prompt type, model and prompt version", async () => {
     const { client, calls } = fakeClient({ data: { answer: "Cached" }, error: null });
-    const cache = supabaseCache(client, "claude-sonnet-5-5");
-    expect(await cache.get(7, "map")).toBe("Cached");
-    await cache.set(7, "map", "New");
+    const cache = supabaseCache(client);
+    const key = { dayIndex: 7, type: "map" as const, model: "claude-sonnet-5-5", promptVersion: "2026-11-13" };
+    expect(await cache.get(key)).toBe("Cached");
+    await cache.set(key, "New");
     expect(calls).toContainEqual(["eq", "day_index", 7]);
     expect(calls).toContainEqual(["eq", "prompt_type", "map"]);
-    expect(calls).toContainEqual(["upsert", { day_index: 7, prompt_type: "map", answer: "New", model: "claude-sonnet-5-5" }]);
+    expect(calls).toContainEqual(["eq", "model", "claude-sonnet-5-5"]);
+    expect(calls).toContainEqual(["eq", "prompt_version", "2026-11-13"]);
+    expect(calls).toContainEqual([
+      "upsert",
+      { day_index: 7, prompt_type: "map", model: "claude-sonnet-5-5", prompt_version: "2026-11-13", answer: "New" },
+    ]);
   });
 });
 

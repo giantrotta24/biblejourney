@@ -37,13 +37,29 @@ describe("memoryLimiter", () => {
   });
 });
 
+describe("memoryLimiter release", () => {
+  it("gives a question back without going below zero", async () => {
+    const limiter = memoryLimiter(1);
+    const now = at("2026-11-13T10:00:00Z");
+    expect((await limiter.take("a", now)).allowed).toBe(true);
+    await limiter.release("a", now);
+    await limiter.release("a", now);
+    expect(await limiter.take("a", now)).toEqual({ allowed: true, used: 1 });
+    expect((await limiter.take("a", now)).allowed).toBe(false);
+  });
+});
+
 describe("memoryCache", () => {
-  it("stores answers per day index and prompt type", async () => {
+  const key = { dayIndex: 3, type: "map" as const, model: "m1", promptVersion: "v1" };
+
+  it("stores answers per day index, prompt type, model and prompt version", async () => {
     const cache = memoryCache();
-    expect(await cache.get(3, "map")).toBeNull();
-    await cache.set(3, "map", "The answer");
-    expect(await cache.get(3, "map")).toBe("The answer");
-    expect(await cache.get(3, "people")).toBeNull();
-    expect(await cache.get(4, "map")).toBeNull();
+    expect(await cache.get(key)).toBeNull();
+    await cache.set(key, "The answer");
+    expect(await cache.get(key)).toBe("The answer");
+    expect(await cache.get({ ...key, type: "people" })).toBeNull();
+    expect(await cache.get({ ...key, dayIndex: 4 })).toBeNull();
+    expect(await cache.get({ ...key, model: "m2" })).toBeNull();
+    expect(await cache.get({ ...key, promptVersion: "v2" })).toBeNull();
   });
 });

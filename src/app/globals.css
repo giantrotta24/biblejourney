@@ -9,7 +9,7 @@
   --line: light-dark(#dfe4dc, #2a332d);
   --accent: light-dark(#2f6b4f, #7fc3a0);
   --on-accent: light-dark(#ffffff, #141a16);
-  --track: light-dark(#a7b0a8, #4a554d);
+  --track: light-dark(#7d8a7f, #657268);
 }
 
 :root[data-theme="light"] {

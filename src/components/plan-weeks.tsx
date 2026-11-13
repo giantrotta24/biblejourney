@@ -25,9 +25,9 @@ function WeekDots({ week }: { week: number }) {
   const read = dots.filter(Boolean).length;
 
   return (
-    <span className="flex shrink-0 gap-[3px]" role="img" aria-label={`${read} of ${DAYS_PER_WEEK} days read`}>
+    <span className="flex shrink-0 items-center gap-[3px]" role="img" aria-label={`${read} of ${DAYS_PER_WEEK} days read`}>
       {dots.map((on, i) => (
-        <i key={i} className={`block h-2 w-[2px] ${on ? "bg-accent" : "bg-track"}`} />
+        <i key={i} className={`block w-[2px] ${on ? "h-3 bg-accent" : "h-2 bg-track"}`} />
       ))}
     </span>
   );

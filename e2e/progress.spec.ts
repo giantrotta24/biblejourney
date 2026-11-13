@@ -275,12 +275,54 @@ test("year marks distinguish read, partly read and unread by shape, with a talle
   const current = await page.locator(".current-week").boundingBox();
   expect(current!.height).toBeGreaterThan((await full.boundingBox())!.height);
 
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    const ratio = await empty.evaluate((mark) => {
+      const rgb = (value: string) => value.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+      const lum = ([r, g, b]: number[]) => {
+        const c = [r, g, b].map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      };
+      const [x, y] = [lum(rgb(getComputedStyle(mark).fill)), lum(rgb(getComputedStyle(document.body).backgroundColor))].sort((m, n) => n - m);
+      return (x + 0.05) / (y + 0.05);
+    });
+    expect(ratio, `${scheme} unread year mark`).toBeGreaterThanOrEqual(3);
+  }
+
   const animation = () => page.locator(".current-week").evaluate((el) => getComputedStyle(el).animationName);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   expect(await animation()).toBe("none");
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(await animation()).toBe("none");
   await expect(page.locator(".btn").first()).toHaveCSS("transition-duration", "0s");
+});
+
+test("plan week dots distinguish read days by shape and unread dots contrast with the ground in both themes", async ({ page }) => {
+  await page.goto("/plan");
+  await planWeek(page, 1).getByRole("checkbox", { name: /Genesis 1–4/ }).check();
+  const progress = page.locator("#week-1").getByRole("img", { name: "1 of 6 days read" });
+  await expect(progress).toBeVisible();
+  const dots = progress.locator("i");
+  await expect(dots).toHaveCount(6);
+  const read = dots.nth(0);
+  const unread = dots.nth(1);
+  const readBox = await read.boundingBox();
+  const unreadBox = await unread.boundingBox();
+  expect(readBox!.height).toBeGreaterThan(unreadBox!.height);
+
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    const ratio = await unread.evaluate((dot) => {
+      const rgb = (value: string) => value.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+      const lum = ([r, g, b]: number[]) => {
+        const c = [r, g, b].map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      };
+      const [x, y] = [lum(rgb(getComputedStyle(dot).backgroundColor)), lum(rgb(getComputedStyle(document.body).backgroundColor))].sort((m, n) => n - m);
+      return (x + 0.05) / (y + 0.05);
+    });
+    expect(ratio, `${scheme} unread Plan week dot`).toBeGreaterThanOrEqual(3);
+  }
 });
 
 test("says so when progress is not being saved on this device", async ({ page }) => {

@@ -39,7 +39,7 @@ const consoleLog: AssistantLog = {
 const MESSAGES: Record<AskErrorCode, string> = {
   not_configured: "The study assistant isn’t set up on this copy of the app.",
   unauthorized: "Please sign in to ask the study assistant.",
-  rate_limited: `You’ve asked ${DAILY_QUESTION_LIMIT} questions today, which is the daily limit. You can ask more tomorrow (the count resets at midnight UTC).`,
+  rate_limited: `You’ve asked ${DAILY_QUESTION_LIMIT} questions today. The assistant will be ready again tomorrow.`,
   invalid: "That question couldn’t be read. Questions can be up to 500 characters.",
   upstream: "The study assistant couldn’t answer just now. Please try again in a moment.",
 };

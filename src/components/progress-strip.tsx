@@ -7,6 +7,8 @@ import { progressStats, weekState, type WeekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress } from "@/progress/client";
 
+const phaseSummary = phases.map((phase) => `${phase.name}, weeks ${phase.weeks[0]}–${phase.weeks[1]}`).join("; ");
+
 const SEGMENT = 10;
 const HEIGHT = 64;
 const TOP = 12;
@@ -38,7 +40,7 @@ export function ProgressStrip() {
       <p className="sr-only">
         {!progress.ready
           ? "Loading your progress."
-          : `${currentWeek ? `You are in week ${currentWeek} of ${WEEK_COUNT}. ` : "You have read every week. "}${percentLabel} of the Bible read, ${daysDone} of ${DAY_COUNT} reading days, ${versesLearned} of ${WEEK_COUNT} verses learned.`}
+          : `${currentWeek ? `You are in week ${currentWeek} of ${WEEK_COUNT}. ` : "You have read every week. "}${percentLabel} of the Bible read, ${daysDone} of ${DAY_COUNT} reading days, ${versesLearned} of ${WEEK_COUNT} verses learned. Phases: ${phaseSummary}.`}
       </p>
       {currentWeek && (
         <a

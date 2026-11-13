@@ -239,3 +239,12 @@ test("a closed hash-linked week stays closed when progress changes", async ({ pa
 
   await expect(week13).toHaveAttribute("aria-expanded", "false");
 });
+
+test("the strip’s text alternative names each phase and its weeks", async ({ page }) => {
+  await page.goto("/");
+  const summary = page.locator("#journey-heading + p");
+  await expect(summary).toContainText(/You are in week 1 of 52/);
+  await expect(summary).toContainText("Origins and the Exodus, weeks 1–12");
+  await expect(summary).toContainText("Jesus and the early church, weeks 40–52");
+  await expect(page.locator("section[aria-labelledby=journey-heading] ul")).toHaveAttribute("aria-hidden", "true");
+});

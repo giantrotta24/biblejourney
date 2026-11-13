@@ -210,9 +210,13 @@
 
   .dialog {
     position: fixed;
-    inset: calc(env(safe-area-inset-top, 0px) + 1rem) 0 auto;
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+    right: calc(env(safe-area-inset-right, 0px) + 1rem);
+    bottom: auto;
+    left: calc(env(safe-area-inset-left, 0px) + 1rem);
     z-index: 50;
-    width: min(100% - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px), 30rem);
+    width: auto;
+    max-width: 30rem;
     height: fit-content;
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
     overflow: auto;
@@ -303,6 +307,11 @@ svg a[data-week]:focus-visible [data-part="focus"] {
 
 .site-nav {
   scrollbar-width: none;
+  scroll-padding-inline: 2.5rem;
+}
+
+.site-nav:is([data-more="end"], [data-more="start"], [data-more="both"]) > ul {
+  padding-inline-end: 2.5rem;
 }
 
 .site-nav[data-more="end"] {

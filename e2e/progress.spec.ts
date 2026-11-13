@@ -380,6 +380,8 @@ test("the caption keeps the inspected week when the pointer moves onto it", asyn
   const caption = page.getByTestId("strip-caption");
   await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
   await expect(caption).toHaveText(/Week 2 of 52/);
+  await page.locator("section[aria-labelledby=journey-heading] ul").hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
   await caption.hover();
   await expect(caption).toHaveText(/Week 2 of 52/);
   await caption.click();
@@ -408,4 +410,16 @@ test("a touch on a week names it in the caption", async ({ page }) => {
   await page.locator('svg a[data-week="3"]').dispatchEvent("pointerup", { pointerType: "touch", isPrimary: true, bubbles: true });
   await page.locator('svg a[data-week="3"]').dispatchEvent("pointerout", { pointerType: "touch", isPrimary: true, bubbles: true });
   await expect(page.getByTestId("strip-caption")).toHaveText(/Week 3 of 52/);
+});
+
+test("a tap on the current-week marker opens the current week", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 20);
+  await page.evaluate(() => localStorage.setItem("bible-journey:sunday-seen", "3"));
+  await page.reload();
+  await expect(reading(page)).toBeVisible();
+  const marker = await page.locator('[data-part="marker"]').boundingBox();
+  await page.mouse.click(marker!.x + marker!.width / 2, marker!.y + marker!.height / 2);
+  await expect(page).toHaveURL(/\/plan#week-4$/);
 });

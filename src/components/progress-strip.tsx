@@ -173,6 +173,8 @@ export function ProgressStrip() {
         })}
         {currentWeek && (
           <path
+            data-part="marker"
+            pointerEvents="none"
             d={`M${(currentWeek - 1) * SEGMENT - 1} 0 H${currentWeek * SEGMENT + 1} L${(currentWeek - 0.5) * SEGMENT} 8.5 Z`}
             fill="var(--ink)"
           />

@@ -28,6 +28,7 @@ export function SiteNav() {
     update();
     const observer = new ResizeObserver(update);
     observer.observe(nav);
+    if (nav.firstElementChild) observer.observe(nav.firstElementChild);
     nav.addEventListener("scroll", update, { passive: true });
     return () => {
       observer.disconnect();
@@ -37,7 +38,7 @@ export function SiteNav() {
 
   return (
     <nav ref={navRef} aria-label="Sections" data-more={more} className="site-nav -mx-1.5 mt-0.5 overflow-x-auto px-0.5 pt-1 sm:-mx-3">
-      <ul className="m-0 flex list-none justify-between p-0 sm:justify-start sm:gap-2">
+      <ul className="m-0 flex w-max min-w-full list-none justify-between p-0 sm:justify-start sm:gap-2">
         {SECTIONS.map(({ href, label }) => {
           const current = pathname === href;
           return (

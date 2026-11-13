@@ -219,6 +219,11 @@
   animation: current-week 2.4s ease-in-out infinite;
 }
 
+.toast {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  transition: opacity 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

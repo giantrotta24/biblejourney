@@ -214,14 +214,16 @@
 @keyframes current-week {
   0%,
   100% {
-    opacity: 1;
+    transform: scaleY(1);
   }
   50% {
-    opacity: 0.4;
+    transform: scaleY(0.9);
   }
 }
 
 .current-week {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
   animation: current-week 2.4s ease-in-out infinite;
 }
 

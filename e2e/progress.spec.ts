@@ -248,3 +248,30 @@ test("the strip’s text alternative names each phase and its weeks", async ({ p
   await expect(summary).toContainText("Jesus and the early church, weeks 40–52");
   await expect(page.locator("section[aria-labelledby=journey-heading] ul")).toHaveAttribute("aria-hidden", "true");
 });
+
+test("strip segments never use faded fills and the pulse respects reduced motion", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 9);
+  await page.reload();
+  await expect(page.locator('svg a[data-week="1"]')).toHaveAttribute("data-state", "full");
+  await expect(page.locator('svg a[data-week="2"]')).toHaveAttribute("data-state", "partial");
+  await expect(page.locator('svg a[data-week="3"]')).toHaveAttribute("data-state", "empty");
+
+  expect(await page.locator("svg [fill-opacity], svg [opacity]").count()).toBe(0);
+  for (const week of [1, 2, 3]) {
+    const outline = page.locator(`svg a[data-week="${week}"] [data-part="outline"]`);
+    await expect(outline).toHaveAttribute("vector-effect", "non-scaling-stroke");
+    await expect(outline).toHaveAttribute("stroke-width", "2");
+  }
+  await expect(page.locator('svg a[data-week="2"] [data-part="bar"]')).toHaveCount(1);
+  await expect(page.locator('svg a[data-week="3"] [data-part="bar"]')).toHaveCount(0);
+  await expect(page.locator('svg a[data-week="1"] [data-part="outline"]')).not.toHaveAttribute("fill", "none");
+  await expect(page.locator('svg a[data-week="3"] [data-part="outline"]')).toHaveAttribute("fill", "none");
+
+  const animation = () => page.locator(".current-week").evaluate((el) => getComputedStyle(el).animationName);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  expect(await animation()).toBe("current-week");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await animation()).toBe("none");
+});

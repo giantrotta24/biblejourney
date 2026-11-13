@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { DAY_COUNT, phases, weeks, WEEK_COUNT } from "@/content/plan";
-import { progressStats, weekState, type WeekState } from "@/lib/progress";
+import { progressStats, weekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress } from "@/progress/client";
 
@@ -12,8 +12,6 @@ const phaseSummary = phases.map((phase) => `${phase.name}, weeks ${phase.weeks[0
 const SEGMENT = 10;
 const HEIGHT = 64;
 const TOP = 12;
-
-const FILL: Record<WeekState, number> = { empty: 0.16, partial: 0.55, full: 1 };
 
 function weekHref(week: number) {
   return `/plan#${weekAnchor(week)}`;
@@ -65,18 +63,31 @@ export function ProgressStrip() {
               data-state={state}
             >
               <rect x={x} y={0} width={SEGMENT} height={HEIGHT} fill="transparent" />
-              <rect
-                x={x + 1.25}
-                y={TOP}
-                width={SEGMENT - 2.5}
-                height={HEIGHT - TOP - 1}
-                rx={2}
-                fill={color}
-                fillOpacity={FILL[state]}
-                stroke={color}
-                strokeWidth={1}
-                className={week.week === currentWeek ? "current-week" : undefined}
-              />
+              <g className={week.week === currentWeek ? "current-week" : undefined}>
+                <rect
+                  data-part="outline"
+                  x={x + 1.9}
+                  y={TOP}
+                  width={SEGMENT - 3.8}
+                  height={HEIGHT - TOP - 1}
+                  rx={2}
+                  fill={state === "full" ? color : "none"}
+                  stroke={color}
+                  strokeWidth={2}
+                  vectorEffect="non-scaling-stroke"
+                />
+                {state === "partial" && (
+                  <rect
+                    data-part="bar"
+                    x={x + 1.9}
+                    y={TOP + (HEIGHT - TOP - 1) / 2}
+                    width={SEGMENT - 3.8}
+                    height={(HEIGHT - TOP - 1) / 2}
+                    rx={2}
+                    fill={color}
+                  />
+                )}
+              </g>
             </a>
           );
         })}

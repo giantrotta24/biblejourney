@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { syncThemeColor } from "@/settings/client";
 
 export function SettingsLink() {
   const current = usePathname() === "/settings";
+
+  useEffect(() => {
+    syncThemeColor();
+  }, []);
 
   return (
     <Link

@@ -70,7 +70,10 @@ const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: W
 export function PlanWeeks({ first, last, phaseColor }: { first: number; last: number; phaseColor: string }) {
   const weeks = useMemo(() => Array.from({ length: last - first + 1 }, (_, i) => getWeek(first + i)), [first, last]);
   const [accordion] = useState(() => createAccordionController());
-  const [open, setOpen] = useState<string[]>([]);
+  const firstWeek = weekAnchor(1);
+  const startsPlan = first === 1;
+  const [open, setOpen] = useState<string[]>(() => (startsPlan ? [firstWeek] : []));
+  const [guessedFirst, setGuessedFirst] = useState(startsPlan);
   const currentWeek = useCurrentWeek();
   const [openedCurrent, setOpenedCurrent] = useState<number | null>(null);
 
@@ -79,7 +82,18 @@ export function PlanWeeks({ first, last, phaseColor }: { first: number; last: nu
     const value = currentWeek && weeks.some((week) => week.week === currentWeek) ? weekAnchor(currentWeek) : null;
     const linked = weekFromHash(window.location.hash);
     const linkedToWeek = openedCurrent === null && linked !== null && weeks.some((week) => weekAnchor(week.week) === linked);
-    if (value && !linkedToWeek && !open.includes(value)) setOpen([...open, value]);
+    let next = open;
+    if (guessedFirst && currentWeek !== null) {
+      setGuessedFirst(false);
+      if (value !== firstWeek || linkedToWeek) next = next.filter((item) => item !== firstWeek || linked === firstWeek);
+    }
+    if (value && !linkedToWeek && !next.includes(value)) next = [...next, value];
+    if (next !== open) setOpen(next);
+  }
+
+  function onValueChange(value: string[]) {
+    setGuessedFirst(false);
+    setOpen(value);
   }
 
   useEffect(() => {
@@ -98,7 +112,7 @@ export function PlanWeeks({ first, last, phaseColor }: { first: number; last: nu
   }, [accordion, weeks]);
 
   return (
-    <Accordion multiple value={open} onValueChange={setOpen} controller={accordion} className="flex flex-col gap-2">
+    <Accordion multiple value={open} onValueChange={onValueChange} controller={accordion} className="flex flex-col gap-2">
       {weeks.map((week) => (
         <PlanWeek key={week.week} week={week} current={week.week === currentWeek} phaseColor={phaseColor} />
       ))}

@@ -12,6 +12,7 @@ import {
   type Settings,
   type SettingsStore,
   type Theme,
+  THEME_COLORS,
 } from "./settings";
 
 let booted: { store: SettingsStore; sync: ProfileSync } | null = null;
@@ -32,6 +33,14 @@ function applyTheme(theme: Theme) {
   const root = document.documentElement;
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
+  applyThemeColor(theme);
+}
+
+function applyThemeColor(theme: Theme) {
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    const scheme = theme === "system" ? (meta.media.includes("dark") ? "dark" : "light") : theme;
+    meta.content = THEME_COLORS[scheme];
+  }
 }
 
 function boot() {
@@ -91,4 +100,8 @@ export function useSettings(): Settings {
 
 export function useLinkTranslation() {
   return useSyncExternalStore(subscribe, () => settingsStore().getSnapshot().linkTranslation, () => DEFAULT_SETTINGS.linkTranslation);
+}
+
+export function syncThemeColor() {
+  applyThemeColor(settingsStore().getSnapshot().theme);
 }

@@ -4,7 +4,7 @@ import { AccountLink } from "@/components/account-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SettingsLink } from "@/components/settings-link";
 import { SiteNav } from "@/components/site-nav";
-import { THEME_SCRIPT } from "@/settings/settings";
+import { THEME_COLORS, THEME_SCRIPT } from "@/settings/settings";
 import "./globals.css";
 
 const marcellus = Marcellus({
@@ -35,8 +35,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f5f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1424" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
   ],
 };
 

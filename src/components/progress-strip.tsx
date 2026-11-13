@@ -176,21 +176,19 @@ export function ProgressStrip() {
         {progress.ready && (
           <Link
             href={captionWeek ? weekHref(captionWeek) : "/plan"}
-            className="inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] text-ink no-underline hover:underline"
+            className="inline-flex min-h-11 items-center py-1 text-[0.9375rem] leading-snug text-ink no-underline hover:underline"
             data-testid="strip-caption"
           >
-            {captionWeek ? (
-              <span>
-                {captionWeek === currentWeek
+            <span>
+              {!captionWeek
+                ? "All 52 weeks read · see the plan"
+                : captionWeek === currentWeek
                   ? `You’re in week ${captionWeek} of ${WEEK_COUNT} · ${getPhase(getWeek(captionWeek).phase).name}`
                   : `Week ${captionWeek} of ${WEEK_COUNT} · ${getWeek(captionWeek).title}`}
-              </span>
-            ) : (
-              <span>All 52 weeks read · see the plan</span>
-            )}
-            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-muted">
-              <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" className="ml-1.5 inline-block align-[-0.125em] text-muted">
+                <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
           </Link>
         )}
       </p>

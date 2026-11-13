@@ -20,7 +20,13 @@ export type ProgressSync = {
   subscribeRemote(listener: () => void): () => void;
 };
 
-type Session = { userId: string; remote: RemoteProgress; reconciled: boolean; unsubscribe: () => void };
+type Session = {
+  userId: string;
+  remote: RemoteProgress;
+  reconciled: boolean;
+  buffer: RemoteChange[] | null;
+  unsubscribe: () => void;
+};
 
 const dayEcho = (row: DayRow) => `day:${row.day_index}:${row.completed_at}`;
 const verseEcho = (row: VerseRow) => `verse:${row.week}:${row.learned_at}`;
@@ -65,6 +71,7 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   const remoteListeners = new Set<() => void>();
   const echoes = new Set<string>();
   const recorded = new Map<string, Recorded>();
+  const unrecorded = new Set<string>();
   const inflight = new Set<Promise<unknown>>();
 
   function notifyStatus() {
@@ -107,25 +114,26 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
 
   async function record(change: RemoteChange, token: Recorded, echo: string) {
     const key = changeKey(change);
-    if (recorded.get(key) === token) return;
-    if (echoes.delete(echo)) {
+    if (recorded.get(key) === token || echoes.delete(echo)) {
       recorded.set(key, token);
+      unrecorded.delete(key);
       return;
     }
     await linkedLoaded;
     const userId = session?.userId ?? linked;
-    if (!userId) return;
-    await queue.push({ ...change, user_id: userId });
-    recorded.set(key, token);
-    if (session) void track(flush());
-  }
-
-  async function pendingKinds(userId: string): Promise<Map<string, RemoteChange["kind"]>> {
-    try {
-      return lastPending(await queue.list(userId));
-    } catch {
-      return new Map();
+    if (!userId) {
+      unrecorded.delete(key);
+      return;
     }
+    try {
+      await queue.push({ ...change, user_id: userId });
+    } catch (error) {
+      unrecorded.add(key);
+      throw error;
+    }
+    recorded.set(key, token);
+    unrecorded.delete(key);
+    if (session) void track(flush());
   }
 
   async function applyRows(rows: ProgressRows) {
@@ -167,17 +175,33 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   }
 
   async function reconcile(s: Session): Promise<boolean> {
+    s.buffer ??= [];
+    try {
+      return await applySnapshot(s);
+    } finally {
+      const buffered = s.buffer ?? [];
+      s.buffer = null;
+      for (const change of buffered) await applyChange(s, change).catch(() => {});
+    }
+  }
+
+  async function applySnapshot(s: Session): Promise<boolean> {
     const target = attachedStore();
     await Promise.all([target.load(), linkedLoaded]);
     await drain(s);
     const remote = await s.remote.pull();
-    if (session !== s) return false;
+    if (session !== s || remote.userId !== s.userId) return false;
 
     const pending = lastPending(await queue.list(s.userId));
+    const held = (key: string) => pending.has(key) || unrecorded.has(key);
     const blocked = (key: string) => {
       const kind = pending.get(key);
-      return kind !== undefined && isDelete(kind);
+      return unrecorded.has(key) || (kind !== undefined && isDelete(kind));
     };
+    const current = target.rows();
+    const removable =
+      current.days.some((row) => !held(`day:${row.day_index}`)) || current.verses.some((row) => !held(`verse:${row.week}`));
+    if (linked === s.userId && remote.days.length === 0 && remote.verses.length === 0 && removable) return false;
     const incoming: ProgressRows = {
       days: remote.days.filter((row) => !blocked(`day:${row.day_index}`)),
       verses: remote.verses.filter((row) => !blocked(`verse:${row.week}`)),
@@ -189,10 +213,10 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       if (linked === s.userId) {
         const local = target.rows();
         for (const row of local.days) {
-          if (!remoteDays.has(row.day_index) && !pending.has(`day:${row.day_index}`)) await applyDelete("day", row.day_index);
+          if (!remoteDays.has(row.day_index) && !held(`day:${row.day_index}`)) await applyDelete("day", row.day_index);
         }
         for (const row of local.verses) {
-          if (!remoteVerses.has(row.week) && !pending.has(`verse:${row.week}`)) await applyDelete("verse", row.week);
+          if (!remoteVerses.has(row.week) && !held(`verse:${row.week}`)) await applyDelete("verse", row.week);
         }
         await applyRows(incoming);
       } else {
@@ -224,7 +248,16 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   async function applyChange(s: Session, change: RemoteChange) {
     await Promise.all([attachedStore().load(), linkedLoaded]);
     if (session !== s) return;
-    const pendingKind = (await pendingKinds(s.userId)).get(changeKey(change));
+    const key = changeKey(change);
+    let pending: Map<string, RemoteChange["kind"]>;
+    try {
+      if (unrecorded.has(key)) throw new Error("A change for this row is not queued yet");
+      pending = lastPending(await queue.list(s.userId));
+    } catch {
+      s.reconciled = false;
+      return;
+    }
+    const pendingKind = pending.get(key);
     if (pendingKind !== undefined && isDelete(pendingKind) !== isDelete(change.kind)) return;
     await fromRemote(() => {
       switch (change.kind) {
@@ -298,10 +331,12 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     start(userId, remote) {
       if (session?.userId === userId && session.remote === remote) return flush();
       session?.unsubscribe();
-      const s: Session = { userId, remote, reconciled: false, unsubscribe: () => {} };
+      const s: Session = { userId, remote, reconciled: false, buffer: null, unsubscribe: () => {} };
       session = s;
       s.unsubscribe = remote.subscribe((change) => {
-        if (session === s) void track(applyChange(s, change).catch(() => {}));
+        if (session !== s) return;
+        if (s.buffer) s.buffer.push(change);
+        else void track(applyChange(s, change).catch(() => {}));
       });
       return flush();
     },
@@ -311,6 +346,7 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       session = null;
       s?.unsubscribe();
       recorded.clear();
+      unrecorded.clear();
       setStatus("off");
       await linkedLoaded;
       linked = null;

@@ -81,6 +81,8 @@ test("marking a day read shows the next day and survives a reload", async ({ pag
   await page.getByRole("button", { name: "Mark as read" }).click();
   await expect(page.getByRole("status")).toHaveText("Marked as read");
   await expect(reading(page)).toHaveText(/Genesis 5–7/);
+  await expect(reading(page)).toBeFocused();
+  expect(await reading(page).evaluate((heading) => getComputedStyle(heading).outlineStyle)).not.toBe("none");
   await expect(weekList(page).getByRole("checkbox", { name: /Genesis 1–4/ })).toBeChecked();
   await expect(stats(page)).toContainText("1 of 312 days");
   await savedDays(page, [0]);
@@ -262,7 +264,7 @@ test("strip segments never use faded fills and the pulse respects reduced motion
   for (const week of [1, 2, 3]) {
     const outline = page.locator(`svg a[data-week="${week}"] [data-part="outline"]`);
     await expect(outline).toHaveAttribute("vector-effect", "non-scaling-stroke");
-    await expect(outline).toHaveAttribute("stroke-width", "2");
+    await expect(outline).toHaveAttribute("stroke-width", "1.5");
   }
   await expect(page.locator('svg a[data-week="2"] [data-part="bar"]')).toHaveCount(1);
   await expect(page.locator('svg a[data-week="3"] [data-part="bar"]')).toHaveCount(0);
@@ -341,4 +343,83 @@ test("the strip’s hit area is taller than its drawing", async ({ page }) => {
   const hit = await page.locator('svg a[data-week="7"] [data-part="hit"]').boundingBox();
   const drawn = await page.locator('svg a[data-week="7"] [data-part="outline"]').boundingBox();
   expect(hit!.height).toBeGreaterThanOrEqual(drawn!.height + 12);
+});
+
+test("the finished screen keeps the last week’s deep dive", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 312);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 2, name: "You read the whole Bible." })).toBeVisible();
+  const dive = page.getByRole("region", { name: /Sunday deep dive/ });
+  await expect(dive.getByRole("heading", { name: /Hebrews, John’s letters, Revelation/ })).toBeVisible();
+  await expect(dive.getByText(/seven churches of Revelation/)).toBeVisible();
+});
+
+test("adjacent strip weeks keep a visible gap and the caption names the week under the pointer", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const first = await page.locator('svg a[data-week="20"] [data-part="outline"]').boundingBox();
+  const second = await page.locator('svg a[data-week="21"] [data-part="outline"]').boundingBox();
+  expect(second!.x - (first!.x + first!.width)).toBeGreaterThanOrEqual(1.5);
+  const hit = await page.locator('svg a[data-week="21"] [data-part="hit"]').boundingBox();
+  expect(hit!.height).toBeGreaterThanOrEqual(44);
+
+  const caption = page.getByTestId("strip-caption");
+  await expect(caption).toHaveText(/You’re in week 1 of 52 · Origins and the Exodus/);
+  await expect(caption).toHaveAttribute("href", "/plan#week-1");
+  await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
+  await expect(caption).toHaveText(/Week 2 of 52 · The book of Job/);
+  await caption.click();
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+});
+
+test("the caption keeps the inspected week when the pointer moves onto it", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const caption = page.getByTestId("strip-caption");
+  await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await page.locator("section[aria-labelledby=journey-heading] ul").hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await caption.hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await caption.click();
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+});
+
+test("the caption keeps the week chosen with the arrow keys when tabbing onto it", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const strip = page.getByRole("group", { name: /weeks/i });
+  await strip.locator('a[tabindex="0"]').focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(strip.getByRole("link", { name: /^Week 2,/ })).toBeFocused();
+  await page.keyboard.press("Tab");
+  const caption = page.getByTestId("strip-caption");
+  await expect(caption).toBeFocused();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+});
+
+test("a touch on a week names it in the caption", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerup", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerout", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await expect(page.getByTestId("strip-caption")).toHaveText(/Week 3 of 52/);
+});
+
+test("a tap on the current-week marker opens the current week", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 20);
+  await page.evaluate(() => localStorage.setItem("bible-journey:sunday-seen", "3"));
+  await page.reload();
+  await expect(reading(page)).toBeVisible();
+  const marker = await page.locator('[data-part="marker"]').boundingBox();
+  await page.mouse.click(marker!.x + marker!.width / 2, marker!.y + marker!.height / 2);
+  await expect(page).toHaveURL(/\/plan#week-4$/);
 });

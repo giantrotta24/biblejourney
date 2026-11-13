@@ -31,6 +31,22 @@ for (const route of ROUTES) {
   });
 }
 
+test("a focused tab at the end of an overflowing nav sits clear of the fade", async ({ page }) => {
+  await page.goto("/");
+  await page.addStyleTag({ content: "html { font-size: 130%; }" });
+  const nav = page.getByRole("navigation", { name: "Sections" });
+  expect(await nav.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  const last = nav.getByRole("link", { name: "Who’s who" });
+  await last.focus();
+  await page.waitForTimeout(300);
+  const gap = await last.evaluate((link) => {
+    const navBox = link.closest("nav")!.getBoundingClientRect();
+    const fade = parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.5;
+    return navBox.right - link.getBoundingClientRect().right - fade;
+  });
+  expect(gap).toBeGreaterThanOrEqual(-0.5);
+});
+
 test("Today shows the first day, its week and a Read online link", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 2, name: /Genesis 1–4/ })).toBeVisible();

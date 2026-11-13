@@ -80,7 +80,7 @@ function SignInPrompt({ expired = false }: { expired?: boolean }) {
   return (
     <p className="m-0 max-w-[65ch]">
       {expired ? "Your sign-in has expired. " : ""}
-      <Link href="/account" className="underline underline-offset-4">
+      <Link href="/account" className="inline-flex min-h-11 min-w-11 items-center underline underline-offset-4">
         Sign in
       </Link>{" "}
       to ask the study assistant about today’s reading.
@@ -188,13 +188,15 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        if (!received) setNotice(null);
         received += value;
         setRaw(received);
       }
 
-      const { end } = readStream(received);
-      if (end === "complete") setNotice({ kind: "ready" });
+      const { end, text } = readStream(received);
+      if (end === "complete" && !text.trim()) {
+        setRaw("");
+        setNotice({ kind: "error" });
+      } else if (end === "complete") setNotice({ kind: "ready" });
       else if (end === "refused") {
         setRaw("");
         setNotice({ kind: "refused" });
@@ -228,7 +230,7 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
           <button
             key={prompt.type}
             type="button"
-            className="btn aria-disabled:opacity-60"
+            className="btn"
             aria-disabled={blocked || undefined}
             onClick={(event) => {
               if (!blocked) void ask({ type: prompt.type }, event.currentTarget);
@@ -237,6 +239,11 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
             {prompt.label}
           </button>
         ))}
+        {streaming && (
+          <button ref={stopButton} type="button" className="btn" onClick={() => controller.current?.abort()}>
+            Stop
+          </button>
+        )}
       </div>
 
       <form onSubmit={onSubmit} className="mt-4 flex max-w-xl flex-col gap-2">
@@ -253,9 +260,9 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             aria-describedby="ask-question-count"
-            className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-ink"
+            className="field min-w-0 flex-1"
           />
-          <button type="submit" className="btn btn-primary aria-disabled:opacity-60" aria-disabled={blocked || !question.trim() || undefined}>
+          <button type="submit" className="btn btn-primary" aria-disabled={blocked || !question.trim() || undefined}>
             Ask
           </button>
         </div>
@@ -281,14 +288,6 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
         <div aria-busy={streaming} className="mt-3 max-w-[65ch]">
           <p className="m-0 whitespace-pre-line">{answer}</p>
         </div>
-      )}
-
-      {streaming && (
-        <p className="mt-3 mb-0">
-          <button ref={stopButton} type="button" className="btn" onClick={() => controller.current?.abort()}>
-            Stop
-          </button>
-        </p>
       )}
     </>
   );

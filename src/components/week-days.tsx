@@ -2,14 +2,14 @@
 
 import { memo } from "react";
 import { WEEKDAY_NAMES, type Day } from "@/content/plan";
-import { setDayDone, useCurrentDayIndex, useDayDone, useProgressReady } from "@/progress/client";
+import { setDayDone, useDayDone, useIsCurrentDay, useProgressReady } from "@/progress/client";
 
 type DayItem = Pick<Day, "index" | "weekday" | "reading"> & { week?: number };
 
 const DayCheckbox = memo(function DayCheckbox({ day, idPrefix, withWeek }: { day: DayItem; idPrefix: string; withWeek: boolean }) {
   const ready = useProgressReady();
   const done = useDayDone(day.index);
-  const current = useCurrentDayIndex() === day.index;
+  const current = useIsCurrentDay(day.index);
   const id = `${idPrefix}-${day.index}`;
 
   return (
@@ -23,13 +23,13 @@ const DayCheckbox = memo(function DayCheckbox({ day, idPrefix, withWeek }: { day
           disabled={!ready}
           onChange={(event) => void setDayDone(day.index, event.currentTarget.checked)}
         />
-        <span className={`shrink-0 text-sm text-muted tabular-nums ${withWeek ? "w-[4.5rem]" : "w-10"}`}>
-          {withWeek && <>Wk {day.week} </>}
+        <span className={`shrink-0 text-sm text-muted tabular-nums ${withWeek ? "w-[5.5rem]" : "w-10"}`}>
+          {withWeek && <>Week {day.week} </>}
           <abbr title={WEEKDAY_NAMES[day.weekday]} className="no-underline">
             {day.weekday}
           </abbr>
         </span>
-        <span className={current ? "font-semibold" : done ? "text-muted line-through decoration-line" : undefined}>
+        <span className={current ? "font-semibold" : done ? "text-muted" : undefined}>
           {day.reading}
           {current && <span className="sr-only"> (today’s reading)</span>}
         </span>

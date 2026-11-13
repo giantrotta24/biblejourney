@@ -114,3 +114,86 @@ test("reset clears progress only after the confirmation word is typed", async ({
   await page.reload();
   await expect(reading(page)).toHaveText(/Genesis 1–4/);
 });
+
+test("the reset dialog sits above the header, scrolls on a short screen and confirms with Enter", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Mark as read" }).click();
+  await expect(reading(page)).toHaveText(/Genesis 5–7/);
+
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Reset progress…" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Reset your progress?" });
+  await expect(dialog).toBeVisible();
+  const plan = page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Plan" });
+  await plan.click({ force: true });
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(dialog).toBeVisible();
+
+  await page.setViewportSize({ width: 360, height: 420 });
+  const confirm = dialog.getByRole("button", { name: "Reset progress" });
+  await confirm.scrollIntoViewIfNeeded();
+  await expect(confirm).toBeInViewport();
+  const box = await dialog.boundingBox();
+  expect(box!.height).toBeLessThanOrEqual(420);
+
+  const word = dialog.getByLabel(/Type RESET to confirm/);
+  await word.fill("RES");
+  await word.press("Enter");
+  await expect(dialog).toBeVisible();
+  await word.fill("RESET");
+  await word.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("status").filter({ hasText: "Your progress has been reset." })).toBeVisible();
+});
+
+test("the selected theme is clearly marked", async ({ page }) => {
+  await page.goto("/settings");
+  const theme = page.getByRole("radiogroup", { name: "Theme" });
+  await theme.getByRole("radio", { name: "Dark" }).click();
+  for (const scheme of ["dark", "light"] as const) {
+    if (scheme === "light") await theme.getByRole("radio", { name: "Light" }).click();
+    const ratio = await theme.evaluate((group) => {
+      const rgb = (value: string) => value.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+      const lum = ([r, g, b]: number[]) => {
+        const c = [r, g, b].map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      };
+      const contrast = (a: number[], b: number[]) => {
+        const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+        return (x + 0.05) / (y + 0.05);
+      };
+      const indicator = group.querySelector("[data-slot=segmented-control-indicator]")!;
+      const checked = group.querySelector("[data-checked]")!;
+      const pill = rgb(getComputedStyle(indicator).backgroundColor);
+      return {
+        pill: contrast(pill, rgb(getComputedStyle(group).backgroundColor)),
+        label: contrast(rgb(getComputedStyle(checked).color), pill),
+      };
+    });
+    expect(ratio.pill, scheme).toBeGreaterThanOrEqual(3);
+    expect(ratio.label, scheme).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test("browser chrome follows the chosen theme", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/settings");
+  const color = () => page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map((meta) => meta.getAttribute("content")));
+  await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Dark" }).click();
+  expect(new Set(await color())).toEqual(new Set(["#0e1424"]));
+  await page.reload();
+  expect(new Set(await color())).toEqual(new Set(["#0e1424"]));
+  await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "System" }).click();
+  expect(new Set(await color())).toEqual(new Set(["#f3f5f9", "#0e1424"]));
+});
+
+test("a long translation name never widens the page", async ({ page }) => {
+  await page.goto("/settings");
+  await page.getByLabel("Translation for Read online links").selectOption("NRSVUE");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});
+
+test("the installed app is not locked to one orientation", async ({ request }) => {
+  const manifest = await (await request.get("/manifest.webmanifest")).json();
+  expect(manifest.orientation).toBeUndefined();
+});

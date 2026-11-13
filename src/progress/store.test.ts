@@ -1,7 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it, vi } from "vitest";
 import { localPersistence, memoryPersistence } from "./persistence";
-import type { ProgressPersistence } from "./rows";
+import type { ProgressPersistence, ProgressRows } from "./rows";
 import { createProgressStore } from "./store";
 
 function clock() {
@@ -213,6 +213,59 @@ describe("failed writes", () => {
     control.failing = false;
     await store.load();
     expect(store.getSnapshot().saved).toBe(true);
+  });
+});
+
+function slowLoad(rows: ProgressRows) {
+  const inner = memoryPersistence();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  void inner.putDays(rows.days);
+  void inner.putVerses(rows.verses);
+  const persistence: ProgressPersistence = {
+    ...inner,
+    load: async () => {
+      await gate;
+      return inner.load();
+    },
+  };
+  return { persistence, inner, release };
+}
+
+describe("mutations while loading", () => {
+  const saved: ProgressRows = {
+    days: [
+      { day_index: 4, completed_at: "2026-01-01T00:00:00.000Z" },
+      { day_index: 5, completed_at: "2026-01-02T00:00:00.000Z" },
+    ],
+    verses: [{ week: 2, learned_at: "2026-01-03T00:00:00.000Z" }],
+  };
+
+  it("applies an untick made before the load resolves", async () => {
+    const { persistence, inner, release } = slowLoad(saved);
+    const store = createProgressStore(persistence, clock());
+    const loaded = store.load();
+    const untickDay = store.removeDay(4);
+    const untickVerse = store.removeVerse(2);
+    release();
+    await Promise.all([loaded, untickDay, untickVerse]);
+    expect([...store.getSnapshot().days]).toEqual([5]);
+    expect(store.getSnapshot().verses.size).toBe(0);
+    expect((await inner.load()).days.map((row) => row.day_index)).toEqual([5]);
+  });
+
+  it("keeps the earliest timestamp for a tick made before the load resolves", async () => {
+    const { persistence, inner, release } = slowLoad(saved);
+    const store = createProgressStore(persistence, clock());
+    const loaded = store.load();
+    const tick = store.addDay(5);
+    const tickVerse = store.addVerse(2);
+    const merged = store.merge({ days: [{ day_index: 5, completed_at: "2026-06-01T00:00:00.000Z" }], verses: [] });
+    release();
+    await Promise.all([loaded, tick, tickVerse, merged]);
+    expect(store.rows().days).toContainEqual({ day_index: 5, completed_at: "2026-01-02T00:00:00.000Z" });
+    expect(store.rows().verses).toEqual([{ week: 2, learned_at: "2026-01-03T00:00:00.000Z" }]);
+    expect(await inner.load()).toEqual(saved);
   });
 });
 

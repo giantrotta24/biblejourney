@@ -11,7 +11,7 @@ import {
 } from "@ui-sdk/react/alert-dialog";
 import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useAccount } from "@/account/session";
 import { progressStore, progressSync } from "@/progress/client";
 import { RESET_WORD, resetConfirmed, resetProgress } from "@/progress/reset";
@@ -30,7 +30,7 @@ import { THEMES, TRANSLATIONS, type Theme, type TranslationCode } from "@/settin
 const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 const body = "m-0 max-w-[65ch]";
 const note = "mt-2 mb-0 max-w-[65ch] text-[0.9375rem] text-muted";
-const field = "min-h-11 rounded-lg border border-line bg-surface px-3 text-ink";
+const field = "field";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const id = useId();
@@ -188,7 +188,7 @@ function TranslationSetting() {
           id={id}
           value={linkTranslation}
           onChange={(event) => changeSettings({ linkTranslation: event.target.value as TranslationCode })}
-          className={`${field} max-w-md`}
+          className={`${field} w-full min-w-0 max-w-md`}
         >
           {TRANSLATIONS.map(({ code, name }) => (
             <option key={code} value={code}>
@@ -215,6 +215,11 @@ function ResetSetting() {
     setDone(true);
   }
 
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (confirmed) event.currentTarget.querySelector<HTMLButtonElement>("button[data-confirm]")?.click();
+  }
+
   return (
     <>
       <p className={body}>Clear every day and memory verse you’ve marked and begin again from week 1.</p>
@@ -233,27 +238,31 @@ function ResetSetting() {
           <AlertDialogDescription className="mt-2 mb-0">
             This clears every day and memory verse you’ve marked, on this device and on your account if you’re signed in. It can’t be undone.
           </AlertDialogDescription>
-          <p className="mt-4 mb-0 flex flex-col gap-2">
-            <label htmlFor={inputId}>
-              Type <strong>{RESET_WORD}</strong> to confirm
-            </label>
-            <input
-              ref={inputRef}
-              id={inputId}
-              value={typed}
-              onChange={(event) => setTyped(event.target.value)}
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              className={field}
-            />
-          </p>
-          <div className="mt-5 flex flex-wrap justify-end gap-2">
-            <AlertDialogClose className="btn">Cancel</AlertDialogClose>
-            <AlertDialogClose className="btn btn-primary" value="confirm" disabled={!confirmed} action={reset}>
-              Reset progress
-            </AlertDialogClose>
-          </div>
+          <form onSubmit={onSubmit}>
+            <p className="mt-4 mb-0 flex flex-col gap-2">
+              <label htmlFor={inputId}>
+                Type <strong>{RESET_WORD}</strong> to confirm
+              </label>
+              <input
+                ref={inputRef}
+                id={inputId}
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                className={field}
+              />
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <AlertDialogClose type="button" className="btn">
+                Cancel
+              </AlertDialogClose>
+              <AlertDialogClose type="button" data-confirm="" className="btn btn-primary" value="confirm" disabled={!confirmed} action={reset}>
+                Reset progress
+              </AlertDialogClose>
+            </div>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
       {done && (

@@ -8,6 +8,7 @@ import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";
 import { markSundaySeen, useSundaySeen } from "@/progress/sunday-seen";
 import { useLinkTranslation } from "@/settings/client";
+import { Figures } from "./figures";
 import { StudyAssistant } from "./study-assistant";
 import { VersePractice } from "./verse-practice";
 import { WeekDays } from "./week-days";
@@ -37,13 +38,13 @@ export function TodayView() {
 
   const today = progress.ready ? currentDay(progress.days) : null;
   const sunday = progress.ready ? sundayWeek(progress.days, seen) : null;
-  const view = !progress.ready ? "loading" : !today ? "finished" : sunday ? `sunday-${sunday}` : "reading";
+  const passage = !progress.ready ? "loading" : !today ? "finished" : sunday ? `sunday-${sunday}` : `day-${today.index}`;
 
   useEffect(() => {
     if (!focusHeading.current) return;
     focusHeading.current = false;
     headingRef.current?.focus({ preventScroll: true });
-  }, [view]);
+  }, [passage]);
 
   function markRead(day: PlanDay) {
     focusHeading.current = true;
@@ -59,7 +60,7 @@ export function TodayView() {
 
   return (
     <>
-      {view === "loading" ? (
+      {passage === "loading" ? (
         <div aria-busy="true" className="min-h-[60vh]">
           <p className="sr-only">Loading your progress.</p>
         </div>
@@ -85,7 +86,6 @@ type HeadingRef = RefObject<HTMLHeadingElement | null>;
 function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done: ReadonlySet<number>; headingRef: HeadingRef; onMarkRead: () => void }) {
   const translation = useLinkTranslation();
   const week = getWeek(day.week);
-  const phase = getPhase(week.phase);
   const minutes = estimatedMinutes(day.chapters);
   const resuming = [...done].some((index) => index > day.index);
 
@@ -93,14 +93,14 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
     <>
       <section aria-labelledby="reading-heading" className="mb-10">
         {resuming && <p className="mt-0 mb-2 text-[0.9375rem] text-muted">Picking up where you left off.</p>}
-        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1] focus:outline-none">
+        <h2 id="reading-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1]">
           <span className="sr-only">Today’s reading: </span>
-          {day.reading}
+          <Figures text={day.reading} />
         </h2>
-        <p className="mt-2 mb-0 text-muted">
-          Week {day.week} of {WEEK_COUNT}, {WEEKDAY_NAMES[day.weekday]} · {phase.name}
+        <p className="mt-3 mb-0 text-ink">
+          {WEEKDAY_NAMES[day.weekday]} of week {day.week} · {week.title}
         </p>
-        <p className="mt-1 mb-0 text-muted">
+        <p className="mt-0.5 mb-0 text-[0.9375rem] text-muted">
           {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes
         </p>
         <p className="mt-5 mb-0 flex flex-wrap gap-3">
@@ -116,17 +116,18 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
         </p>
       </section>
 
-      <section aria-labelledby="week-heading" className="mb-10">
-        <h2 id="week-heading" className="m-0 text-2xl leading-tight">
-          {week.title}
+      <section aria-labelledby="week-heading" className="mb-10 border-t border-line pt-6">
+        <h2 id="week-heading" className="m-0 mb-2 text-2xl leading-tight">
+          This week’s readings
         </h2>
-        <p className="mt-1 mb-3 text-sm text-muted">This week’s readings</p>
         <WeekDays days={week.days} idPrefix="today-day" label="This week’s readings" />
-        <h3 className="mt-6 mb-1 text-lg">Sunday deep dive</h3>
+        <h3 className="mt-6 mb-1 text-lg">This Sunday’s deep dive</h3>
         <p className="m-0 max-w-[65ch]">{week.deepDive}</p>
       </section>
 
-      <VersePractice key={week.week} week={week} />
+      <div className="mb-10">
+        <VersePractice key={week.week} week={week} />
+      </div>
 
       <StudyAssistant key={day.index} dayIndex={day.index} />
     </>
@@ -147,7 +148,7 @@ function SundayView({ week: weekNumber, next, headingRef, onContinue }: { week: 
         <p className="mt-0 mb-1 text-muted">
           Sunday, week {weekNumber} of {WEEK_COUNT} · {phase.name}
         </p>
-        <h2 id="sunday-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1] focus:outline-none">
+        <h2 id="sunday-heading" ref={headingRef} tabIndex={-1} className="m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1] focus-heading">
           <span className="sr-only">Sunday deep dive: </span>
           {week.title}
         </h2>
@@ -157,7 +158,7 @@ function SundayView({ week: weekNumber, next, headingRef, onContinue }: { week: 
             {nextIsNewWeek && moreWeeks ? `Start week ${next.week}` : "Continue reading"}
           </button>
         </p>
-        <p className="mt-2 mb-0 text-sm text-muted">Next up: {next.reading}</p>
+        <p className="mt-2 mb-0 text-[0.9375rem] text-muted">Next up: {next.reading}</p>
       </section>
 
       {openDays.length > 0 && (
@@ -176,19 +177,31 @@ function SundayView({ week: weekNumber, next, headingRef, onContinue }: { week: 
 }
 
 function Finished({ headingRef }: { headingRef: HeadingRef }) {
+  const last = getWeek(WEEK_COUNT);
   return (
-    <section aria-labelledby="finished-heading">
-      <h2 id="finished-heading" ref={headingRef} tabIndex={-1} className="m-0 text-3xl focus:outline-none">
-        You read the whole Bible.
-      </h2>
-      <p className="max-w-[65ch]">
-        All 1,189 chapters, in the order events happened. Keep your verses fresh, or start a second pass in a different translation.
-      </p>
-      <p>
-        <Link className="btn" href="/verses">
-          Practice your verses
-        </Link>
-      </p>
-    </section>
+    <>
+      <section aria-labelledby="finished-heading" className="mb-10">
+        <h2 id="finished-heading" ref={headingRef} tabIndex={-1} className="focus-heading m-0 text-[clamp(2rem,8vw,2.75rem)] leading-[1.1]">
+          You read the whole Bible.
+        </h2>
+        <p className="mt-4 mb-0 max-w-[65ch]">
+          All 1,189 chapters, in the order events happened. Keep your verses fresh, or start a second pass in a different translation.
+        </p>
+        <p className="mt-5 mb-0">
+          <Link className="btn btn-primary" href="/verses">
+            Practice your verses
+          </Link>
+        </p>
+      </section>
+
+      <section aria-labelledby="last-dive-heading" className="mb-10">
+        <p className="mt-0 mb-1 text-muted">Sunday deep dive, week {WEEK_COUNT}</p>
+        <h2 id="last-dive-heading" className="m-0 text-2xl leading-tight">
+          <span className="sr-only">Sunday deep dive: </span>
+          {last.title}
+        </h2>
+        <p className="mt-3 mb-0 max-w-[65ch]">{last.deepDive}</p>
+      </section>
+    </>
   );
 }

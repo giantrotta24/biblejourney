@@ -70,7 +70,7 @@ export const useProgressReady = () => useSelect((s) => s.ready, false);
 export const useDayDone = (dayIndex: number) => useSelect((s) => s.days.has(dayIndex), false);
 export const useVerseLearned = (week: number) => useSelect((s) => s.verses.has(week), false);
 export const useWeekMask = (week: number) => useSelect((s) => weekMask(s.days, week), 0);
-export const useCurrentDayIndex = () => useSelect((s) => derived(s).currentIndex, null);
+export const useIsCurrentDay = (dayIndex: number) => useSelect((s) => derived(s).currentIndex === dayIndex, false);
 export const useCurrentEraIndex = () => useSelect((s) => (s.ready ? currentEraIndex(s.days, eras) : null), null);
 export const useCurrentWeek = () => useSelect((s) => derived(s).currentWeek, null);
 

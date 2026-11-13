@@ -91,3 +91,72 @@ test("going offline keeps a finished answer on screen with the offline note besi
   await expect(panel(page).getByText("Eden sits near the Tigris and Euphrates.")).toBeVisible();
   await expect(panel(page).locator("[aria-live=polite]")).not.toContainText("offline");
 });
+
+async function streamInSteps(page: Page) {
+  await page.addInitScript(() => {
+    const original = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    const stream = window as unknown as { pushAnswer?: (text: string) => void; endAnswer?: () => void };
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (!url.endsWith("/api/ask")) return original(input, init);
+      if ((init?.method ?? "GET") === "GET") return Response.json({ configured: true, signInRequired: false });
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          stream.pushAnswer = (text) => controller.enqueue(encoder.encode(text));
+          stream.endAnswer = () => controller.close();
+        },
+      });
+      return new Response(body, { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } });
+    };
+  });
+  return {
+    push: (text: string) => page.waitForFunction(() => "pushAnswer" in window).then(() => page.evaluate((chunk) => (window as unknown as { pushAnswer: (t: string) => void }).pushAnswer(chunk), text)),
+    end: () => page.evaluate(() => (window as unknown as { endAnswer: () => void }).endAnswer()),
+  };
+}
+
+test("Stop sits with the prompts, above the answer, and the loading line stays while it streams", async ({ page }) => {
+  const api = await streamInSteps(page);
+  await page.goto("/");
+  await panel(page).getByRole("button", { name: "Historical setting" }).click();
+  const stop = panel(page).getByRole("button", { name: "Stop" });
+  await expect(stop).toBeVisible();
+  const loading = panel(page).getByText("Looking into today’s reading…");
+  await expect(loading).toBeVisible();
+  const stopBeforeAnswer = await stop.evaluate((button) => {
+    const live = button.closest("section")!.querySelector("[aria-live=polite]")!;
+    return Boolean(button.compareDocumentPosition(live) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(stopBeforeAnswer).toBe(true);
+
+  await api.push("Abraham came from Ur.");
+  await expect(panel(page).getByText("Abraham came from Ur.")).toBeVisible();
+  await expect(loading).toBeVisible();
+  await expect(stop).toBeVisible();
+
+  await api.push(` He settled in Canaan.${END}complete`);
+  await api.end();
+  await expect(panel(page).getByText(/He settled in Canaan\./)).toBeVisible();
+  await expect(loading).toHaveCount(0);
+});
+
+test("a finished answer with no text shows the error notice instead of clearing the panel", async ({ page }) => {
+  const api = mockAssistant(page);
+  await page.goto("/");
+  await panel(page).getByRole("button", { name: "Historical setting" }).click();
+  await expect(panel(page).getByRole("button", { name: "Stop" })).toBeVisible();
+  api.respond(`${END}complete`);
+  await expect(panel(page).getByText("That didn’t go through. Please try again in a moment.")).toBeVisible();
+  await expect(panel(page).getByText("Answer ready.")).toHaveCount(0);
+});
+
+test("the sign-in link in the assistant is a full-size target", async ({ page }) => {
+  await page.route("**/api/ask", (route) => route.fulfill({ json: { configured: true, signInRequired: true } }));
+  await page.goto("/");
+  const link = panel(page).getByRole("link", { name: "Sign in" });
+  await expect(link).toBeVisible();
+  const box = await link.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+});

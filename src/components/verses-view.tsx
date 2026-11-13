@@ -42,16 +42,16 @@ export function VerseQuiz() {
       <p className="mt-1 mb-0 font-display text-[1.375rem] leading-tight" aria-live="polite">
         {week.memoryVerse.ref}
       </p>
-      <p aria-live="polite" className={`mt-3 mb-5 max-w-[65ch] min-h-[3.2em] ${revealed ? "text-lg leading-relaxed" : "text-base text-muted italic"}`}>
-        {revealed ? week.memoryVerse.textKJV : "Recite it, then reveal."}
-      </p>
-      <p className="m-0 flex flex-wrap gap-3">
+      <p className="mt-3 mb-0 flex flex-wrap gap-3">
         <button type="button" className="btn" aria-pressed={revealed} onClick={() => setRevealed(!revealed)}>
           {revealed ? "Hide" : "Reveal"}
         </button>
         <button type="button" className="btn btn-primary" onClick={next} disabled={pool.length < 2}>
           Next verse
         </button>
+      </p>
+      <p aria-live="polite" className={`mt-4 mb-0 max-w-[65ch] min-h-[3.2em] ${revealed ? "text-lg leading-relaxed" : "text-base text-muted italic"}`}>
+        {revealed ? week.memoryVerse.textKJV : "Recite it, then reveal."}
       </p>
     </section>
   );

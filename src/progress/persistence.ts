@@ -52,9 +52,21 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(DAYS)) db.createObjectStore(DAYS, { keyPath: "day_index" });
       if (!db.objectStoreNames.contains(VERSES)) db.createObjectStore(VERSES, { keyPath: "week" });
     };
-    request.onsuccess = () => resolve(request.result);
+    let abandoned = false;
+    request.onsuccess = () => {
+      const db = request.result;
+      if (abandoned) {
+        db.close();
+        return;
+      }
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new DOMException("IndexedDB upgrade blocked", "InvalidStateError"));
+    request.onblocked = () => {
+      abandoned = true;
+      reject(new DOMException("IndexedDB upgrade blocked", "InvalidStateError"));
+    };
   });
 }
 
@@ -84,16 +96,20 @@ function indexedDbPersistence(db: IDBDatabase): ProgressPersistence {
 }
 
 export function localPersistence(factory: IDBFactory | null): ProgressPersistence {
+  let durable = false;
   const ready: Promise<ProgressPersistence> = (async () => {
     if (!factory) return memoryPersistence();
     try {
-      return indexedDbPersistence(await openDatabase(factory));
+      const database = indexedDbPersistence(await openDatabase(factory));
+      durable = true;
+      return database;
     } catch {
       return memoryPersistence();
     }
   })();
 
   return {
+    durable: () => durable,
     async load() {
       try {
         return await (await ready).load();

@@ -10,6 +10,7 @@ export type ProgressPersistence = {
   deleteDay(dayIndex: number): Promise<void>;
   putVerses(rows: readonly VerseRow[]): Promise<void>;
   deleteVerse(week: number): Promise<void>;
+  durable?(): boolean;
 };
 
-export type ProgressSnapshot = Progress & { ready: boolean };
+export type ProgressSnapshot = Progress & { ready: boolean; saved: boolean };

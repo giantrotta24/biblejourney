@@ -30,6 +30,18 @@ CI runs all four on every pull request.
 
 Copy `.env.example` to `.env.local`. Each group turns on one feature (accounts and sync, the study assistant, reminders) and the app works without any of them.
 
+## Accounts and sync
+
+Signing in is optional. Without the Supabase variables the Account screen says accounts aren’t set up, and progress stays on the device. To turn accounts on:
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Run the schema. Either paste [`supabase/migrations/20261113000000_init.sql`](supabase/migrations/20261113000000_init.sql) into the SQL editor and run it, or with the Supabase CLI run `supabase link --project-ref <ref>` and then `supabase db push`. It creates `profiles`, `day_progress`, `verse_progress` and `push_subscriptions` with row-level security, a profile for each new user, and realtime on the two progress tables. It is safe to run again.
+3. In Authentication → URL Configuration, set the Site URL to your production address and add each address you sign in from to Redirect URLs, ending in `/account`: for example `http://localhost:3000/account` and `https://your-app.vercel.app/account`. A wildcard such as `https://*-your-team.vercel.app/account` covers preview deploys.
+4. To offer Google: in Authentication → Sign In / Providers, enable Google and paste a client ID and secret from a Google Cloud OAuth client (type Web application). In Google Cloud, add the callback URL Supabase shows on that page as an authorized redirect URI. Email magic links work without this step.
+5. Copy the Project URL and the anon public key from Project Settings → API into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and into the Vercel project’s environment variables. Restart `npm run dev` or redeploy; the values are built into the page.
+
+On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns. Signing out keeps progress on the device.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` deploys a Vercel preview for each pull request and production on a push to `main`. It skips itself until the repository has these secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.

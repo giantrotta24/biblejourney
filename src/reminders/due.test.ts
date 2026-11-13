@@ -60,6 +60,14 @@ describe("dueReminderDate", () => {
     expect(dueReminderDate(skipped, at("2026-03-08T07:05:00Z"))).toBe("2026-03-08");
   });
 
+  it("sends a reminder set for the start of the skipped hour as soon as the clocks spring forward", async () => {
+    const start = { ...reader, reminderTime: "02:00" };
+    expect(dueReminderDate(start, at("2026-03-08T06:59:00Z"))).toBeNull();
+    expect(dueReminderDate(start, at("2026-03-08T07:00:00Z"))).toBe("2026-03-08");
+    expect(dueReminderDate(start, at("2026-03-08T07:30:00Z"))).toBe("2026-03-08");
+    expect(dueReminderDate(start, at("2026-03-08T08:01:00Z"))).toBeNull();
+  });
+
   it("sends once when the clocks fall back and the reminder time happens twice", () => {
     const repeated = { ...reader, reminderTime: "01:30" };
     expect(dueReminderDate(repeated, at("2026-11-01T05:35:00Z"))).toBe("2026-11-01");

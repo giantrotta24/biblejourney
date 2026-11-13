@@ -44,13 +44,25 @@ export function parseReminderTime(value: string | null): number | null {
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 }
 
+const LONGEST_CLOCK_JUMP_MINUTES = 60;
+
+function reachedOn(minute: { date: string; minutes: number }, reminder: number) {
+  return minute.minutes >= reminder;
+}
+
 export function dueReminderDate(schedule: ReminderSchedule, now: Date): string | null {
   const reminder = parseReminderTime(schedule.reminderTime);
   if (reminder === null) return null;
-  const { minutes } = localClock(now, schedule.timezone);
-  const since = (minutes - reminder + MINUTES_PER_DAY) % MINUTES_PER_DAY;
-  if (since >= DUE_WINDOW_MINUTES) return null;
-  const { date } = localClock(new Date(now.getTime() - since * 60_000), schedule.timezone);
-  if (schedule.lastRemindedOn !== null && schedule.lastRemindedOn >= date) return null;
-  return date;
+  const wall = localClock(now, schedule.timezone).minutes;
+  if ((wall - reminder + MINUTES_PER_DAY) % MINUTES_PER_DAY >= DUE_WINDOW_MINUTES + LONGEST_CLOCK_JUMP_MINUTES) return null;
+
+  for (let back = 0; back < DUE_WINDOW_MINUTES; back++) {
+    const minute = localClock(new Date(now.getTime() - back * 60_000), schedule.timezone);
+    if (!reachedOn(minute, reminder)) continue;
+    const before = localClock(new Date(now.getTime() - (back + 1) * 60_000), schedule.timezone);
+    if (before.date === minute.date && reachedOn(before, reminder)) continue;
+    if (schedule.lastRemindedOn !== null && schedule.lastRemindedOn >= minute.date) return null;
+    return minute.date;
+  }
+  return null;
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
-import { DAY_COUNT, DAYS_PER_WEEK, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
+import { DAY_COUNT, DAYS_PER_WEEK, getPhase, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
 import { progressStats, weekMask, weekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress, useProgressUnsaved } from "@/progress/client";
@@ -180,7 +180,11 @@ export function ProgressStrip() {
             data-testid="strip-caption"
           >
             {captionWeek ? (
-              <span>{`Week ${captionWeek} of ${WEEK_COUNT} · ${getWeek(captionWeek).title}`}</span>
+              <span>
+                {captionWeek === currentWeek
+                  ? `You’re in week ${captionWeek} of ${WEEK_COUNT} · ${getPhase(getWeek(captionWeek).phase).name}`
+                  : `Week ${captionWeek} of ${WEEK_COUNT} · ${getWeek(captionWeek).title}`}
+              </span>
             ) : (
               <span>All 52 weeks read · see the plan</span>
             )}

@@ -86,7 +86,6 @@ type HeadingRef = RefObject<HTMLHeadingElement | null>;
 function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done: ReadonlySet<number>; headingRef: HeadingRef; onMarkRead: () => void }) {
   const translation = useLinkTranslation();
   const week = getWeek(day.week);
-  const phase = getPhase(week.phase);
   const minutes = estimatedMinutes(day.chapters);
   const resuming = [...done].some((index) => index > day.index);
 
@@ -102,7 +101,7 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
           {WEEKDAY_NAMES[day.weekday]} of week {day.week} · {week.title}
         </p>
         <p className="mt-0.5 mb-0 text-[0.9375rem] text-muted">
-          {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes · {phase.name}
+          {day.chapters} {day.chapters === 1 ? "chapter" : "chapters"} · about {minutes} minutes
         </p>
         <p className="mt-5 mb-0 flex flex-wrap gap-3">
           <button type="button" className="btn btn-primary" onClick={onMarkRead}>

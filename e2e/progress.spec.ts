@@ -366,7 +366,7 @@ test("adjacent strip weeks keep a visible gap and the caption names the week und
   expect(hit!.height).toBeGreaterThanOrEqual(44);
 
   const caption = page.getByTestId("strip-caption");
-  await expect(caption).toHaveText(/Week 1 of 52 · Creation and the early world/);
+  await expect(caption).toHaveText(/You’re in week 1 of 52 · Origins and the Exodus/);
   await expect(caption).toHaveAttribute("href", "/plan#week-1");
   await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
   await expect(caption).toHaveText(/Week 2 of 52 · The book of Job/);

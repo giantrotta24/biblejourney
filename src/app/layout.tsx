@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Marcellus } from "next/font/google";
+import { AccountLink } from "@/components/account-link";
 import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
@@ -41,8 +42,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <header className="sticky top-0 z-10 border-b border-line bg-bg pt-[env(safe-area-inset-top)]">
-          <div className="mx-auto max-w-190 px-4 pt-3">
-            <p className="m-0 font-display text-lg tracking-wide">One-Year Bible Journey</p>
+          <div className="mx-auto max-w-190 px-4 pt-1">
+            <div className="flex items-center justify-between gap-3">
+              <p className="m-0 font-display text-lg tracking-wide">One-Year Bible Journey</p>
+              <AccountLink />
+            </div>
             <SiteNav />
           </div>
         </header>

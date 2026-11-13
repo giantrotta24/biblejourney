@@ -3,19 +3,28 @@
 import { useSyncExternalStore } from "react";
 import { currentDay } from "@/content/plan";
 import { weekMask } from "@/lib/progress";
+import { createProgressSync, type ProgressSync } from "@/sync/engine";
+import { localQueue } from "@/sync/queue";
 import { localPersistence } from "./persistence";
 import type { ProgressSnapshot } from "./rows";
 import { createProgressStore, LOADING_SNAPSHOT, type ProgressStore } from "./store";
 
 let store: ProgressStore | null = null;
+let sync: ProgressSync | null = null;
 
-export function progressStore(): ProgressStore {
-  if (!store) {
-    store = createProgressStore(localPersistence(typeof indexedDB === "undefined" ? null : indexedDB));
+function boot(): { store: ProgressStore; sync: ProgressSync } {
+  if (!store || !sync) {
+    const factory = typeof indexedDB === "undefined" ? null : indexedDB;
+    sync = createProgressSync(localPersistence(factory), localQueue(factory));
+    store = createProgressStore(sync.persistence);
+    sync.attach(store);
     void store.load();
   }
-  return store;
+  return { store, sync };
 }
+
+export const progressStore = (): ProgressStore => boot().store;
+export const progressSync = (): ProgressSync => boot().sync;
 
 const subscribe = (listener: () => void) => progressStore().subscribe(listener);
 

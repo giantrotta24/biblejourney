@@ -46,7 +46,7 @@
 
 @layer base {
   html {
-    scroll-padding-top: 7.5rem;
+    scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 7.5rem);
     -webkit-text-size-adjust: 100%;
   }
 

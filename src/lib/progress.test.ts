@@ -51,6 +51,14 @@ describe("progressStats", () => {
     expect(stats.versesLearned).toBe(2);
   });
 
+  it("labels the percentage as under 1% until a whole percent is read, and 0% only with nothing read", () => {
+    expect(progressStats({ days: new Set(), verses: new Set() }).percentLabel).toBe("0%");
+    expect(progressStats({ days: new Set([0]), verses: new Set() }).percentLabel).toBe("<1%");
+    expect(progressStats({ days: range(0, 20), verses: new Set() }).percentLabel).toMatch(/^[1-9]\d*%$/);
+    expect(progressStats({ days: range(0, DAY_COUNT - 1), verses: new Set() }).percentLabel).not.toBe("100%");
+    expect(progressStats({ days: range(0, DAY_COUNT), verses: new Set() }).percentLabel).toBe("100%");
+  });
+
   it("reaches 100 only when every chapter is read", () => {
     expect(progressStats({ days: range(0, DAY_COUNT - 1), verses: new Set() }).percent).toBeLessThan(100);
     expect(progressStats({ days: range(0, DAY_COUNT), verses: new Set() }).percent).toBe(100);

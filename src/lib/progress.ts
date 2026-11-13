@@ -2,7 +2,7 @@ import { currentDay, DAY_COUNT, DAYS_PER_WEEK, days, WEEK_COUNT, weekDayIndexes,
 import { percentRead } from "./reading";
 
 export type WeekState = "empty" | "partial" | "full";
-export type ProgressStats = { percent: number; daysDone: number; versesLearned: number };
+export type ProgressStats = { percent: number; percentLabel: string; daysDone: number; versesLearned: number };
 
 const FULL_WEEK = (1 << DAYS_PER_WEEK) - 1;
 
@@ -30,8 +30,10 @@ export function currentEraIndex(done: ReadonlySet<number>, eras: ReadonlyArray<{
 }
 
 export function progressStats(progress: Progress): ProgressStats {
+  const percent = percentRead(progress.days, days);
   return {
-    percent: percentRead(progress.days, days),
+    percent,
+    percentLabel: percent === 0 && progress.days.size > 0 ? "<1%" : `${percent}%`,
     daysDone: progress.days.size,
     versesLearned: progress.verses.size,
   };

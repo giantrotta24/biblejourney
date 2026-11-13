@@ -21,7 +21,7 @@ export function ProgressStrip() {
   const router = useRouter();
   const progress = useProgress();
   const currentWeek = useCurrentWeek();
-  const { percent, daysDone, versesLearned } = progressStats(progress);
+  const { percentLabel, daysDone, versesLearned } = progressStats(progress);
   const statsClass = progress.ready ? undefined : "invisible";
 
   function openWeek(event: MouseEvent<Element>, week: number) {
@@ -38,7 +38,7 @@ export function ProgressStrip() {
       <p className="sr-only">
         {!progress.ready
           ? "Loading your progress."
-          : `${currentWeek ? `You are in week ${currentWeek} of ${WEEK_COUNT}. ` : "You have read every week. "}${percent}% of the Bible read, ${daysDone} of ${DAY_COUNT} reading days, ${versesLearned} of ${WEEK_COUNT} verses learned.`}
+          : `${currentWeek ? `You are in week ${currentWeek} of ${WEEK_COUNT}. ` : "You have read every week. "}${percentLabel} of the Bible read, ${daysDone} of ${DAY_COUNT} reading days, ${versesLearned} of ${WEEK_COUNT} verses learned.`}
       </p>
       {currentWeek && (
         <a
@@ -101,7 +101,7 @@ export function ProgressStrip() {
       </ul>
       <p className="mt-5 mb-0 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[0.9375rem] text-muted" aria-hidden="true" data-testid="journey-stats">
         <span className="basis-full whitespace-nowrap sm:basis-auto">
-          <span className={`font-display text-[1.75rem] leading-none text-ink tabular-nums ${statsClass ?? ""}`}>{percent}%</span> of the Bible read
+          <span className={`font-display text-[1.75rem] leading-none text-ink tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> of the Bible read
         </span>
         <span className="whitespace-nowrap">
           <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{daysDone}</span> of {DAY_COUNT} days

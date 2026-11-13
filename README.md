@@ -42,6 +42,27 @@ Signing in is optional. Without the Supabase variables the Account screen says a
 
 On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns. Signing out keeps progress on the device.
 
+## Install and offline
+
+The app is a progressive web app. On Android, Chrome offers Install app from its menu. On iPhone or iPad, open it in Safari, tap Share, then Add to Home Screen.
+
+A service worker (`public/sw.js`) is registered in production builds only, so `npm run dev` never caches anything. On first load it saves Today, Plan, Timeline, Verses, Who’s who, Account and Settings with their scripts, styles and fonts, so they open in airplane mode. Pages are network-first, falling back to the saved copy offline; `/api/*` is never cached, so the study assistant needs a connection. Each build registers the worker under a new version, which replaces the saved copy and clears the old one the next time the app is opened online. Icons are drawn in `public/icon.svg` and `public/icons/*.svg`; after changing them run `node scripts/generate-icons.mjs` to redraw the PNGs.
+
+## Reminders
+
+A daily reminder is optional, needs an account, and arrives as a web push notification at the reader’s chosen time in their own time zone. On iPhone it works only after the app is added to the Home Screen (iOS 16.4 or later). Without the variables below the setting says reminders aren’t set up and nothing else changes.
+
+1. Set up accounts first (above), then run [`supabase/migrations/20261114000000_reminders.sql`](supabase/migrations/20261114000000_reminders.sql) the same way. It adds `profiles.last_reminded_on`, which keeps a reader to one reminder a day.
+2. Generate a key pair with `npx web-push generate-vapid-keys`.
+3. Set these in `.env.local` and in the Vercel project: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (the public key), `VAPID_PRIVATE_KEY` (the private key), `VAPID_SUBJECT` (a `mailto:` address push services can contact), `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → API; the send route uses it to read every reader’s subscriptions), and `CRON_SECRET` (any long random string, for example from `openssl rand -hex 32`). Only the `NEXT_PUBLIC_` key reaches the browser.
+4. In the GitHub repository, add a variable `APP_URL` (the production address, such as `https://your-app.vercel.app`) under Settings → Secrets and variables → Actions → Variables, and a secret `CRON_SECRET` with the same value as above.
+
+`.github/workflows/reminders.yml` runs every 15 minutes and calls `POST /api/reminders/send` with the secret as a bearer token; it skips quietly until both are set. The route sends to readers whose reminder time passed within the last hour in their own time zone and who haven’t had one that day, then drops subscriptions the push service reports gone. Running it twice sends nothing new. GitHub Actions does the scheduling because Vercel’s free plan runs cron jobs only once a day, which can’t follow each reader’s time zone. GitHub may delay scheduled runs at busy times; the one-hour window absorbs ordinary delays. Run the workflow by hand from the Actions tab to test it.
+
+## Settings
+
+Settings (the slider icon beside Account) holds the daily reminder, the theme (system, light or dark, applied before the page paints), the translation used by Read online links (NIV by default), and Reset progress, which asks the reader to type RESET. Settings are kept on the device; when signed in they are also saved to the reader’s profile, with the device’s values winning on its first sign-in. Reset clears days and verses on the device and, when signed in, on the account.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` deploys a Vercel preview for each pull request and production on a push to `main`. It skips itself until the repository has these secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.

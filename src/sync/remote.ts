@@ -6,8 +6,10 @@ export type RemoteChange =
   | { kind: "put-verse"; row: VerseRow }
   | { kind: "delete-verse"; week: number };
 
+export type RemotePull = ProgressRows & { userId: string | null };
+
 export type RemoteProgress = {
-  pull(): Promise<ProgressRows>;
+  pull(): Promise<RemotePull>;
   putDays(rows: readonly DayRow[]): Promise<void>;
   deleteDay(dayIndex: number): Promise<void>;
   putVerses(rows: readonly VerseRow[]): Promise<void>;

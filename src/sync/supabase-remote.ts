@@ -4,7 +4,12 @@ import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
 import { RemoteRefusedError, type RemoteChange, type RemoteProgress } from "./remote";
 
 export type ProgressTable = "day_progress" | "verse_progress";
-export type ChangePayload = { eventType: string; new: Record<string, unknown>; old: Record<string, unknown> };
+export type BroadcastPayload = {
+  table?: unknown;
+  operation?: unknown;
+  record?: Record<string, unknown> | null;
+  old_record?: Record<string, unknown> | null;
+};
 
 const isIndex = (value: unknown, min: number, max: number): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
@@ -34,14 +39,20 @@ export function remoteRows(days: unknown[], verses: unknown[]): ProgressRows {
   };
 }
 
-export function realtimeChange(table: ProgressTable, payload: ChangePayload, userId: string): RemoteChange | null {
-  if (payload.eventType === "DELETE") {
-    const old = payload.old ?? {};
+export const progressTopic = (userId: string) => `progress:${userId}`;
+
+export function broadcastChange(payload: BroadcastPayload | null | undefined, userId: string): RemoteChange | null {
+  if (!payload) return null;
+  const { table, operation } = payload;
+  if (table !== "day_progress" && table !== "verse_progress") return null;
+  if (operation === "DELETE") {
+    const old = payload.old_record ?? {};
     if (old.user_id !== userId) return null;
     if (table === "day_progress") return isIndex(old.day_index, 0, DAY_COUNT - 1) ? { kind: "delete-day", day_index: old.day_index } : null;
     return isIndex(old.week, 1, WEEK_COUNT) ? { kind: "delete-verse", week: old.week } : null;
   }
-  const record = payload.new ?? {};
+  if (operation !== "INSERT" && operation !== "UPDATE") return null;
+  const record = payload.record ?? {};
   if (record.user_id !== userId) return null;
   if (table === "day_progress") {
     const row = dayRow(record);
@@ -49,6 +60,13 @@ export function realtimeChange(table: ProgressTable, payload: ChangePayload, use
   }
   const row = verseRow(record);
   return row && { kind: "put-verse", row };
+}
+
+export class SessionMissingError extends Error {
+  constructor() {
+    super("No session for this account");
+    this.name = "SessionMissingError";
+  }
 }
 
 const RETRYABLE = new Set([401, 408, 429]);
@@ -59,55 +77,60 @@ export function remoteError(error: unknown, status: number): unknown {
   return new RemoteRefusedError(message, status);
 }
 
-let channelCount = 0;
-
 export function supabaseRemote(client: SupabaseClient, userId: string): RemoteProgress {
-  async function check(request: PromiseLike<{ error: unknown; status: number }>) {
-    const { error, status } = await request;
+  async function signedIn() {
+    const { data } = await client.auth.getSession();
+    if (data.session?.user.id !== userId) throw new SessionMissingError();
+  }
+
+  async function check(request: () => PromiseLike<{ error: unknown; status: number }>) {
+    await signedIn();
+    const { error, status } = await request();
     if (error) throw remoteError(error, status);
   }
 
   return {
     async pull() {
+      await signedIn();
       const [days, verses] = await Promise.all([
         client.from("day_progress").select("day_index, completed_at").eq("user_id", userId),
         client.from("verse_progress").select("week, learned_at").eq("user_id", userId),
       ]);
       if (days.error) throw remoteError(days.error, days.status);
       if (verses.error) throw remoteError(verses.error, verses.status);
-      return remoteRows(days.data ?? [], verses.data ?? []);
+      return { ...remoteRows(days.data ?? [], verses.data ?? []), userId };
     },
     putDays: (rows) =>
-      check(
+      check(() =>
         client.from("day_progress").upsert(
           rows.map((row) => ({ ...row, user_id: userId })),
           { onConflict: "user_id,day_index" },
         ),
       ),
-    deleteDay: (dayIndex) => check(client.from("day_progress").delete().eq("user_id", userId).eq("day_index", dayIndex)),
+    deleteDay: (dayIndex) => check(() => client.from("day_progress").delete().eq("user_id", userId).eq("day_index", dayIndex)),
     putVerses: (rows) =>
-      check(
+      check(() =>
         client.from("verse_progress").upsert(
           rows.map((row) => ({ ...row, user_id: userId })),
           { onConflict: "user_id,week" },
         ),
       ),
-    deleteVerse: (week) => check(client.from("verse_progress").delete().eq("user_id", userId).eq("week", week)),
+    deleteVerse: (week) => check(() => client.from("verse_progress").delete().eq("user_id", userId).eq("week", week)),
     subscribe(onChange) {
-      const channel = client.channel(`progress:${userId}:${++channelCount}`);
-      for (const table of ["day_progress", "verse_progress"] as const) {
-        const deliver = (payload: ChangePayload) => {
-          const change = realtimeChange(table, payload, userId);
-          if (change) onChange(change);
-        };
-        const filter = `user_id=eq.${userId}`;
-        channel
-          .on("postgres_changes", { event: "INSERT", schema: "public", table, filter }, deliver)
-          .on("postgres_changes", { event: "UPDATE", schema: "public", table, filter }, deliver)
-          .on("postgres_changes", { event: "DELETE", schema: "public", table }, deliver);
-      }
-      channel.subscribe();
+      const channel = client.channel(progressTopic(userId), { config: { private: true } });
+      channel.on("broadcast", { event: "*" }, (message: { payload?: BroadcastPayload }) => {
+        const change = broadcastChange(message.payload, userId);
+        if (change) onChange(change);
+      });
+      let closed = false;
+      void client.realtime.setAuth().then(
+        () => {
+          if (!closed) channel.subscribe();
+        },
+        () => {},
+      );
       return () => {
+        closed = true;
         void client.removeChannel(channel);
       };
     },

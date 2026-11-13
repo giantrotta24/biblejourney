@@ -45,6 +45,9 @@ async function openDevice(server: Server, storage = new IDBFactory(), now = cloc
     set queueBroken(value: boolean) {
       queueDisk.control.broken = value;
     },
+    set localBroken(value: boolean) {
+      localDisk.control.broken = value;
+    },
   };
   const sync = createProgressSync(local, queue);
   const store = createProgressStore(sync.persistence, now);
@@ -372,13 +375,13 @@ describe("progress sync", () => {
     await laptop.sync.start(USER, laptop.remote);
     await settle(phone, laptop);
 
-    laptop.disk.broken = true;
+    laptop.disk.localBroken = true;
     await phone.store.addDay(2);
     await settle(phone, laptop);
     expect(dayKeys(laptop)).toEqual([2]);
     expect(laptop.store.getSnapshot().saved).toBe(false);
 
-    laptop.disk.broken = false;
+    laptop.disk.localBroken = false;
     await laptop.store.flush();
     await settle(phone, laptop);
     expect(laptop.store.getSnapshot().saved).toBe(true);
@@ -476,5 +479,138 @@ describe("progress sync", () => {
     await settle(device);
     expect(device.store.getSnapshot().saved).toBe(true);
     expect(serverDays(server)).toEqual([8]);
+  });
+
+  it("does not let another device's upsert undo an untick whose sync op could not be queued yet", async () => {
+    const server = createFakeServer();
+    const laptop = await openDevice(server);
+    const phone = await openDevice(server);
+    await laptop.sync.start(USER, laptop.remote);
+    await phone.sync.start(USER, phone.remote);
+    await laptop.store.addDay(8);
+    await settle(laptop, phone);
+    expect(dayKeys(phone)).toEqual([8]);
+
+    laptop.disk.queueBroken = true;
+    await laptop.store.removeDay(8);
+    await settle(laptop, phone);
+    expect(laptop.store.getSnapshot().saved).toBe(false);
+
+    await phone.remote.putDays([{ day_index: 8, completed_at: at(1) }]);
+    await settle(laptop, phone);
+    expect(dayKeys(laptop)).toEqual([]);
+
+    laptop.disk.queueBroken = false;
+    await phone.remote.putDays([{ day_index: 8, completed_at: at(1) }]);
+    await settle(laptop, phone);
+    expect(dayKeys(laptop)).toEqual([]);
+
+    await laptop.store.flush();
+    await settle(laptop, phone);
+    expect(dayKeys(laptop)).toEqual([]);
+    expect(serverDays(server)).toEqual([]);
+    expect(dayKeys(phone)).toEqual([]);
+    expect(laptop.store.getSnapshot().saved).toBe(true);
+  });
+
+  it("keeps local progress when a pull comes back empty because the session was dropped", async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addDay(1);
+    await settle(device);
+
+    device.remote.sessionDropped = true;
+    await device.sync.resync();
+    await settle(device);
+
+    expect(dayKeys(device)).toEqual([0, 1]);
+    expect((await device.local.load()).days.map((row) => row.day_index)).toEqual([0, 1]);
+    expect(await localQueue(device.storage).list(USER)).toEqual([]);
+    expect(serverDays(server)).toEqual([0, 1]);
+  });
+
+  it("keeps local progress when a signed-in pull would remove every row", async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addDay(1);
+    await settle(device);
+
+    device.remote.online = false;
+    const other = server.device(USER);
+    await other.deleteDay(0);
+    await other.deleteDay(1);
+    device.remote.online = true;
+    await device.sync.resync();
+    await settle(device);
+
+    expect(dayKeys(device)).toEqual([0, 1]);
+    expect(await localQueue(device.storage).list(USER)).toEqual([]);
+    expect(device.sync.getStatus()).toBe("offline");
+  });
+
+  it("applies a delete from another device that arrives while a slow pull is in flight", async () => {
+    const server = createFakeServer();
+    const laptop = await openDevice(server);
+    const phone = await openDevice(server);
+    await laptop.sync.start(USER, laptop.remote);
+    await phone.sync.start(USER, phone.remote);
+    await laptop.store.addDay(0);
+    await laptop.store.addDay(1);
+    await settle(laptop, phone);
+
+    const release = laptop.remote.holdNextPull();
+    const resync = laptop.sync.resync();
+    await settle(phone);
+    await phone.store.removeDay(1);
+    await settle(phone);
+    release();
+    await resync;
+    await settle(laptop, phone);
+
+    expect(serverDays(server)).toEqual([0]);
+    expect(dayKeys(laptop)).toEqual([0]);
+  });
+
+  it("keeps an insert from another device that arrives while a slow pull is in flight", async () => {
+    const server = createFakeServer();
+    const laptop = await openDevice(server);
+    const phone = await openDevice(server);
+    await laptop.sync.start(USER, laptop.remote);
+    await phone.sync.start(USER, phone.remote);
+    await laptop.store.addDay(0);
+    await settle(laptop, phone);
+
+    const release = laptop.remote.holdNextPull();
+    const resync = laptop.sync.resync();
+    await settle(phone);
+    await phone.store.addDay(5);
+    await settle(phone);
+    release();
+    await resync;
+    await settle(laptop, phone);
+
+    expect(serverDays(server)).toEqual([0, 5]);
+    expect(dayKeys(laptop)).toEqual([0, 5]);
+  });
+
+  it("waits to merge a first sign-in until the pull is read as that user", async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.store.addDay(3);
+    device.remote.sessionDropped = true;
+    await device.sync.start(USER, device.remote);
+    await settle(device);
+    expect(serverDays(server)).toEqual([]);
+    expect(await localQueue(device.storage).linkedUser()).toBeNull();
+
+    device.remote.sessionDropped = false;
+    await device.sync.resync();
+    await settle(device);
+    expect(serverDays(server)).toEqual([3]);
+    expect(dayKeys(device)).toEqual([3]);
   });
 });

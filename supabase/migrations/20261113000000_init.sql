@@ -55,6 +55,7 @@ $$;
 create or replace function public.keep_earliest_completion()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   if tg_table_name = 'day_progress' then
@@ -101,17 +102,55 @@ on conflict (user_id) do nothing;
 
 do $$
 begin
-  if not exists (
+  if exists (
     select 1 from pg_publication_tables
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'day_progress'
   ) then
-    alter publication supabase_realtime add table public.day_progress;
+    alter publication supabase_realtime drop table public.day_progress;
   end if;
-  if not exists (
+  if exists (
     select 1 from pg_publication_tables
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'verse_progress'
   ) then
-    alter publication supabase_realtime add table public.verse_progress;
+    alter publication supabase_realtime drop table public.verse_progress;
   end if;
 end
 $$;
+
+create or replace function public.broadcast_progress_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform realtime.broadcast_changes(
+    'progress:' || coalesce(new.user_id, old.user_id)::text,
+    tg_op,
+    tg_op,
+    tg_table_name,
+    tg_table_schema,
+    new,
+    old
+  );
+  return null;
+end;
+$$;
+
+drop trigger if exists day_progress_broadcast on public.day_progress;
+create trigger day_progress_broadcast
+  after insert or update or delete on public.day_progress
+  for each row execute function public.broadcast_progress_change();
+
+drop trigger if exists verse_progress_broadcast on public.verse_progress;
+create trigger verse_progress_broadcast
+  after insert or update or delete on public.verse_progress
+  for each row execute function public.broadcast_progress_change();
+
+drop policy if exists "Own progress topic: receive" on realtime.messages;
+create policy "Own progress topic: receive" on realtime.messages
+  for select to authenticated
+  using (
+    (select realtime.topic()) = 'progress:' || (select auth.uid())::text
+    and realtime.messages.extension = 'broadcast'
+  );

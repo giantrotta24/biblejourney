@@ -26,7 +26,7 @@ test("Today shows the first day, its week and a Read online link", async ({ page
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 2, name: /Genesis 1–4/ })).toBeVisible();
   await expect(page.getByText("4 chapters · about 20 minutes")).toBeVisible();
-  await expect(page.getByRole("checkbox")).toHaveCount(6);
+  await expect(page.getByRole("list", { name: "This week’s readings" }).getByRole("checkbox")).toHaveCount(6);
   await expect(page.getByText(/You are in week 1 of 52/)).toBeAttached();
   const link = page.getByRole("link", { name: /Read online/ });
   await expect(link).toHaveAttribute("href", "https://www.biblegateway.com/passage/?search=Genesis+1-4&version=NIV");

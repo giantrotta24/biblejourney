@@ -29,7 +29,7 @@ function fakeStore(profiles: Profile[], subscriptions: Record<string, StoredSubs
   return store;
 }
 
-const sub = (endpoint: string): StoredSubscription => ({ endpoint, keys: { p256dh: "p", auth: "a" } });
+const sub = (endpoint: string, createdAt?: string): StoredSubscription => ({ endpoint, keys: { p256dh: "p", auth: "a" }, createdAt });
 
 function setup(options: { dead?: Record<string, number> } = {}) {
   const store = fakeStore(
@@ -38,7 +38,7 @@ function setup(options: { dead?: Record<string, number> } = {}) {
       { userId: "tokyo", timezone: "Asia/Tokyo", reminderTime: "07:00:00", lastRemindedOn: null },
       { userId: "off", timezone: "America/New_York", reminderTime: null, lastRemindedOn: null },
     ],
-    { ny: [sub("https://push.example/ny-phone"), sub("https://push.example/ny-laptop")], tokyo: [sub("https://push.example/tokyo")] },
+    { ny: [sub("https://fcm.googleapis.com/fcm/send/ny-phone"), sub("https://fcm.googleapis.com/fcm/send/ny-laptop")], tokyo: [sub("https://fcm.googleapis.com/fcm/send/tokyo")] },
     { ny: [0, 1] },
   );
   const sent: { endpoint: string; message: PushMessage }[] = [];
@@ -83,8 +83,8 @@ describe("POST /api/reminders/send", () => {
     const { deps, sent, store } = setup();
     const response = await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 2, removed: 0 });
-    expect(sent.map((s) => s.endpoint)).toEqual(["https://push.example/ny-phone", "https://push.example/ny-laptop"]);
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 2, removed: 0, failed: 0 });
+    expect(sent.map((s) => s.endpoint)).toEqual(["https://fcm.googleapis.com/fcm/send/ny-phone", "https://fcm.googleapis.com/fcm/send/ny-laptop"]);
     expect(sent[0].message).toEqual({ title: "Today’s reading is ready", body: "Genesis 8–11", url: "/" });
     expect(store.profiles.find((p) => p.userId === "ny")?.lastRemindedOn).toBe("2026-06-01");
     expect(store.profiles.find((p) => p.userId === "tokyo")?.lastRemindedOn).toBeNull();
@@ -94,7 +94,7 @@ describe("POST /api/reminders/send", () => {
     const { deps, sent } = setup();
     await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
     const again = await handleReminderRequest(request("s3cret"), "s3cret", () => ({ ...deps, now: () => new Date("2026-06-01T11:20:00Z") }));
-    expect(await again.json()).toEqual({ status: "ok", due: 0, sent: 0, removed: 0 });
+    expect(await again.json()).toEqual({ status: "ok", due: 0, sent: 0, removed: 0, failed: 0 });
     expect(sent).toHaveLength(2);
   });
 
@@ -108,18 +108,18 @@ describe("POST /api/reminders/send", () => {
   });
 
   it("drops subscriptions the push service says are gone and keeps the rest", async () => {
-    const { deps, sent, store } = setup({ dead: { "https://push.example/ny-phone": 410, "https://push.example/ny-laptop": 404 } });
+    const { deps, sent, store } = setup({ dead: { "https://fcm.googleapis.com/fcm/send/ny-phone": 410, "https://fcm.googleapis.com/fcm/send/ny-laptop": 404 } });
     const response = await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
-    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 0, removed: 2 });
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 0, removed: 2, failed: 0 });
     expect(sent).toEqual([]);
     expect(store.devices.ny).toEqual([]);
     expect(store.devices.tokyo).toHaveLength(1);
   });
 
   it("keeps a subscription after a temporary push failure", async () => {
-    const { deps, store } = setup({ dead: { "https://push.example/ny-phone": 500 } });
+    const { deps, store } = setup({ dead: { "https://fcm.googleapis.com/fcm/send/ny-phone": 500 } });
     const response = await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
-    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 1, removed: 0 });
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 1, removed: 0, failed: 0 });
     expect(store.devices.ny).toHaveLength(2);
   });
 
@@ -135,7 +135,41 @@ describe("POST /api/reminders/send", () => {
     const all = Array.from({ length: 312 }, (_, i) => i);
     const finished = { ...deps, store: { ...store, completedDays: async () => all } };
     const response = await handleReminderRequest(request("s3cret"), "s3cret", () => finished);
-    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 0, removed: 0 });
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 0, removed: 0, failed: 0 });
     expect(sent).toEqual([]);
+  });
+  it("skips and deletes subscriptions that are not https on a known push service", async () => {
+    const { deps, sent, store } = setup();
+    store.devices.ny = [sub("https://fcm.googleapis.com/fcm/send/ok"), sub("http://fcm.googleapis.com/fcm/send/plain"), sub("https://evil.example/collect")];
+    const response = await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 1, removed: 2, failed: 0 });
+    expect(sent.map((s) => s.endpoint)).toEqual(["https://fcm.googleapis.com/fcm/send/ok"]);
+    expect(store.devices.ny.map((s) => s.endpoint)).toEqual(["https://fcm.googleapis.com/fcm/send/ok"]);
+  });
+
+  it("uses only a reader's five most recent subscriptions and deletes the older ones", async () => {
+    const { deps, sent, store } = setup();
+    store.devices.ny = Array.from({ length: 7 }, (_, i) => sub(`https://fcm.googleapis.com/fcm/send/d${i}`, `2026-05-0${i + 1}T00:00:00Z`));
+    const response = await handleReminderRequest(request("s3cret"), "s3cret", () => deps);
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 5, removed: 2, failed: 0 });
+    expect(sent.map((s) => s.endpoint.slice(-2)).sort()).toEqual(["d2", "d3", "d4", "d5", "d6"]);
+    expect(store.devices.ny.map((s) => s.endpoint.slice(-2)).sort()).toEqual(["d2", "d3", "d4", "d5", "d6"]);
+  });
+
+  it("carries on with other readers when the store fails for one, without using up that reader's day", async () => {
+    const { deps, sent, store } = setup();
+    store.profiles.push({ userId: "ny2", timezone: "America/New_York", reminderTime: "07:00", lastRemindedOn: null });
+    store.devices.ny2 = [sub("https://fcm.googleapis.com/fcm/send/ny2")];
+    const flaky = {
+      ...store,
+      async completedDays(userId: string) {
+        if (userId === "ny") throw new Error("database hiccup");
+        return [];
+      },
+    };
+    const response = await handleReminderRequest(request("s3cret"), "s3cret", () => ({ ...deps, store: flaky }));
+    expect(await response.json()).toEqual({ status: "ok", due: 1, sent: 1, removed: 0, failed: 1 });
+    expect(sent.map((s) => s.endpoint)).toEqual(["https://fcm.googleapis.com/fcm/send/ny2"]);
+    expect(store.profiles.find((p) => p.userId === "ny")?.lastRemindedOn).toBeNull();
   });
 });

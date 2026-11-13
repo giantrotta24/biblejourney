@@ -1,11 +1,12 @@
 import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
-import type { RemoteChange, RemoteProgress } from "./remote";
+import { RemoteRefusedError, type RemoteChange, type RemoteProgress } from "./remote";
 
 type Account = { days: Map<number, DayRow>; verses: Map<number, VerseRow> };
 
 export type FakeDevice = RemoteProgress & {
   online: boolean;
   failNext(method: keyof Omit<RemoteProgress, "subscribe">, times?: number): void;
+  refuseNext(method: keyof Omit<RemoteProgress, "subscribe">, times?: number): void;
   calls: string[];
 };
 
@@ -39,11 +40,17 @@ export function createFakeServer() {
 
   function device(userId: string): FakeDevice {
     const failing = new Map<string, number>();
+    const refusing = new Map<string, number>();
     const calls: string[] = [];
 
     function guard(method: string) {
       calls.push(method);
       if (!self.online) throw new TypeError("Failed to fetch");
+      const refusals = refusing.get(method) ?? 0;
+      if (refusals > 0) {
+        refusing.set(method, refusals - 1);
+        throw new RemoteRefusedError(`${method} refused`, 403);
+      }
       const left = failing.get(method) ?? 0;
       if (left > 0) {
         failing.set(method, left - 1);
@@ -56,6 +63,9 @@ export function createFakeServer() {
       calls,
       failNext(method, times = 1) {
         failing.set(method, times);
+      },
+      refuseNext(method, times = 1) {
+        refusing.set(method, times);
       },
       async pull() {
         guard("pull");

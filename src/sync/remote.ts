@@ -40,3 +40,12 @@ export function sendChange(remote: RemoteProgress, change: RemoteChange): Promis
       return remote.deleteVerse(change.week);
   }
 }
+
+export class RemoteRefusedError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message);
+    this.name = "RemoteRefusedError";
+  }
+}
+
+export const isRefusal = (error: unknown): error is RemoteRefusedError => error instanceof RemoteRefusedError;

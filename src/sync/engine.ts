@@ -1,7 +1,7 @@
 import type { DayRow, ProgressPersistence, ProgressRows, VerseRow } from "@/progress/rows";
 import type { ProgressStore } from "@/progress/store";
 import type { PendingQueue, QueuedOp } from "./queue";
-import { changeKey, sendChange, type RemoteChange, type RemoteProgress } from "./remote";
+import { changeKey, isRefusal, sendChange, type RemoteChange, type RemoteProgress } from "./remote";
 
 export type SyncStatus = "off" | "syncing" | "synced" | "offline";
 
@@ -15,14 +15,23 @@ export type ProgressSync = {
   idle(): Promise<void>;
   userId(): string | null;
   getStatus(): SyncStatus;
+  rejectedCount(): number;
   subscribeStatus(listener: () => void): () => void;
+  subscribeRemote(listener: () => void): () => void;
 };
 
 type Session = { userId: string; remote: RemoteProgress; reconciled: boolean; unsubscribe: () => void };
 
 const dayEcho = (row: DayRow) => `day:${row.day_index}:${row.completed_at}`;
 const verseEcho = (row: VerseRow) => `verse:${row.week}:${row.learned_at}`;
+async function both(write: Promise<void>, records: Promise<void>[]): Promise<void> {
+  const results = await Promise.allSettled([write, ...records]);
+  const failed = results.find((result) => result.status === "rejected");
+  if (failed) throw failed.reason;
+}
+
 const isDelete = (kind: RemoteChange["kind"]) => kind === "delete-day" || kind === "delete-verse";
+type Recorded = DayRow | VerseRow | "delete";
 
 function lastPending(ops: readonly QueuedOp[]): Map<string, RemoteChange["kind"]> {
   const last = new Map<string, RemoteChange["kind"]>();
@@ -37,20 +46,45 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   let linked: string | null = null;
   let running: Promise<void> | null = null;
   let again = false;
-  const linkedLoaded = queue.linkedUser().then(
-    (value) => {
-      linked ??= value;
-    },
-    () => {},
-  );
+  let rejected = 0;
+  const linkedLoaded = Promise.all([
+    queue.linkedUser().then(
+      (value) => {
+        linked ??= value;
+      },
+      () => {},
+    ),
+    queue.rejectedCount().then(
+      (value) => {
+        rejected += value;
+      },
+      () => {},
+    ),
+  ]);
   const statusListeners = new Set<() => void>();
+  const remoteListeners = new Set<() => void>();
   const echoes = new Set<string>();
+  const recorded = new Map<string, Recorded>();
   const inflight = new Set<Promise<unknown>>();
+
+  function notifyStatus() {
+    for (const listener of statusListeners) listener();
+  }
 
   function setStatus(next: SyncStatus) {
     if (status === next) return;
     status = next;
-    for (const listener of statusListeners) listener();
+    notifyStatus();
+  }
+
+  async function addRejected() {
+    rejected += 1;
+    notifyStatus();
+    await queue.setRejectedCount(rejected).catch(() => {});
+  }
+
+  function notifyRemote() {
+    for (const listener of remoteListeners) listener();
   }
 
   function track<T>(promise: Promise<T>): Promise<T> {
@@ -68,13 +102,27 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     return store;
   }
 
-  async function record(change: RemoteChange, echo: string) {
-    if (echoes.delete(echo)) return;
+  async function record(change: RemoteChange, token: Recorded, echo: string) {
+    const key = changeKey(change);
+    if (recorded.get(key) === token) return;
+    if (echoes.delete(echo)) {
+      recorded.set(key, token);
+      return;
+    }
     await linkedLoaded;
     const userId = session?.userId ?? linked;
     if (!userId) return;
     await queue.push({ ...change, user_id: userId });
+    recorded.set(key, token);
     if (session) void track(flush());
+  }
+
+  async function pendingKinds(userId: string): Promise<Map<string, RemoteChange["kind"]>> {
+    try {
+      return lastPending(await queue.list(userId));
+    } catch {
+      return new Map();
+    }
   }
 
   async function applyRows(rows: ProgressRows) {
@@ -105,8 +153,10 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       if (session !== s) return false;
       try {
         await sendChange(s.remote, op);
-      } catch {
-        return false;
+      } catch (error) {
+        if (!isRefusal(error)) return false;
+        console.warn("The server refused a progress change", error);
+        await addRejected();
       }
       await queue.remove(op.id);
     }
@@ -146,15 +196,22 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       const local = target.rows();
       for (const row of local.days) {
         const theirs = remoteDays.get(row.day_index);
-        if (!theirs || theirs.completed_at > row.completed_at) await queue.push({ kind: "put-day", row, user_id: s.userId });
+        if (!theirs || theirs.completed_at > row.completed_at) {
+          await queue.push({ kind: "put-day", row, user_id: s.userId });
+          recorded.set(`day:${row.day_index}`, row);
+        }
       }
       for (const row of local.verses) {
         const theirs = remoteVerses.get(row.week);
-        if (!theirs || theirs.learned_at > row.learned_at) await queue.push({ kind: "put-verse", row, user_id: s.userId });
+        if (!theirs || theirs.learned_at > row.learned_at) {
+          await queue.push({ kind: "put-verse", row, user_id: s.userId });
+          recorded.set(`verse:${row.week}`, row);
+        }
       }
       linked = s.userId;
       await queue.setLinkedUser(s.userId);
     }
+    notifyRemote();
 
     s.reconciled = true;
     return drain(s);
@@ -163,18 +220,23 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   async function applyChange(s: Session, change: RemoteChange) {
     await Promise.all([attachedStore().load(), linkedLoaded]);
     if (session !== s) return;
-    const pendingKind = lastPending(await queue.list(s.userId)).get(changeKey(change));
+    const pendingKind = (await pendingKinds(s.userId)).get(changeKey(change));
     if (pendingKind !== undefined && isDelete(pendingKind) !== isDelete(change.kind)) return;
     switch (change.kind) {
       case "put-day":
-        return applyRows({ days: [change.row], verses: [] });
+        await applyRows({ days: [change.row], verses: [] });
+        break;
       case "put-verse":
-        return applyRows({ days: [], verses: [change.row] });
+        await applyRows({ days: [], verses: [change.row] });
+        break;
       case "delete-day":
-        return applyDelete("day", change.day_index);
+        await applyDelete("day", change.day_index);
+        break;
       case "delete-verse":
-        return applyDelete("verse", change.week);
+        await applyDelete("verse", change.week);
+        break;
     }
+    notifyRemote();
   }
 
   function flush(): Promise<void> {
@@ -209,22 +271,20 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
 
   const persistence: ProgressPersistence = {
     load: () => local.load(),
-    async putDays(rows) {
-      await local.putDays(rows);
-      for (const row of rows) await record({ kind: "put-day", row }, dayEcho(row));
-    },
-    async deleteDay(dayIndex) {
-      await local.deleteDay(dayIndex);
-      await record({ kind: "delete-day", day_index: dayIndex }, `day:${dayIndex}:delete`);
-    },
-    async putVerses(rows) {
-      await local.putVerses(rows);
-      for (const row of rows) await record({ kind: "put-verse", row }, verseEcho(row));
-    },
-    async deleteVerse(week) {
-      await local.deleteVerse(week);
-      await record({ kind: "delete-verse", week }, `verse:${week}:delete`);
-    },
+    durable: () => local.durable?.() ?? true,
+    putDays: (rows) =>
+      both(
+        local.putDays(rows),
+        rows.map((row) => record({ kind: "put-day", row }, row, dayEcho(row))),
+      ),
+    deleteDay: (dayIndex) =>
+      both(local.deleteDay(dayIndex), [record({ kind: "delete-day", day_index: dayIndex }, "delete", `day:${dayIndex}:delete`)]),
+    putVerses: (rows) =>
+      both(
+        local.putVerses(rows),
+        rows.map((row) => record({ kind: "put-verse", row }, row, verseEcho(row))),
+      ),
+    deleteVerse: (week) => both(local.deleteVerse(week), [record({ kind: "delete-verse", week }, "delete", `verse:${week}:delete`)]),
   };
 
   return {
@@ -249,10 +309,14 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       const s = session;
       session = null;
       s?.unsubscribe();
+      recorded.clear();
       setStatus("off");
       await linkedLoaded;
       linked = null;
+      rejected = 0;
+      notifyStatus();
       await queue.setLinkedUser(null).catch(() => {});
+      await queue.setRejectedCount(0).catch(() => {});
     },
 
     flush,
@@ -268,9 +332,14 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
 
     userId: () => session?.userId ?? null,
     getStatus: () => status,
+    rejectedCount: () => rejected,
     subscribeStatus(listener) {
       statusListeners.add(listener);
       return () => statusListeners.delete(listener);
+    },
+    subscribeRemote(listener) {
+      remoteListeners.add(listener);
+      return () => remoteListeners.delete(listener);
     },
   };
 }

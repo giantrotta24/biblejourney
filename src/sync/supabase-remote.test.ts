@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { realtimeChange, remoteRows } from "./supabase-remote";
+import { isRefusal } from "./remote";
+import { realtimeChange, remoteError, remoteRows } from "./supabase-remote";
 
 const ME = "me";
 
@@ -38,5 +39,17 @@ describe("Supabase row mapping", () => {
     expect(realtimeChange("day_progress", { eventType: "DELETE", new: {}, old: { day_index: 3 } }, ME)).toBeNull();
     expect(realtimeChange("day_progress", { eventType: "INSERT", new: { user_id: ME, day_index: 400, completed_at: "2026-11-13T12:00:00Z" }, old: {} }, ME)).toBeNull();
     expect(realtimeChange("verse_progress", { eventType: "INSERT", new: { user_id: ME, week: 2 }, old: {} }, ME)).toBeNull();
+  });
+});
+
+describe("Supabase error classes", () => {
+  const error = { message: "nope", code: "42501", details: "", hint: "" };
+
+  it("treats constraint, permission and conflict errors as refusals", () => {
+    for (const status of [400, 403, 404, 409, 422]) expect(isRefusal(remoteError(error, status))).toBe(true);
+  });
+
+  it("treats network, auth, rate-limit and server errors as worth retrying", () => {
+    for (const status of [0, 401, 408, 429, 500, 502, 503]) expect(isRefusal(remoteError(error, status))).toBe(false);
   });
 });

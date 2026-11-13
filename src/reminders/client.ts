@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { accountsConfigured, supabaseClient } from "@/account/supabase";
 import { registerServiceWorker } from "@/pwa/service-worker";
 import { readerTimeZone } from "@/settings/client";
+import { forgetThisDevice, remindersOnHere, type SubscriptionRows } from "./device";
+import { isPushEndpoint } from "./endpoints";
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -54,6 +56,33 @@ export async function accountReminderTime(userId: string): Promise<string | null
   return data?.reminder_time?.slice(0, 5) ?? null;
 }
 
+function subscriptionRows(supabase: SupabaseClient): SubscriptionRows {
+  return {
+    async has(userId, endpoint) {
+      const { count, error } = await supabase
+        .from("push_subscriptions")
+        .select("endpoint", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("endpoint", endpoint);
+      if (error) throw error;
+      return Boolean(count);
+    },
+    remove: (userId, endpoint) => must(supabase.from("push_subscriptions").delete().eq("user_id", userId).eq("endpoint", endpoint)),
+  };
+}
+
+export async function remindersOnForThisDevice(userId: string): Promise<{ on: boolean; time: string | null }> {
+  const [push, time] = await Promise.all([deviceSubscription(), accountReminderTime(userId)]);
+  return { on: await remindersOnHere(userId, time, push, subscriptionRows(await client())), time };
+}
+
+export async function forgetDeviceReminders(userId: string) {
+  const supabase = await supabaseClient();
+  const push = await deviceSubscription().catch(() => null);
+  if (!supabase || !push) return;
+  await forgetThisDevice(userId, push, subscriptionRows(supabase));
+}
+
 export type EnableResult = "on" | "denied";
 
 export async function enableReminders(userId: string, time: string): Promise<EnableResult> {
@@ -64,6 +93,10 @@ export async function enableReminders(userId: string, time: string): Promise<Ena
   const subscription =
     (await reg.pushManager.getSubscription()) ??
     (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationServerKey(vapidPublicKey) }));
+  if (!isPushEndpoint(subscription.endpoint)) {
+    await subscription.unsubscribe().catch(() => false);
+    throw new Error("This browser's push service isn't one the app sends to");
+  }
   const json = subscription.toJSON();
   const supabase = await client();
   await must(

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isPushEndpoint } from "./endpoints";
 import type { PushMessage, ReminderDeps, ReminderStore, StoredSubscription } from "./send";
 
 type ServerConfig = {
@@ -22,7 +23,10 @@ export function reminderServerConfig(env: NodeJS.ProcessEnv = process.env): Serv
 
 type ProfileRow = { user_id: string; timezone: string; reminder_time: string | null; last_reminded_on: string | null };
 
-function supabaseReminderStore(client: SupabaseClient): ReminderStore {
+export const CANDIDATE_PAGE_SIZE = 500;
+export const PUSH_TIMEOUT_MS = 10_000;
+
+export function supabaseReminderStore(client: SupabaseClient): ReminderStore {
   async function must<T>(query: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
     const { data, error } = await query;
     if (error) throw error;
@@ -31,9 +35,19 @@ function supabaseReminderStore(client: SupabaseClient): ReminderStore {
 
   return {
     async candidates() {
-      const rows = await must<ProfileRow[]>(
-        client.from("profiles").select("user_id, timezone, reminder_time, last_reminded_on").not("reminder_time", "is", null),
-      );
+      const rows: ProfileRow[] = [];
+      for (let from = 0; ; from += CANDIDATE_PAGE_SIZE) {
+        const page = await must<ProfileRow[]>(
+          client
+            .from("profiles")
+            .select("user_id, timezone, reminder_time, last_reminded_on")
+            .not("reminder_time", "is", null)
+            .order("user_id")
+            .range(from, from + CANDIDATE_PAGE_SIZE - 1),
+        );
+        rows.push(...page);
+        if (page.length < CANDIDATE_PAGE_SIZE) break;
+      }
       return rows.map((row) => ({
         userId: row.user_id,
         timezone: row.timezone,
@@ -52,8 +66,12 @@ function supabaseReminderStore(client: SupabaseClient): ReminderStore {
       );
       return rows.length > 0;
     },
-    subscriptions: (userId) =>
-      must<StoredSubscription[]>(client.from("push_subscriptions").select("endpoint, keys").eq("user_id", userId)),
+    async subscriptions(userId) {
+      const rows = await must<{ endpoint: string; keys: StoredSubscription["keys"]; created_at: string }[]>(
+        client.from("push_subscriptions").select("endpoint, keys, created_at").eq("user_id", userId),
+      );
+      return rows.map((row) => ({ endpoint: row.endpoint, keys: row.keys, createdAt: row.created_at }));
+    },
     async completedDays(userId) {
       const rows = await must<{ day_index: number }[]>(client.from("day_progress").select("day_index").eq("user_id", userId));
       return rows.map((row) => row.day_index);
@@ -74,7 +92,12 @@ export async function reminderDeps(config: ServerConfig): Promise<ReminderDeps> 
     store: supabaseReminderStore(client),
     now: () => new Date(),
     async push(subscription, message: PushMessage) {
-      await webpush.sendNotification(subscription, JSON.stringify(message), { vapidDetails, TTL: 12 * 60 * 60, urgency: "normal" });
+      if (!isPushEndpoint(subscription.endpoint)) throw new Error("Not a known push service");
+      await webpush.sendNotification(
+        { endpoint: subscription.endpoint, keys: subscription.keys },
+        JSON.stringify(message),
+        { vapidDetails, TTL: 12 * 60 * 60, urgency: "normal", timeout: PUSH_TIMEOUT_MS },
+      );
     },
   };
 }

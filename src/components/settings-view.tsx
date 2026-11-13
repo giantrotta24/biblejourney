@@ -17,13 +17,12 @@ import { progressStore, progressSync } from "@/progress/client";
 import { RESET_WORD, resetConfirmed, resetProgress } from "@/progress/reset";
 import { clearSundaySeen } from "@/progress/sunday-seen";
 import {
-  accountReminderTime,
   changeReminderTime,
-  deviceSubscription,
   disableReminders,
   enableReminders,
   pushSupported,
   remindersConfigured,
+  remindersOnForThisDevice,
 } from "@/reminders/client";
 import { changeSettings, useSettings } from "@/settings/client";
 import { THEMES, TRANSLATIONS, type Theme, type TranslationCode } from "@/settings/settings";
@@ -59,10 +58,10 @@ function ReminderControls({ userId }: { userId: string }) {
     (async () => {
       if (!pushSupported()) return setState("unsupported");
       try {
-        const [subscription, time] = await Promise.all([deviceSubscription(), accountReminderTime(userId)]);
+        const { on, time } = await remindersOnForThisDevice(userId);
         if (!live) return;
         if (time) changeSettings({ reminderTime: time });
-        setState(subscription && time ? "on" : "off");
+        setState(on ? "on" : "off");
       } catch {
         if (live) setState("off");
       }

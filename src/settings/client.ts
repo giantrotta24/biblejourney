@@ -2,24 +2,19 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
+import { createProfileSync, type ProfileSync } from "./profile-sync";
 import {
   createSettingsStore,
   DEFAULT_SETTINGS,
-  profileFields,
-  reconcileProfile,
   type KeyValueStorage,
   type ProfileFields,
   type ProfileRemote,
   type Settings,
-  type SettingsLink,
   type SettingsStore,
   type Theme,
 } from "./settings";
 
-const LINK_KEY = "bible-journey:settings-link";
-
-let store: SettingsStore | null = null;
-let active: { userId: string; remote: ProfileRemote } | null = null;
+let booted: { store: SettingsStore; sync: ProfileSync } | null = null;
 
 function browserStorage(): KeyValueStorage | null {
   try {
@@ -27,26 +22,6 @@ function browserStorage(): KeyValueStorage | null {
   } catch {
     return null;
   }
-}
-
-function settingsStore(): SettingsStore {
-  store ??= createSettingsStore(browserStorage());
-  return store;
-}
-
-function readLink(): SettingsLink {
-  try {
-    const parsed = JSON.parse(browserStorage()?.getItem(LINK_KEY) ?? "null") as Partial<SettingsLink> | null;
-    return { user: typeof parsed?.user === "string" ? parsed.user : null, dirty: parsed?.dirty === true };
-  } catch {
-    return { user: null, dirty: false };
-  }
-}
-
-function writeLink(link: SettingsLink) {
-  try {
-    browserStorage()?.setItem(LINK_KEY, JSON.stringify(link));
-  } catch {}
 }
 
 export function readerTimeZone(): string {
@@ -58,6 +33,23 @@ function applyTheme(theme: Theme) {
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
 }
+
+function boot() {
+  if (!booted) {
+    const storage = browserStorage();
+    const store = createSettingsStore(storage);
+    const sync = createProfileSync({ store, storage, timezone: readerTimeZone, applyTheme });
+    booted = { store, sync };
+    if (typeof window !== "undefined") {
+      const retry = () => void sync.retry();
+      window.addEventListener("online", retry);
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && retry());
+    }
+  }
+  return booted;
+}
+
+const settingsStore = () => boot().store;
 
 function supabaseProfile(client: SupabaseClient, userId: string): ProfileRemote {
   return {
@@ -77,47 +69,18 @@ function supabaseProfile(client: SupabaseClient, userId: string): ProfileRemote 
   };
 }
 
-async function pushToProfile() {
-  const link = readLink();
-  if (link.user) writeLink({ ...link, dirty: true });
-  const session = active;
-  if (!session || link.user !== session.userId) return;
-  try {
-    await session.remote.save(profileFields(settingsStore().getSnapshot(), readerTimeZone()));
-    if (active === session) writeLink({ user: session.userId, dirty: false });
-  } catch {}
-}
-
 export function changeSettings(patch: Partial<Settings>) {
   if (!settingsStore().update(patch)) return;
   if (patch.theme) applyTheme(patch.theme);
-  if (patch.theme || patch.linkTranslation) void pushToProfile();
+  if (patch.theme || patch.linkTranslation) void boot().sync.changed();
 }
 
-export async function settingsSignedIn(client: SupabaseClient, userId: string) {
-  if (active?.userId === userId) return;
-  const session = { userId, remote: supabaseProfile(client, userId) };
-  active = session;
-  try {
-    const result = await reconcileProfile({
-      local: settingsStore().getSnapshot(),
-      link: readLink(),
-      userId,
-      timezone: readerTimeZone(),
-      remote: session.remote,
-    });
-    if (active !== session) return;
-    settingsStore().replace(result.settings);
-    applyTheme(result.settings.theme);
-    writeLink(result.link);
-  } catch {
-    if (active === session) active = null;
-  }
+export function settingsSignedIn(client: SupabaseClient, userId: string) {
+  return boot().sync.signedIn(userId, supabaseProfile(client, userId));
 }
 
 export function settingsSignedOut() {
-  active = null;
-  writeLink({ user: null, dirty: false });
+  boot().sync.signedOut();
 }
 
 const subscribe = (listener: () => void) => settingsStore().subscribe(listener);

@@ -176,7 +176,12 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     for (const op of await queue.list(s.userId)) {
       if (session !== s) return false;
       try {
-        await sendChange(s.remote, op);
+        if (op.kind === "mark-reset") {
+          const stamped = await s.remote.markReset(op.at);
+          if (stamped) await rememberReset(stamped);
+        } else {
+          await sendChange(s.remote, op);
+        }
       } catch (error) {
         if (!isRefusal(error)) return false;
         console.warn("The server refused a progress change", error);

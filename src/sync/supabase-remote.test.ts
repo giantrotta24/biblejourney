@@ -90,11 +90,13 @@ function fakeClient(sessionUser: string | null, profile: Record<string, unknown>
     then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve),
   };
   const from = vi.fn(() => query);
+  const rpc = vi.fn(async () => ({ data: "2026-11-13T12:30:00.5+00:00", error: null, status: 200 }));
   const client = {
+    rpc,
     auth: { getSession: async () => ({ data: { session: sessionUser ? { user: { id: sessionUser } } : null }, error: null }) },
     from,
   } as unknown as SupabaseClient;
-  return { client, from };
+  return { client, from, rpc };
 }
 
 describe("Supabase remote session guard", () => {
@@ -130,5 +132,12 @@ describe("Supabase remote session guard", () => {
   it("returns the account's last reset time with the pull, as an ISO time", async () => {
     const { client } = fakeClient(ME, { progress_reset_at: "2026-11-13T12:30:00.123+00:00" });
     await expect(supabaseRemote(client, ME).pull()).resolves.toMatchObject({ resetAt: "2026-11-13T12:30:00.123Z" });
+  });
+
+  it("resets the whole account in one server call and returns the server's reset time", async () => {
+    const { client, rpc, from } = fakeClient(ME);
+    await expect(supabaseRemote(client, ME).markReset("2026-11-13T12:00:00.000Z")).resolves.toBe("2026-11-13T12:30:00.500Z");
+    expect(rpc).toHaveBeenCalledWith("reset_progress");
+    expect(from).not.toHaveBeenCalled();
   });
 });

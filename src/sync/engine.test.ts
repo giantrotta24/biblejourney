@@ -681,22 +681,28 @@ describe("progress sync", () => {
     await settle(phone);
 
     phone.remote.online = false;
+    const laptopRemote = server.device(USER);
+    await laptopRemote.putDays([{ day_index: 9, completed_at: at(5) }]);
+    await laptopRemote.putVerses([{ week: 3, learned_at: at(6) }]);
     await resetProgress(phone.store, phone.sync);
+    await phone.store.addDay(0);
     await settle(phone);
-    expect(serverDays(server)).toEqual([0, 1]);
+    expect(serverDays(server)).toEqual([0, 1, 9]);
     expect(server.resetAt(USER)).toBeNull();
+    expect(dayKeys(phone)).toEqual([0]);
 
     phone.remote.online = true;
     await phone.sync.resync();
     await settle(phone);
-    expect(server.rows(USER)).toEqual({ days: [], verses: [] });
-    expect(server.resetAt(USER)).not.toBeNull();
-    expect(dayKeys(phone)).toEqual([]);
-
-    const laptop = await openDevice(server);
-    await laptop.store.addDay(0);
-    await laptop.sync.start(USER, laptop.remote);
-    await settle(laptop);
     expect(serverDays(server)).toEqual([0]);
+    expect(server.rows(USER).verses).toEqual([]);
+    expect(server.resetAt(USER)).not.toBeNull();
+    expect(dayKeys(phone)).toEqual([0]);
+    expect([...phone.store.getSnapshot().verses]).toEqual([]);
+
+    await phone.sync.resync();
+    await settle(phone);
+    expect(dayKeys(phone)).toEqual([0]);
+    expect(phone.sync.getStatus()).toBe("synced");
   });
 });

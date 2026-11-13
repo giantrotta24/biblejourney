@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 import { progressSync } from "@/progress/client";
 import type { SyncStatus } from "@/sync/engine";
 import { supabaseRemote } from "@/sync/supabase-remote";
+import { syncAction } from "./follow";
 import { accountsConfigured, authRedirectUrl, supabaseClient } from "./supabase";
 
 export type AccountState =
@@ -26,12 +27,14 @@ function setState(next: AccountState) {
 
 function follow(client: SupabaseClient, event: string, session: Session | null) {
   const sync = progressSync();
-  if (session?.user) {
-    setState({ status: "signed-in", userId: session.user.id, email: session.user.email ?? null });
-    if (sync.userId() !== session.user.id) void sync.start(session.user.id, supabaseRemote(client, session.user.id));
+  const user = session?.user ?? null;
+  const action = syncAction(event, user?.id ?? null, sync.userId());
+  if (action === "stop") void sync.stop();
+  if (user) {
+    setState({ status: "signed-in", userId: user.id, email: user.email ?? null });
+    if (action === "start") void sync.start(user.id, supabaseRemote(client, user.id));
     return;
   }
-  if (event === "SIGNED_OUT") void sync.stop();
   setState({ status: "signed-out" });
 }
 

@@ -4,7 +4,6 @@ import {
   DEFAULT_SETTINGS,
   createSettingsStore,
   parseSettings,
-  readOnlineUrl,
   reconcileProfile,
   THEME_SCRIPT,
   TRANSLATIONS,
@@ -85,9 +84,9 @@ describe("settings store", () => {
 describe("Read online links", () => {
   it("use the chosen translation", () => {
     const store = createSettingsStore(memoryStorage());
-    expect(readOnlineUrl("Genesis 1–4", store.getSnapshot())).toBe(bibleGatewayUrl("Genesis 1–4", "NIV"));
+    expect(bibleGatewayUrl("Genesis 1–4", store.getSnapshot().linkTranslation)).toBe(bibleGatewayUrl("Genesis 1–4"));
     store.update({ linkTranslation: "NRSVUE" });
-    const url = new URL(readOnlineUrl("Job 42; Genesis 12–15", store.getSnapshot()));
+    const url = new URL(bibleGatewayUrl("Job 42; Genesis 12–15", store.getSnapshot().linkTranslation));
     expect(url.searchParams.get("version")).toBe("NRSVUE");
     expect(url.searchParams.get("search")).toBe("Job 42; Genesis 12-15");
   });

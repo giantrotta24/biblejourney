@@ -16,7 +16,7 @@ export function AccountLink() {
     <Link
       href="/account"
       aria-current={current ? "page" : undefined}
-      className={`-mr-2 flex min-h-11 min-w-11 items-center justify-center px-2 text-[0.9375rem] no-underline transition-colors duration-150 ${
+      className={`flex min-h-11 min-w-11 items-center justify-center px-2 text-[0.9375rem] no-underline transition-colors duration-150 ${
         current ? "text-ink underline underline-offset-4" : "text-muted hover:text-ink"
       }`}
     >

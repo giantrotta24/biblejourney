@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { bibleGatewayUrl } from "@/lib/reading";
 
 export const TRANSLATIONS = [
   { code: "NIV", name: "New International Version" },
@@ -99,10 +98,6 @@ export function createSettingsStore(storage: KeyValueStorage | null): SettingsSt
     },
     replace: (next) => replace(fromObject(next)),
   };
-}
-
-export function readOnlineUrl(reading: string, settings: Settings): string {
-  return bibleGatewayUrl(reading, settings.linkTranslation);
 }
 
 export type ProfileFields = { theme: string; link_translation: string; reminder_time: string | null; timezone: string };

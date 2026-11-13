@@ -3,6 +3,7 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
 import { progressSync } from "@/progress/client";
+import { settingsSignedIn, settingsSignedOut } from "@/settings/client";
 import type { SyncStatus } from "@/sync/engine";
 import { supabaseRemote } from "@/sync/supabase-remote";
 import { accountsConfigured, authRedirectUrl, supabaseClient } from "./supabase";
@@ -29,9 +30,13 @@ function follow(client: SupabaseClient, event: string, session: Session | null) 
   if (session?.user) {
     setState({ status: "signed-in", userId: session.user.id, email: session.user.email ?? null });
     if (sync.userId() !== session.user.id) void sync.start(session.user.id, supabaseRemote(client, session.user.id));
+    void settingsSignedIn(client, session.user.id);
     return;
   }
-  if (event === "SIGNED_OUT") void sync.stop();
+  if (event === "SIGNED_OUT") {
+    void sync.stop();
+    settingsSignedOut();
+  }
   setState({ status: "signed-out" });
 }
 

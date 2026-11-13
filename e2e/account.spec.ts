@@ -22,8 +22,16 @@ test("without Supabase settings the account screen says progress stays on this d
 });
 
 test("the account link is keyboard reachable and marks the current page", async ({ page }) => {
-  await page.goto("/account");
+  await page.goto("/");
   const link = page.getByRole("link", { name: "Account" });
+  let reached = false;
+  for (let presses = 0; presses < 20 && !reached; presses++) {
+    await page.keyboard.press("Tab");
+    reached = await link.evaluate((element) => element === document.activeElement);
+  }
+  expect(reached).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/account$/);
   await expect(link).toHaveAttribute("aria-current", "page");
   const box = await link.boundingBox();
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);

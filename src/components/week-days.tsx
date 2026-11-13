@@ -2,14 +2,14 @@
 
 import { memo } from "react";
 import { WEEKDAY_NAMES, type Day } from "@/content/plan";
-import { setDayDone, useCurrentDayIndex, useDayDone, useProgressReady } from "@/progress/client";
+import { setDayDone, useDayDone, useIsCurrentDay, useProgressReady } from "@/progress/client";
 
 type DayItem = Pick<Day, "index" | "weekday" | "reading"> & { week?: number };
 
 const DayCheckbox = memo(function DayCheckbox({ day, idPrefix, withWeek }: { day: DayItem; idPrefix: string; withWeek: boolean }) {
   const ready = useProgressReady();
   const done = useDayDone(day.index);
-  const current = useCurrentDayIndex() === day.index;
+  const current = useIsCurrentDay(day.index);
   const id = `${idPrefix}-${day.index}`;
 
   return (

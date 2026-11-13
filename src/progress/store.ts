@@ -96,6 +96,7 @@ export function createProgressStore(persistence: ProgressPersistence, now: () =>
 
     async addDay(dayIndex) {
       checkDay(dayIndex);
+      if (!ready && loading) await loading.catch(() => undefined);
       if (days.has(dayIndex)) return;
       const row = { day_index: dayIndex, completed_at: now().toISOString() };
       days.set(dayIndex, row);
@@ -105,6 +106,7 @@ export function createProgressStore(persistence: ProgressPersistence, now: () =>
 
     async removeDay(dayIndex) {
       checkDay(dayIndex);
+      if (!ready && loading) await loading.catch(() => undefined);
       if (!days.delete(dayIndex)) return;
       publish();
       await persist(`d${dayIndex}`, () => persistence.deleteDay(dayIndex));
@@ -112,6 +114,7 @@ export function createProgressStore(persistence: ProgressPersistence, now: () =>
 
     async addVerse(week) {
       checkWeek(week);
+      if (!ready && loading) await loading.catch(() => undefined);
       if (verses.has(week)) return;
       const row = { week, learned_at: now().toISOString() };
       verses.set(week, row);
@@ -121,6 +124,7 @@ export function createProgressStore(persistence: ProgressPersistence, now: () =>
 
     async removeVerse(week) {
       checkWeek(week);
+      if (!ready && loading) await loading.catch(() => undefined);
       if (!verses.delete(week)) return;
       publish();
       await persist(`v${week}`, () => persistence.deleteVerse(week));
@@ -129,6 +133,7 @@ export function createProgressStore(persistence: ProgressPersistence, now: () =>
     async merge(rows) {
       rows.days.forEach((row) => checkDay(row.day_index));
       rows.verses.forEach((row) => checkWeek(row.week));
+      if (!ready && loading) await loading.catch(() => undefined);
       const changedDays = unionInto(days, rows.days, (row) => row.day_index, (row) => row.completed_at);
       const changedVerses = unionInto(verses, rows.verses, (row) => row.week, (row) => row.learned_at);
       if (changedDays.length === 0 && changedVerses.length === 0) return;

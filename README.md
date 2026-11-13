@@ -43,6 +43,22 @@ Signing in is optional. Without the Supabase variables the Account screen says a
 
 On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns; a change the server refuses outright is dropped and counted on the Account screen. Signing out keeps progress on the device. If a live update is missed, the app pulls the account again when the connection returns or the tab comes back into view.
 
+## Study assistant
+
+On Today, a signed-in reader can tap Historical setting, Where on the map or Who’s who, or type a question of up to 500 characters, and a short answer about the day’s reading streams in from `POST /api/ask`. When the assistant isn’t fully set up, Today says so and everything else works.
+
+In production (`npm run build && npm start`, or a deploy) the assistant turns on only when all of these are set; if any is missing it stays off and the server logs one line naming what is missing:
+
+- `ANTHROPIC_API_KEY`: server only; never prefix it with `NEXT_PUBLIC_`.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see Accounts and sync): the server checks the reader’s access token on every question.
+- `SUPABASE_SERVICE_ROLE_KEY`: keeps the daily limit (30 questions per reader per UTC day) and the quick-prompt answer cache in Supabase, so the limit holds across server instances. Run [`supabase/migrations/20261113010000_assistant.sql`](supabase/migrations/20261113010000_assistant.sql) the same way as the first migration; it adds `assistant_usage`, `assistant_answers`, and the `assistant_take_question` and `assistant_release_question` functions, all usable only with the service role key.
+
+`ANTHROPIC_MODEL` is optional and defaults to `claude-sonnet-5-5` (set in `src/assistant/config.ts`).
+
+Every question that calls the model counts toward the daily limit, quick prompts included. Only a cached answer is free: the same quick prompt for the same day, model and prompt version comes back instantly without calling the model. A request the reader cancels before the model starts doesn’t count. Server logs carry counts and errors, never question or answer text.
+
+In development (`npm run dev`) the service role key is optional; without it the limit and cache live in the server’s memory. To try the assistant locally with only an Anthropic key, also set `ASSISTANT_ALLOW_ANONYMOUS=1` in `.env.local`: the route then accepts signed-out requests with an in-memory limit. It only works when `NODE_ENV` isn’t `production`, so it never applies to a production build or a deploy.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` deploys a Vercel preview for each pull request and production on a push to `main`. It skips itself until the repository has these secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.

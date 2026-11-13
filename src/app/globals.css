@@ -221,6 +221,14 @@
   }
 }
 
+svg a[data-week] {
+  outline: none;
+}
+
+svg a[data-week]:focus-visible [data-part="focus"] {
+  stroke: var(--ink);
+}
+
 .current-week {
   transform-box: fill-box;
   transform-origin: 50% 100%;

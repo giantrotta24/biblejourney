@@ -298,3 +298,47 @@ test("a week hash only holds back the current-week auto-open in its own phase", 
   await page.reload();
   await expect(page.getByRole("button", { name: /Wk 1 / })).toHaveAttribute("aria-expanded", "true");
 });
+
+test("the strip is one keyboard stop that opens a week from the keyboard", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 2);
+  await page.reload();
+  await expect(reading(page)).toBeVisible();
+
+  const strip = page.getByRole("group", { name: /weeks/i });
+  await expect(strip).toBeVisible();
+  await expect(strip.getByRole("link")).toHaveCount(52);
+  await expect(strip.locator('a[tabindex="0"]')).toHaveCount(1);
+
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Who’s who" }).focus();
+  await page.keyboard.press("Tab");
+  await expect(strip.getByRole("link", { name: /^Week 1, 2 of 6 days read, Creation and the early world/ })).toBeFocused();
+
+  await page.keyboard.press("End");
+  await expect(strip.getByRole("link", { name: /^Week 52, 0 of 6 days read/ })).toBeFocused();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  await expect(strip.getByRole("link", { name: /^Week 2, 0 of 6 days read, The book of Job/ })).toBeFocused();
+  await expect(strip.locator('a[tabindex="0"]')).toHaveCount(1);
+
+  await page.keyboard.press("Tab");
+  await expect(strip.locator("a:focus")).toHaveCount(0);
+  await page.keyboard.press("Shift+Tab");
+  await expect(strip.getByRole("link", { name: /^Week 2,/ })).toBeFocused();
+
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("Space");
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+  await expect(page.getByRole("button", { name: /Wk 2 / })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: /Wk 2 / })).toBeFocused();
+});
+
+test("the strip’s hit area is taller than its drawing", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const hit = await page.locator('svg a[data-week="7"] [data-part="hit"]').boundingBox();
+  const drawn = await page.locator('svg a[data-week="7"] [data-part="outline"]').boundingBox();
+  expect(hit!.height).toBeGreaterThanOrEqual(drawn!.height + 12);
+});

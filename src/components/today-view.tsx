@@ -7,6 +7,7 @@ import { catchUpDays, sundayWeek } from "@/lib/progress";
 import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";
 import { markSundaySeen, useSundaySeen } from "@/progress/sunday-seen";
+import { StudyAssistant } from "./study-assistant";
 import { VersePractice } from "./verse-practice";
 import { WeekDays } from "./week-days";
 
@@ -124,6 +125,8 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
       </section>
 
       <VersePractice key={week.week} week={week} />
+
+      <StudyAssistant key={day.index} dayIndex={day.index} />
     </>
   );
 }

@@ -58,9 +58,6 @@ GitHub needs these too, under Settings → Secrets and variables → Actions:
 |---|---|---|
 | `APP_URL` | Variable | `reminders.yml`: the production address, such as `https://your-app.vercel.app` |
 | `CRON_SECRET` | Secret | `reminders.yml`: the same value as in Vercel |
-| `VERCEL_TOKEN` | Secret | `deploy.yml` |
-| `VERCEL_ORG_ID` | Secret | `deploy.yml` |
-| `VERCEL_PROJECT_ID` | Secret | `deploy.yml` |
 
 ## Supabase database
 
@@ -124,18 +121,13 @@ Icons are drawn in `public/icon.svg` and `public/icons/*.svg`. After changing th
 
 ## Deploy to Vercel
 
-There are two ways. Pick one.
+1. Import the repository in Vercel.
+2. Add the environment variables from the table to the Vercel project, for Production and Preview.
+3. Set the Production Branch to `main`.
 
-**Through GitHub Actions.** `.github/workflows/deploy.yml` deploys a preview for each pull request and production on every push to `main`. It skips itself until its three secrets are set.
+Vercel builds a preview for every pull request and deploys production on every push to `main`.
 
-1. Create a Vercel project for the repository. Turn off Vercel’s own Git deployments for it, so each commit isn’t deployed twice.
-2. Create a token at vercel.com → Account Settings → Tokens. Save it as the `VERCEL_TOKEN` secret.
-3. Run `npx vercel link` in a checkout. Copy `orgId` and `projectId` from `.vercel/project.json` into the `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` secrets.
-4. Add the environment variables from the table to the Vercel project, for Production and Preview.
-
-**By connecting the repository.** Import the repository in Vercel and add the environment variables. Leave the three Vercel secrets unset. Vercel then builds every push itself, and the Actions workflow skips.
-
-Either way, set `APP_URL` in GitHub to the production address once it exists, so reminders can reach it.
+Set `APP_URL` in GitHub to the production address once it exists, so reminders can reach it.
 
 ## First deploy checklist
 
@@ -151,7 +143,7 @@ None of these has been run against live services yet. The tests cover them with 
 - [ ] **Study assistant.** Signed in, tap Historical setting. An answer should stream in. Tap it again the same day; it should come back at once from the cache. `select * from assistant_usage;` should show one row for you.
 - [ ] **Reminders.** In Settings, turn on a reminder a few minutes ahead. After that time, run the Reminders workflow by hand from the Actions tab. The notification should arrive, and a second run should send nothing.
 - [ ] **Install.** Add the app to the Home Screen on an iPhone and on Android. Turn on airplane mode. Today, Plan and Verses should still open.
-- [ ] **Deploy workflow.** Open a pull request and check that the preview deploys. Merge to `main` and check that production deploys.
+- [ ] **Deploy.** Open a pull request and check Vercel’s own preview deploy. Merge to `main` and check the production deploy.
 
 ## How changes are made
 

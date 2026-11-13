@@ -2,8 +2,9 @@
 id: BJ-3
 title: Accounts and sync: Supabase auth, RLS, merge on sign-in, realtime
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-3: Accounts and sync: Supabase auth, RLS, merge on sign-in, realtime
@@ -33,3 +34,4 @@ Acceptance: lint, typecheck, vitest, build, e2e pass with no environment variabl
 - 2026-11-13: implemented on gw/BJ-3: Supabase schema with RLS, sync engine over ProgressPersistence (union on first sign-in, follows the account on a restored session, IndexedDB pending queue, realtime apply), account screen behind a header link
 - 2026-11-13: follow-up: merged feature/mvp; device retry and sync queue reconciled; server refusals dropped and counted; Sunday view skipped when another device read past it
 - 2026-11-13: PR 7 review fix pass: private broadcast per user, session-checked sync, mid-pull buffering, unqueued-change deferral
+- 2026-11-13: closed. Accounts and sync shipped in PR 7

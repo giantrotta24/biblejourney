@@ -2,8 +2,9 @@
 id: BJ-4
 title: Study assistant: server route, streaming, quick prompts, cache, rate limit
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-4: Study assistant: server route, streaming, quick prompts, cache, rate limit
@@ -29,3 +30,4 @@ Intent: on Today the reader taps one of three quick prompts (historical setting,
 
 - 2026-11-13: opened
 - 2026-11-13: implemented on gw/BJ-4: POST /api/ask streaming plain text from the Anthropic Messages API (default claude-sonnet-5-5 in src/assistant/config.ts), Supabase token auth, 30 a UTC day limit, quick-prompt cache, assistant tables migration, panel on Today
+- 2026-11-13: closed. Study assistant shipped in PR 8

@@ -4,9 +4,10 @@ export type RemoteChange =
   | { kind: "put-day"; row: DayRow }
   | { kind: "delete-day"; day_index: number }
   | { kind: "put-verse"; row: VerseRow }
-  | { kind: "delete-verse"; week: number };
+  | { kind: "delete-verse"; week: number }
+  | { kind: "mark-reset"; at: string };
 
-export type RemotePull = ProgressRows & { userId: string | null };
+export type RemotePull = ProgressRows & { userId: string | null; resetAt: string | null };
 
 export type RemoteProgress = {
   pull(): Promise<RemotePull>;
@@ -14,6 +15,7 @@ export type RemoteProgress = {
   deleteDay(dayIndex: number): Promise<void>;
   putVerses(rows: readonly VerseRow[]): Promise<void>;
   deleteVerse(week: number): Promise<void>;
+  markReset(at: string): Promise<string | null>;
   subscribe(onChange: (change: RemoteChange) => void): () => void;
 };
 
@@ -27,10 +29,12 @@ export function changeKey(change: RemoteChange): string {
       return `verse:${change.row.week}`;
     case "delete-verse":
       return `verse:${change.week}`;
+    case "mark-reset":
+      return "reset";
   }
 }
 
-export function sendChange(remote: RemoteProgress, change: RemoteChange): Promise<void> {
+export function sendChange(remote: RemoteProgress, change: RemoteChange): Promise<unknown> {
   switch (change.kind) {
     case "put-day":
       return remote.putDays([change.row]);
@@ -40,6 +44,8 @@ export function sendChange(remote: RemoteProgress, change: RemoteChange): Promis
       return remote.putVerses([change.row]);
     case "delete-verse":
       return remote.deleteVerse(change.week);
+    case "mark-reset":
+      return remote.markReset(change.at);
   }
 }
 

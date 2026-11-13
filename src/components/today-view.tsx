@@ -7,6 +7,7 @@ import { catchUpDays, sundayWeek } from "@/lib/progress";
 import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";
 import { markSundaySeen, useSundaySeen } from "@/progress/sunday-seen";
+import { useLinkTranslation } from "@/settings/client";
 import { StudyAssistant } from "./study-assistant";
 import { VersePractice } from "./verse-practice";
 import { WeekDays } from "./week-days";
@@ -82,6 +83,7 @@ export function TodayView() {
 type HeadingRef = RefObject<HTMLHeadingElement | null>;
 
 function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done: ReadonlySet<number>; headingRef: HeadingRef; onMarkRead: () => void }) {
+  const translation = useLinkTranslation();
   const week = getWeek(day.week);
   const phase = getPhase(week.phase);
   const minutes = estimatedMinutes(day.chapters);
@@ -105,7 +107,7 @@ function ReadingView({ day, done, headingRef, onMarkRead }: { day: PlanDay; done
           <button type="button" className="btn btn-primary" onClick={onMarkRead}>
             Mark as read
           </button>
-          <a className="btn" href={bibleGatewayUrl(day.reading)} target="_blank" rel="noopener noreferrer">
+          <a className="btn" href={bibleGatewayUrl(day.reading, translation)} target="_blank" rel="noopener noreferrer">
             Read online<span className="sr-only"> at Bible Gateway (opens in a new tab)</span>
             <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M5 2.5H2.5v9h9V9M8 2.5h3.5V6M11.5 2.5 6.5 7.5" strokeLinecap="round" strokeLinejoin="round" />

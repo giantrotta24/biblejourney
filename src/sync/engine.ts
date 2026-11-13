@@ -16,6 +16,7 @@ export type ProgressSync = {
   userId(): string | null;
   getStatus(): SyncStatus;
   rejectedCount(): number;
+  markReset(at: string): Promise<void>;
   subscribeStatus(listener: () => void): () => void;
   subscribeRemote(listener: () => void): () => void;
 };
@@ -53,7 +54,14 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
   let running: Promise<void> | null = null;
   let again = false;
   let rejected = 0;
+  let resetSeen: string | null = null;
   const linkedLoaded = Promise.all([
+    queue.resetSeen().then(
+      (value) => {
+        resetSeen ??= value;
+      },
+      () => {},
+    ),
     queue.linkedUser().then(
       (value) => {
         linked ??= value;
@@ -136,6 +144,11 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     if (session) void track(flush());
   }
 
+  async function rememberReset(at: string | null) {
+    resetSeen = at;
+    await queue.setResetSeen(at).catch(() => {});
+  }
+
   async function applyRows(rows: ProgressRows) {
     const keys = [...rows.days.map(dayEcho), ...rows.verses.map(verseEcho)];
     keys.forEach((key) => echoes.add(key));
@@ -163,7 +176,12 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     for (const op of await queue.list(s.userId)) {
       if (session !== s) return false;
       try {
-        await sendChange(s.remote, op);
+        if (op.kind === "mark-reset") {
+          const stamped = await s.remote.markReset(op.at);
+          if (stamped) await rememberReset(stamped);
+        } else {
+          await sendChange(s.remote, op);
+        }
       } catch (error) {
         if (!isRefusal(error)) return false;
         console.warn("The server refused a progress change", error);
@@ -201,7 +219,8 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     const current = target.rows();
     const removable =
       current.days.some((row) => !held(`day:${row.day_index}`)) || current.verses.some((row) => !held(`verse:${row.week}`));
-    if (linked === s.userId && remote.days.length === 0 && remote.verses.length === 0 && removable) return false;
+    const resetElsewhere = remote.resetAt !== null && remote.resetAt !== resetSeen;
+    if (linked === s.userId && remote.days.length === 0 && remote.verses.length === 0 && removable && !resetElsewhere) return false;
     const incoming: ProgressRows = {
       days: remote.days.filter((row) => !blocked(`day:${row.day_index}`)),
       verses: remote.verses.filter((row) => !blocked(`verse:${row.week}`)),
@@ -240,6 +259,7 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
         await queue.setLinkedUser(s.userId);
       }
     });
+    if (resetElsewhere) await rememberReset(remote.resetAt);
 
     s.reconciled = true;
     return drain(s);
@@ -269,6 +289,8 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
           return applyDelete("day", change.day_index);
         case "delete-verse":
           return applyDelete("verse", change.week);
+        case "mark-reset":
+          return Promise.resolve();
       }
     });
   }
@@ -351,9 +373,11 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
       await linkedLoaded;
       linked = null;
       rejected = 0;
+      resetSeen = null;
       notifyStatus();
       await queue.setLinkedUser(null).catch(() => {});
       await queue.setRejectedCount(0).catch(() => {});
+      await queue.setResetSeen(null).catch(() => {});
     },
 
     flush,
@@ -370,6 +394,14 @@ export function createProgressSync(local: ProgressPersistence, queue: PendingQue
     userId: () => session?.userId ?? null,
     getStatus: () => status,
     rejectedCount: () => rejected,
+    async markReset(at) {
+      await linkedLoaded;
+      const userId = session?.userId ?? linked;
+      if (!userId) return;
+      await queue.push({ kind: "mark-reset", at, user_id: userId });
+      await rememberReset(at);
+      if (session) void track(flush());
+    },
     subscribeStatus(listener) {
       statusListeners.add(listener);
       return () => statusListeners.delete(listener);

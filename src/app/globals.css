@@ -172,6 +172,39 @@
     transform: rotate(180deg);
   }
 
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgb(14 20 36 / 0.45);
+  }
+
+  .dialog {
+    position: fixed;
+    inset: 0;
+    width: min(100% - 2rem, 30rem);
+    height: fit-content;
+    margin: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 20px 50px -20px color-mix(in oklab, var(--ink) 45%, transparent);
+    transition:
+      opacity 180ms ease-out,
+      translate 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dialog:is([data-starting-style], [data-ending-style]) {
+    opacity: 0;
+    translate: 0 12px;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   [data-slot="segmented-control"] {
     position: relative;
     display: inline-flex;

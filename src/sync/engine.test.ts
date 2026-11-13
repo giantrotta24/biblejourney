@@ -2,6 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import { localPersistence } from "@/progress/persistence";
 import type { DayRow } from "@/progress/rows";
+import { resetProgress } from "@/progress/reset";
 import { createProgressStore } from "@/progress/store";
 import { createProgressSync } from "./engine";
 import { createFakeServer, type FakeDevice } from "./fake-remote";
@@ -612,5 +613,96 @@ describe("progress sync", () => {
     await settle(device);
     expect(serverDays(server)).toEqual([3]);
     expect(dayKeys(device)).toEqual([3]);
+  });
+
+  it("clears a second device that was offline during a reset once it reconnects", async () => {
+    const server = createFakeServer();
+    const phone = await openDevice(server);
+    const laptop = await openDevice(server);
+    await phone.sync.start(USER, phone.remote);
+    await laptop.sync.start(USER, laptop.remote);
+    await phone.store.addDay(0);
+    await phone.store.addDay(1);
+    await phone.store.addVerse(1);
+    await settle(phone, laptop);
+    expect(dayKeys(laptop)).toEqual([0, 1]);
+
+    laptop.remote.online = false;
+    await resetProgress(phone.store, phone.sync);
+    await settle(phone, laptop);
+    expect(server.rows(USER)).toEqual({ days: [], verses: [] });
+    expect(server.resetAt(USER)).not.toBeNull();
+    expect(dayKeys(laptop)).toEqual([0, 1]);
+
+    laptop.remote.online = true;
+    await laptop.sync.resync();
+    await settle(phone, laptop);
+    expect(dayKeys(laptop)).toEqual([]);
+    expect([...laptop.store.getSnapshot().verses]).toEqual([]);
+    expect((await laptop.local.load()).days).toEqual([]);
+    expect(laptop.sync.getStatus()).toBe("synced");
+    expect(server.rows(USER)).toEqual({ days: [], verses: [] });
+  });
+
+  it("still keeps rows on an empty pull after an earlier reset this device already saw", async () => {
+    const server = createFakeServer();
+    const phone = await openDevice(server);
+    const laptop = await openDevice(server);
+    await phone.sync.start(USER, phone.remote);
+    await laptop.sync.start(USER, laptop.remote);
+    await phone.store.addDay(0);
+    await settle(phone, laptop);
+    await resetProgress(phone.store, phone.sync);
+    await settle(phone, laptop);
+    await laptop.sync.resync();
+    await settle(phone, laptop);
+
+    await laptop.store.addDay(4);
+    await laptop.store.addDay(5);
+    await settle(phone, laptop);
+    laptop.remote.online = false;
+    const other = server.device(USER);
+    await other.deleteDay(4);
+    await other.deleteDay(5);
+    laptop.remote.online = true;
+    await laptop.sync.resync();
+    await settle(laptop);
+
+    expect(dayKeys(laptop)).toEqual([4, 5]);
+    expect(laptop.sync.getStatus()).toBe("offline");
+  });
+
+  it("sends a reset made while offline to the account when the device reconnects", async () => {
+    const server = createFakeServer();
+    const phone = await openDevice(server);
+    await phone.sync.start(USER, phone.remote);
+    await phone.store.addDay(0);
+    await phone.store.addDay(1);
+    await settle(phone);
+
+    phone.remote.online = false;
+    const laptopRemote = server.device(USER);
+    await laptopRemote.putDays([{ day_index: 9, completed_at: at(5) }]);
+    await laptopRemote.putVerses([{ week: 3, learned_at: at(6) }]);
+    await resetProgress(phone.store, phone.sync);
+    await phone.store.addDay(0);
+    await settle(phone);
+    expect(serverDays(server)).toEqual([0, 1, 9]);
+    expect(server.resetAt(USER)).toBeNull();
+    expect(dayKeys(phone)).toEqual([0]);
+
+    phone.remote.online = true;
+    await phone.sync.resync();
+    await settle(phone);
+    expect(serverDays(server)).toEqual([0]);
+    expect(server.rows(USER).verses).toEqual([]);
+    expect(server.resetAt(USER)).not.toBeNull();
+    expect(dayKeys(phone)).toEqual([0]);
+    expect([...phone.store.getSnapshot().verses]).toEqual([]);
+
+    await phone.sync.resync();
+    await settle(phone);
+    expect(dayKeys(phone)).toEqual([0]);
+    expect(phone.sync.getStatus()).toBe("synced");
   });
 });

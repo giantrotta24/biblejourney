@@ -1,7 +1,7 @@
 import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
 import { RemoteRefusedError, type RemoteChange, type RemoteProgress, type RemotePull } from "./remote";
 
-type Account = { days: Map<number, DayRow>; verses: Map<number, VerseRow> };
+type Account = { days: Map<number, DayRow>; verses: Map<number, VerseRow>; resetAt: string | null };
 
 export type FakeDevice = RemoteProgress & {
   online: boolean;
@@ -18,11 +18,12 @@ const earliest = <R>(existing: R | undefined, row: R, time: (row: R) => string) 
 export function createFakeServer() {
   const accounts = new Map<string, Account>();
   const listeners = new Map<string, Set<(change: RemoteChange) => void>>();
+  let resets = 0;
 
   function account(userId: string): Account {
     let found = accounts.get(userId);
     if (!found) {
-      found = { days: new Map(), verses: new Map() };
+      found = { days: new Map(), verses: new Map(), resetAt: null };
       accounts.set(userId, found);
     }
     return found;
@@ -83,7 +84,9 @@ export function createFakeServer() {
       },
       async pull() {
         guard("pull");
-        const snapshot: RemotePull = self.sessionDropped ? { days: [], verses: [], userId: null } : { ...structuredClone(rows(userId)), userId };
+        const snapshot: RemotePull = self.sessionDropped
+          ? { days: [], verses: [], userId: null, resetAt: null }
+          : { ...structuredClone(rows(userId)), userId, resetAt: account(userId).resetAt };
         const gate = held;
         held = null;
         if (gate) await gate;
@@ -123,6 +126,21 @@ export function createFakeServer() {
           if (account(userId).verses.delete(week)) broadcast(userId, { kind: "delete-verse", week });
         });
       },
+      async markReset() {
+        guard("markReset");
+        if (self.sessionDropped) return null;
+        const owned = account(userId);
+        for (const dayIndex of [...owned.days.keys()]) {
+          owned.days.delete(dayIndex);
+          broadcast(userId, { kind: "delete-day", day_index: dayIndex });
+        }
+        for (const week of [...owned.verses.keys()]) {
+          owned.verses.delete(week);
+          broadcast(userId, { kind: "delete-verse", week });
+        }
+        owned.resetAt = `server-reset-${++resets}`;
+        return owned.resetAt;
+      },
       subscribe(onChange) {
         let set = listeners.get(userId);
         if (!set) listeners.set(userId, (set = new Set()));
@@ -136,5 +154,7 @@ export function createFakeServer() {
     return self;
   }
 
-  return { device, rows };
+  const resetAt = (userId: string) => account(userId).resetAt;
+
+  return { device, rows, resetAt };
 }

@@ -2,8 +2,9 @@
 id: BJ-7
 title: Remove the Vercel deploy workflow now that Vercel deploys from Git
 size: small
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-7: Remove the Vercel deploy workflow now that Vercel deploys from Git
@@ -25,3 +26,4 @@ Codex implemented this task (first under the alternating dev rule). rg for deplo
 ## Log
 
 - 2026-11-13: opened
+- 2026-11-13: closed. Deploy workflow removed in PR 11

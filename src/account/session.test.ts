@@ -45,14 +45,25 @@ describe("email sign-in error messages", () => {
     { code: "over_email_send_rate_limit" },
     { code: "over_request_rate_limit" },
   ])("explains a rate limit without exposing server text: %j", (details) => {
-    expect(emailSignInError({ ...details, message: "private server detail" })).toEqual({
+    expect(emailSignInError({ ...details, message: "private server detail" }, "send")).toEqual({
       kind: "rate-limit",
       message: "An email was sent recently. Please wait before asking for another code.",
     });
   });
 
+  it.each([
+    { status: 429 },
+    { code: "over_email_send_rate_limit" },
+    { code: "over_request_rate_limit" },
+  ])("explains a verification rate limit without exposing server text: %j", (details) => {
+    expect(emailSignInError({ ...details, message: "private server detail" }, "verify")).toEqual({
+      kind: "rate-limit",
+      message: "Too many attempts. Please wait a moment and try again.",
+    });
+  });
+
   it.each(["otp_expired", "invalid_credentials"])("explains an incorrect or expired code: %s", (code) => {
-    expect(emailSignInError({ code, status: 403, message: "private server detail" })).toEqual({
+    expect(emailSignInError({ code, status: 403, message: "private server detail" }, "verify")).toEqual({
       kind: "invalid-code",
       message: "That code is incorrect or has expired. Check it or send a new code.",
     });
@@ -62,20 +73,20 @@ describe("email sign-in error messages", () => {
     new TypeError("Failed to fetch"),
     { name: "AuthRetryableFetchError", status: 0 },
   ])("explains a network failure: %j", (error) => {
-    expect(emailSignInError(error)).toEqual({
+    expect(emailSignInError(error, "send")).toEqual({
       kind: "network",
       message: "You may be offline. Check your connection and try again.",
     });
   });
 
   it("accepts offline state as an argument without reading browser globals", () => {
-    expect(emailSignInError(new Error("private server detail"), false).kind).toBe("network");
+    expect(emailSignInError(new Error("private server detail"), "send", false).kind).toBe("network");
   });
 
   it.each([null, undefined, "private server detail", new Error("private server detail"), { status: 500 }, { status: 403 }])(
     "uses calm fallback copy for other failures: %j",
     (error) => {
-      expect(emailSignInError(error)).toEqual({
+      expect(emailSignInError(error, "send")).toEqual({
         kind: "other",
         message: "Sign-in didn’t go through. Please try again.",
       });

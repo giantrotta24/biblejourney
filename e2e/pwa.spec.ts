@@ -40,12 +40,26 @@ test("Today, Plan and Verses keep working offline once the app has loaded", asyn
   await expect(reading(page)).toHaveText(/Genesis 5–7/);
   await waitForOfflineReady(page);
 
+  const cachedApi = await page.evaluate(async () => {
+    const found: string[] = [];
+    for (const name of await caches.keys()) {
+      for (const request of await (await caches.open(name)).keys()) {
+        if (new URL(request.url).pathname.startsWith("/api/")) found.push(request.url);
+      }
+    }
+    return found;
+  });
+  expect(cachedApi).toEqual([]);
+
   await context.setOffline(true);
   const network = await page.evaluate(() => fetch("/api/reminders/send", { method: "POST" }).then(() => "online", () => "offline"));
   expect(network).toBe("offline");
 
   await page.reload();
   await expect(reading(page)).toHaveText(/Genesis 5–7/);
+  await expect(page.getByText("You’re offline. The study assistant needs a connection; the rest of the app works as usual.")).toBeVisible();
+  const ask = await page.evaluate(() => fetch("/api/ask").then(() => "answered", () => "failed"));
+  expect(ask).toBe("failed");
 
   const sections = page.getByRole("navigation", { name: "Sections" });
   await sections.getByRole("link", { name: "Plan" }).click();

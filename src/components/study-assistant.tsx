@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useAccount } from "@/account/session";
 import { getAccessToken } from "@/account/supabase";
 import { QUESTION_MAX_LENGTH, type AskErrorCode, type QuickPromptType } from "@/assistant/types";
@@ -31,9 +31,23 @@ const NOTICE_TEXT: Record<Exclude<Notice["kind"], "server" | "signed-out">, stri
   error: "That didn’t go through. Please try again in a moment.",
 };
 
-function useServerStatus(): ServerStatus | "unknown" | null {
+function subscribeOnline(listener: () => void) {
+  window.addEventListener("online", listener);
+  window.addEventListener("offline", listener);
+  return () => {
+    window.removeEventListener("online", listener);
+    window.removeEventListener("offline", listener);
+  };
+}
+
+function useOnline(): boolean {
+  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+}
+
+function useServerStatus(online: boolean): ServerStatus | "unknown" | null {
   const [status, setStatus] = useState<ServerStatus | "unknown" | null>(null);
   useEffect(() => {
+    if (!online) return;
     let live = true;
     fetch("/api/ask", { cache: "no-store" })
       .then((response) => (response.ok ? (response.json() as Promise<ServerStatus>) : Promise.reject(new Error(String(response.status)))))
@@ -42,7 +56,7 @@ function useServerStatus(): ServerStatus | "unknown" | null {
     return () => {
       live = false;
     };
-  }, []);
+  }, [online]);
   return status;
 }
 
@@ -68,12 +82,19 @@ function SignInPrompt({ expired = false }: { expired?: boolean }) {
 }
 
 export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
-  const server = useServerStatus();
+  const online = useOnline();
+  const server = useServerStatus(online);
   const account = useAccount();
   const [notConfigured, setNotConfigured] = useState(false);
 
   let body;
-  if (server === null || (server !== "unknown" && server.signInRequired && account.status === "loading")) {
+  if (!online) {
+    body = (
+      <p role="status" className="m-0 max-w-[65ch]">
+        {NOTICE_TEXT.offline}
+      </p>
+    );
+  } else if (server === null || (server !== "unknown" && server.signInRequired && account.status === "loading")) {
     body = <p className="sr-only">Checking whether the study assistant is available.</p>;
   } else if (notConfigured || (server !== "unknown" && !server.configured)) {
     body = <NotSetUp />;

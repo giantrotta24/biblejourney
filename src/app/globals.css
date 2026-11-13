@@ -134,6 +134,12 @@
     background: var(--surface);
   }
 
+  .check:disabled {
+    border-style: dashed;
+    background: var(--surface-2);
+    cursor: progress;
+  }
+
   .check:checked {
     background: var(--done);
     border-color: var(--done);

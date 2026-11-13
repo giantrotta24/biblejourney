@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const ROUTES = [
+const ROUTES: Array<{ path: string; tab: string; heading: string; content: RegExp; also?: RegExp }> = [
   { path: "/", tab: "Today", heading: "Today", content: /Genesis 1–4/ },
   { path: "/plan", tab: "Plan", heading: "The full plan", content: /Creation and the early world/ },
   { path: "/timeline", tab: "Timeline", heading: "The story in time", content: /Creation and the patriarchs/ },
   { path: "/verses", tab: "Verses", heading: "Memory verses", content: /Genesis 1:1/ },
-  { path: "/whos-who", tab: "Who’s who", heading: "Who’s who", content: /The prophets in their time/ },
+  { path: "/whos-who", tab: "Who’s who", heading: "Who’s who", content: /Israelites/, also: /Jonah/ },
 ];
 
 async function pageWidth(page: Page) {
@@ -17,6 +17,7 @@ for (const route of ROUTES) {
     await page.goto(route.path);
     await expect(page.getByRole("heading", { level: 1, name: route.heading })).toBeAttached();
     await expect(page.getByText(route.content).first()).toBeVisible();
+    if (route.also) await expect(page.getByText(route.also).first()).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: route.tab })).toHaveAttribute("aria-current", "page");
     expect(await pageWidth(page)).toBeLessThanOrEqual(360);
   });
@@ -34,7 +35,7 @@ test("Today shows the first day, its week and a Read online link", async ({ page
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 2, name: /Genesis 1–4/ })).toBeVisible();
   await expect(page.getByText("4 chapters · about 20 minutes")).toBeVisible();
-  await expect(page.getByRole("checkbox")).toHaveCount(6);
+  await expect(page.getByRole("list", { name: "This week’s readings" }).getByRole("checkbox")).toHaveCount(6);
   await expect(page.getByText(/You are in week 1 of 52/)).toBeAttached();
   const link = page.getByRole("link", { name: /Read online/ });
   await expect(link).toHaveAttribute("href", "https://www.biblegateway.com/passage/?search=Genesis+1-4&version=NIV");
@@ -57,6 +58,7 @@ test("a timeline era opens its first week in the plan", async ({ page }) => {
   await page.getByRole("link", { name: "Open week 13 in the plan" }).click();
   await expect(page).toHaveURL(/\/plan#week-13$/);
   await expect(page.getByRole("button", { name: /Wk 13 / })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: /Wk 13 / })).toBeFocused();
 });
 
 test("the memory verse switches between hidden, first letters and full text", async ({ page }) => {

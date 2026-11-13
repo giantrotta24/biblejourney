@@ -2,8 +2,9 @@
 id: BJ-1
 title: Foundation: seed validation, theme tokens, five static screens
 size: full
-status: open
+status: closed
 opened: 2026-11-13
+closed: 2026-11-13
 ---
 
 # BJ-1: Foundation: seed validation, theme tokens, five static screens
@@ -38,3 +39,4 @@ Not verified: an automated axe/contrast scan of rendered pages; Safari and Firef
 
 - 2026-11-13: opened
 - 2026-11-13: implemented on gw/BJ-1; UI SDK used for the Plan accordion and verse modes; Impeccable shape run in fallback mode
+- 2026-11-13: closed. Foundation shipped in PR 5: seed validation, theme tokens, five static screens, Playwright smoke in CI

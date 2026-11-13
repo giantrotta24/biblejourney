@@ -3,6 +3,7 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
 import { progressSync } from "@/progress/client";
+import { forgetDeviceReminders } from "@/reminders/client";
 import { settingsSignedIn, settingsSignedOut } from "@/settings/client";
 import type { SyncStatus } from "@/sync/engine";
 import { supabaseRemote } from "@/sync/supabase-remote";
@@ -74,6 +75,7 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  if (state.status === "signed-in") await forgetDeviceReminders(state.userId).catch(() => {});
   const { error } = await (await requireClient()).auth.signOut({ scope: "local" });
   if (error) throw error;
 }

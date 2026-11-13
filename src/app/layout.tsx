@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Literata } from "next/font/google";
 import { AccountLink } from "@/components/account-link";
+import { LogoMark } from "@/components/logo-mark";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SettingsLink } from "@/components/settings-link";
 import { SiteNav } from "@/components/site-nav";
@@ -49,7 +50,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <header className="sticky top-0 z-10 bg-bg pt-[env(safe-area-inset-top)]">
           <div className="page-width">
             <div className="flex min-h-14 items-center justify-between gap-1">
-              <p className="m-0 text-[0.9375rem] font-medium leading-tight">One-Year Bible Journey</p>
+              <p className="m-0 flex items-center gap-2 text-[0.9375rem] font-medium leading-tight">
+                <LogoMark className="h-5 w-auto shrink-0" />
+                One-Year Bible Journey
+              </p>
               <div className="-mr-3 flex shrink-0 items-center">
                 <AccountLink />
                 <SettingsLink />

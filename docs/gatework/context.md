@@ -59,3 +59,5 @@ Record decisions here, newest last: the date, the decision, and the reason.
 - 2026-11-13: BJ-7: removed the Actions deploy workflow; Vercel's GitHub integration deploys previews and production
 - 2026-11-13: closed task BJ-7: Deploy workflow removed in PR 11
 - 2026-11-13: BJ-9: redesigned to the owner's simple, clean direction in sage; cards, pills, phase colours and Marcellus removed; the year is one line of 52 marks
+- 2026-11-13: closed task BJ-8: Dependabot ignore rules shipped in PR 13
+- 2026-11-13: closed task BJ-9: Sage redesign shipped in PR 15

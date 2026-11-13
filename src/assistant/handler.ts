@@ -164,7 +164,7 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
         controller.enqueue(encoder.encode(next.value));
       } catch (error) {
         request.signal.removeEventListener("abort", abort);
-        log.error({ event: "assistant.error", stage: "stream", name: errorName(error), chars: answer.length });
+        if (!upstream.signal.aborted) log.error({ event: "assistant.error", stage: "stream", name: errorName(error), chars: answer.length });
         controller.error(error);
       }
     },
@@ -191,9 +191,9 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
 
 function errorName(error: unknown): string {
   if (error && typeof error === "object") {
-    const status = "status" in error ? String((error as { status: unknown }).status) : "";
+    const status = "status" in error ? (error as { status: unknown }).status : undefined;
     const name = error instanceof Error ? error.name : "Error";
-    return status ? `${name}:${status}` : name;
+    return typeof status === "number" ? `${name}:${status}` : name;
   }
   return "unknown";
 }

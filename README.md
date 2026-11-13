@@ -40,7 +40,7 @@ Signing in is optional. Without the Supabase variables the Account screen says a
 4. To offer Google: in Authentication → Sign In / Providers, enable Google and paste a client ID and secret from a Google Cloud OAuth client (type Web application). In Google Cloud, add the callback URL Supabase shows on that page as an authorized redirect URI. Email magic links work without this step.
 5. Copy the Project URL and the anon public key from Project Settings → API into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and into the Vercel project’s environment variables. Restart `npm run dev` or redeploy; the values are built into the page.
 
-On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns. Signing out keeps progress on the device.
+On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns; a change the server refuses outright is dropped and counted on the Account screen. Signing out keeps progress on the device.
 
 ## Deploy
 

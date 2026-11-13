@@ -58,6 +58,12 @@ export function sundayWeek(done: ReadonlySet<number>, seen: number | null): numb
   return null;
 }
 
+export function sundayPassedWeek(done: ReadonlySet<number>, seen: number | null): number | null {
+  const week = sundayWeek(done, seen);
+  if (week === null) return null;
+  return Math.max(...done) >= week * DAYS_PER_WEEK ? week : null;
+}
+
 export function catchUpDays(done: ReadonlySet<number>, throughWeek: number): PlanDay[] {
   return days.filter((day) => day.week <= throughWeek && !done.has(day.index));
 }

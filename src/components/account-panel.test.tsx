@@ -95,7 +95,9 @@ describe("sign-in view", () => {
     const view = await requestCode();
     const code = screen.getByLabelText("Email code") as HTMLInputElement;
     fireEvent.change(code, { target: { value: token } });
-    fireEvent.submit(screen.getByRole("button", { name: "Sign in" }));
+    const signIn = screen.getByRole("button", { name: "Sign in" });
+    signIn.focus();
+    fireEvent.submit(signIn);
 
     const waiting = screen.getByRole("button", { name: "Signing in…" }) as HTMLButtonElement;
     expect(waiting.disabled).toBe(true);
@@ -106,10 +108,19 @@ describe("sign-in view", () => {
 
     await act(async () => verifying.resolve());
     expect(screen.getByLabelText("Email code")).toBe(code);
+    expect.soft(waiting.disabled).toBe(true);
+    expect.soft(waiting.textContent).toBe("Signing in…");
+    expect.soft(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "Account" }));
     session.account = { status: "signed-in", userId: "u1", email: "reader@example.com" };
-    view.rerender(<AccountPanel />);
+    view.rerender(
+      <>
+        <h1 id="account-heading" tabIndex={-1}>Account</h1>
+        <AccountPanel />
+      </>,
+    );
     expect(screen.getByText("Signed in as reader@example.com.")).toBeTruthy();
     expect(screen.queryByLabelText("Email code")).toBeNull();
+    expect.soft(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "Account" }));
   });
 
   it("strips spaces from a pasted code without losing a leading zero", async () => {
@@ -125,7 +136,9 @@ describe("sign-in view", () => {
     await requestCode();
     const code = screen.getByLabelText("Email code") as HTMLInputElement;
     fireEvent.change(code, { target: { value: token } });
-    await act(async () => fireEvent.submit(screen.getByRole("button", { name: "Sign in" })));
+    const signIn = screen.getByRole("button", { name: "Sign in" });
+    signIn.focus();
+    await act(async () => signIn.click());
     expect(session.verifyEmailCode).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toContain("Enter the 6–10 digit code from your email.");
     expect(document.activeElement).toBe(code);
@@ -160,6 +173,27 @@ describe("sign-in view", () => {
     fireEvent.change(screen.getByLabelText("Email code"), { target: { value: "123456" } });
     await act(async () => fireEvent.submit(screen.getByRole("button", { name: "Sign in" })));
     expect(session.verifyEmailCode).toHaveBeenCalledExactlyOnceWith("reader@example.com", "123456");
+  });
+
+  it("announces too many verification attempts and keeps the code available to retry", async () => {
+    await requestCode();
+    const code = screen.getByLabelText("Email code") as HTMLInputElement;
+    const status = screen.getByRole("status");
+    const signIn = screen.getByRole("button", { name: "Sign in" }) as HTMLButtonElement;
+    session.verifyEmailCode.mockRejectedValue({ status: 429, message: "private server detail" });
+    fireEvent.change(code, { target: { value: "012345" } });
+    signIn.focus();
+    await act(async () => signIn.click());
+    expect(screen.getByRole("status")).toBe(status);
+    expect(status.textContent).toContain("Too many attempts. Please wait a moment and try again.");
+    expect(status.textContent).not.toContain("private server detail");
+    expect(code.value).toBe("012345");
+    expect(document.activeElement).toBe(code);
+    expect(signIn.disabled).toBe(false);
+    session.verifyEmailCode.mockResolvedValue();
+    await act(async () => signIn.click());
+    expect(session.verifyEmailCode).toHaveBeenCalledTimes(2);
+    expect(status.textContent).not.toContain("Too many attempts.");
   });
 
   it("resends to the retained address, disables concurrent actions, and keeps a code after a rate limit", async () => {

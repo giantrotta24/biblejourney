@@ -42,6 +42,18 @@ Signing in is optional. Without the Supabase variables the Account screen says a
 
 On first sign-in, anything already marked on the device is merged into the account: the union of both, keeping the earliest time each day or verse was marked. Changes made offline wait on the device and send when the connection returns. Signing out keeps progress on the device.
 
+## Study assistant
+
+On Today, a signed-in reader can tap Historical setting, Where on the map or Who’s who, or type a question of up to 500 characters, and a short answer about the day’s reading streams in from `POST /api/ask`. Without the variables below, Today says the assistant isn’t set up and everything else works.
+
+- `ANTHROPIC_API_KEY`: turns the assistant on. Server only; never prefix it with `NEXT_PUBLIC_`.
+- `ANTHROPIC_MODEL`: optional. Defaults to `claude-sonnet-5-5` (set in `src/assistant/config.ts`).
+- `SUPABASE_SERVICE_ROLE_KEY`: keeps the daily limit (30 questions per reader per UTC day) and the quick-prompt answer cache in Supabase. Without it both live in the server’s memory, which resets on every deploy or cold start. Run [`supabase/migrations/20261113010000_assistant.sql`](supabase/migrations/20261113010000_assistant.sql) the same way as the first migration; it adds `assistant_usage`, `assistant_answers` and the `assistant_take_question` function, readable only with the service role key.
+
+The assistant needs accounts (the Supabase URL and anon key above): the server checks the reader’s access token on every question. Quick-prompt answers are cached per day and prompt, so a repeat is instant and doesn’t count toward the limit. Server logs carry counts and errors, never question text.
+
+To try it locally with only an Anthropic key, set `ASSISTANT_ALLOW_ANONYMOUS=1` in `.env.local` and run `npm run dev`. The route then accepts signed-out requests with an in-memory limit. It only works when `NODE_ENV` isn’t `production`, so it never applies to `npm run build && npm start` or a deploy.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` deploys a Vercel preview for each pull request and production on a push to `main`. It skips itself until the repository has these secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.

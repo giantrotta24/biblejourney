@@ -188,9 +188,9 @@ export function ProgressStrip() {
             ) : (
               <span>All 52 weeks read · see the plan</span>
             )}
-            <span aria-hidden="true" className="text-muted">
-              →
-            </span>
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-muted">
+              <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </Link>
         )}
       </p>

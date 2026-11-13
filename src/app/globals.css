@@ -292,6 +292,22 @@ svg a[data-week]:focus-visible [data-part="focus"] {
   animation: current-week 2.4s ease-in-out 3;
 }
 
+.site-nav {
+  scrollbar-width: none;
+}
+
+.site-nav[data-more="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+
+.site-nav[data-more="start"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+}
+
+.site-nav[data-more="both"] {
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+
 .toast {
   bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   transition: opacity 200ms ease-out;

@@ -9,6 +9,8 @@ export type PendingQueue = {
   remove(id: number): Promise<void>;
   linkedUser(): Promise<string | null>;
   setLinkedUser(userId: string | null): Promise<void>;
+  rejectedCount(): Promise<number>;
+  setRejectedCount(count: number): Promise<void>;
 };
 
 const DB_NAME = "bible-journey-sync";
@@ -16,11 +18,13 @@ const DB_VERSION = 1;
 const OPS = "pending_ops";
 const META = "meta";
 const LINKED = "linked_user";
+const REJECTED = "rejected_count";
 
 export function memoryQueue(): PendingQueue {
   const ops: QueuedOp[] = [];
   let next = 1;
   let linked: string | null = null;
+  let rejected = 0;
   return {
     async list(userId) {
       return ops.filter((op) => op.user_id === userId).map((op) => ({ ...op }));
@@ -37,6 +41,12 @@ export function memoryQueue(): PendingQueue {
     },
     async setLinkedUser(userId) {
       linked = userId;
+    },
+    async rejectedCount() {
+      return rejected;
+    },
+    async setRejectedCount(count) {
+      rejected = count;
     },
   };
 }
@@ -90,6 +100,13 @@ function indexedDbQueue(db: IDBDatabase): PendingQueue {
       if (userId === null) await run(db, "readwrite", (store) => store.delete(LINKED), META);
       else await run(db, "readwrite", (store) => store.put(userId, LINKED), META);
     },
+    async rejectedCount() {
+      const value = await run(db, "readonly", (store) => store.get(REJECTED), META);
+      return typeof value === "number" ? value : 0;
+    },
+    async setRejectedCount(count) {
+      await run(db, "readwrite", (store) => store.put(count, REJECTED), META);
+    },
   };
 }
 
@@ -109,5 +126,7 @@ export function localQueue(factory: IDBFactory | null): PendingQueue {
     remove: async (id) => (await ready).remove(id),
     linkedUser: async () => (await ready).linkedUser(),
     setLinkedUser: async (userId) => (await ready).setLinkedUser(userId),
+    rejectedCount: async () => (await ready).rejectedCount(),
+    setRejectedCount: async (count) => (await ready).setRejectedCount(count),
   };
 }

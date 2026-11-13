@@ -8,8 +8,8 @@ import {
   AccordionTrigger,
   createAccordionController,
 } from "@ui-sdk/react/accordion";
-import { memo, useEffect, useState } from "react";
-import { DAYS_PER_WEEK, type Week } from "@/content/plan";
+import { memo, useEffect, useMemo, useState } from "react";
+import { DAYS_PER_WEEK, getWeek, type Week } from "@/content/plan";
 import { weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useWeekMask } from "@/progress/client";
 import { WeekDays } from "./week-days";
@@ -67,7 +67,8 @@ const PlanWeek = memo(function PlanWeek({ week, current, phaseColor }: { week: W
   );
 });
 
-export function PlanWeeks({ weeks, phaseColor }: { weeks: readonly Week[]; phaseColor: string }) {
+export function PlanWeeks({ first, last, phaseColor }: { first: number; last: number; phaseColor: string }) {
+  const weeks = useMemo(() => Array.from({ length: last - first + 1 }, (_, i) => getWeek(first + i)), [first, last]);
   const [accordion] = useState(() => createAccordionController());
   const [open, setOpen] = useState<string[]>([]);
   const currentWeek = useCurrentWeek();
@@ -76,7 +77,8 @@ export function PlanWeeks({ weeks, phaseColor }: { weeks: readonly Week[]; phase
   if (currentWeek !== openedCurrent) {
     setOpenedCurrent(currentWeek);
     const value = currentWeek && weeks.some((week) => week.week === currentWeek) ? weekAnchor(currentWeek) : null;
-    const linkedToWeek = openedCurrent === null && weekFromHash(window.location.hash) !== null;
+    const linked = weekFromHash(window.location.hash);
+    const linkedToWeek = openedCurrent === null && linked !== null && weeks.some((week) => weekAnchor(week.week) === linked);
     if (value && !linkedToWeek && !open.includes(value)) setOpen([...open, value]);
   }
 
@@ -86,7 +88,9 @@ export function PlanWeeks({ weeks, phaseColor }: { weeks: readonly Week[]; phase
       const value = weekFromHash(window.location.hash);
       if (!value || !values.has(value)) return;
       accordion.open(value);
-      document.getElementById(value)?.scrollIntoView({ block: "start" });
+      const item = document.getElementById(value);
+      item?.scrollIntoView({ block: "start" });
+      item?.querySelector("button")?.focus({ preventScroll: true });
     }
     openFromHash();
     window.addEventListener("hashchange", openFromHash);

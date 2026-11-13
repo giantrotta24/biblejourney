@@ -6,8 +6,10 @@ export type RemoteChange =
   | { kind: "put-verse"; row: VerseRow }
   | { kind: "delete-verse"; week: number };
 
+export type RemotePull = ProgressRows & { userId: string | null };
+
 export type RemoteProgress = {
-  pull(): Promise<ProgressRows>;
+  pull(): Promise<RemotePull>;
   putDays(rows: readonly DayRow[]): Promise<void>;
   deleteDay(dayIndex: number): Promise<void>;
   putVerses(rows: readonly VerseRow[]): Promise<void>;
@@ -40,3 +42,12 @@ export function sendChange(remote: RemoteProgress, change: RemoteChange): Promis
       return remote.deleteVerse(change.week);
   }
 }
+
+export class RemoteRefusedError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message);
+    this.name = "RemoteRefusedError";
+  }
+}
+
+export const isRefusal = (error: unknown): error is RemoteRefusedError => error instanceof RemoteRefusedError;

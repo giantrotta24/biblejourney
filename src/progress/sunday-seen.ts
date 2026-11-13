@@ -24,6 +24,8 @@ function write(week: number): boolean {
   }
 }
 
+export const sundaySeen = read;
+
 export function markSundaySeen(week: number) {
   memory = week;
   write(week);

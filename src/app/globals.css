@@ -46,7 +46,7 @@
 
 @layer base {
   html {
-    scroll-padding-top: 7.5rem;
+    scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 7.5rem);
     -webkit-text-size-adjust: 100%;
   }
 
@@ -132,6 +132,12 @@
     border: 1.5px solid var(--muted);
     border-radius: 6px;
     background: var(--surface);
+  }
+
+  .check:disabled {
+    border-style: dashed;
+    background: var(--surface-2);
+    cursor: progress;
   }
 
   .check:checked {
@@ -241,14 +247,24 @@
 @keyframes current-week {
   0%,
   100% {
-    opacity: 1;
+    transform: scaleY(1);
   }
   50% {
-    opacity: 0.4;
+    transform: scaleY(0.9);
   }
 }
 
+svg a[data-week] {
+  outline: none;
+}
+
+svg a[data-week]:focus-visible [data-part="focus"] {
+  stroke: var(--ink);
+}
+
 .current-week {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
   animation: current-week 2.4s ease-in-out infinite;
 }
 

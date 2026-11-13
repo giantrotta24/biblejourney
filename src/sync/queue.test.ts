@@ -38,3 +38,13 @@ it("keeps queued operations across reloads in IndexedDB", async () => {
   expect((await localQueue(storage).list("a")).map((op) => op.kind)).toEqual(["delete-verse"]);
   expect(await localQueue(storage).linkedUser()).toBe("a");
 });
+
+it("keeps a count of changes the server refused", async () => {
+  const storage = new IDBFactory();
+  expect(await localQueue(storage).rejectedCount()).toBe(0);
+  await localQueue(storage).setRejectedCount(2);
+  expect(await localQueue(storage).rejectedCount()).toBe(2);
+  const memory = memoryQueue();
+  await memory.setRejectedCount(1);
+  expect(await memory.rejectedCount()).toBe(1);
+});

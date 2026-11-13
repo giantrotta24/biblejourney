@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@supabase/supabase-js": "^2.119.0",
     "@ui-sdk/core": "^0.1.0-beta.1",
     "@ui-sdk/react": "^0.1.0-beta.1",

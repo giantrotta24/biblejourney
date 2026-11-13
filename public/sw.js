@@ -56,8 +56,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      const names = await caches.keys();
-      await Promise.all(names.filter((name) => name.startsWith("bible-journey-") && name !== CACHE).map((name) => caches.delete(name)));
+      const older = (await caches.keys()).filter((name) => name.startsWith("bible-journey-") && name !== CACHE);
+      const keep = older.at(-1);
+      await Promise.all(older.filter((name) => name !== keep).map((name) => caches.delete(name)));
       await self.clients.claim();
     })(),
   );
@@ -98,7 +99,10 @@ async function navigate(request) {
 
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(request, { ignoreSearch: !request.url.includes("/_next/") });
+  const isBuildAsset = request.url.includes("/_next/static/");
+  const cached =
+    (await cache.match(request, { ignoreSearch: !request.url.includes("/_next/") })) ||
+    (isBuildAsset ? await caches.match(request) : undefined);
   if (cached) return cached;
   const response = await fetch(request);
   if (response.ok && response.type === "basic") await cache.put(request, response.clone());

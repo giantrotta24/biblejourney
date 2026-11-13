@@ -60,7 +60,7 @@ function SignIn() {
         codeRef.current?.focus({ preventScroll: true });
       }
     } catch (error) {
-      const failure = emailSignInError(error, navigator.onLine);
+      const failure = emailSignInError(error, "send", navigator.onLine);
       setMessage(failure.message);
       if (failure.kind === "rate-limit") setSent(address);
     } finally {
@@ -82,11 +82,11 @@ function SignIn() {
     setBusy("verifying");
     try {
       await verifyEmailCode(sent, code);
+      document.getElementById(ACCOUNT_HEADING_ID)?.focus({ preventScroll: true });
     } catch (error) {
-      setMessage(emailSignInError(error, navigator.onLine).message);
+      setMessage(emailSignInError(error, "verify", navigator.onLine).message);
       codeRef.current?.focus({ preventScroll: true });
       codeRef.current?.select();
-    } finally {
       setBusy(null);
     }
   }
@@ -133,8 +133,6 @@ function SignIn() {
               name="code"
               inputMode="numeric"
               autoComplete="one-time-code"
-              pattern="[0-9]{6,10}"
-              required
               readOnly={Boolean(busy)}
               aria-describedby="account-sign-in-status"
               value={code}

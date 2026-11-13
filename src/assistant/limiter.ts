@@ -2,6 +2,7 @@ export type LimitResult = { allowed: boolean; used: number };
 
 export interface UsageLimiter {
   take(userId: string, now: Date): Promise<LimitResult>;
+  release(userId: string, now: Date): Promise<void>;
 }
 
 export function utcDay(now: Date): string {
@@ -19,6 +20,11 @@ export function memoryLimiter(limit: number): UsageLimiter {
       if (used >= limit) return { allowed: false, used };
       counts.set(key, used + 1);
       return { allowed: true, used: used + 1 };
+    },
+    async release(userId, now) {
+      const key = `${utcDay(now)}|${userId}`;
+      const used = counts.get(key) ?? 0;
+      if (used > 0) counts.set(key, used - 1);
     },
   };
 }

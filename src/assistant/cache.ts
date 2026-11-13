@@ -1,18 +1,22 @@
 import type { QuickPromptType } from "./types";
 
+export type AnswerKey = { dayIndex: number; type: QuickPromptType; model: string; promptVersion: string };
+
 export interface AnswerCache {
-  get(dayIndex: number, type: QuickPromptType): Promise<string | null>;
-  set(dayIndex: number, type: QuickPromptType, answer: string): Promise<void>;
+  get(key: AnswerKey): Promise<string | null>;
+  set(key: AnswerKey, answer: string): Promise<void>;
 }
+
+const keyOf = (key: AnswerKey) => JSON.stringify([key.dayIndex, key.type, key.model, key.promptVersion]);
 
 export function memoryCache(): AnswerCache {
   const answers = new Map<string, string>();
   return {
-    async get(dayIndex, type) {
-      return answers.get(`${dayIndex}|${type}`) ?? null;
+    async get(key) {
+      return answers.get(keyOf(key)) ?? null;
     },
-    async set(dayIndex, type, answer) {
-      answers.set(`${dayIndex}|${type}`, answer);
+    async set(key, answer) {
+      answers.set(keyOf(key), answer);
     },
   };
 }

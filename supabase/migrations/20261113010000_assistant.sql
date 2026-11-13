@@ -8,10 +8,11 @@ create table if not exists public.assistant_usage (
 create table if not exists public.assistant_answers (
   day_index smallint not null check (day_index between 0 and 311),
   prompt_type text not null check (prompt_type in ('history', 'map', 'people')),
-  answer text not null,
   model text not null,
+  prompt_version text not null,
+  answer text not null,
   created_at timestamptz not null default now(),
-  primary key (day_index, prompt_type)
+  primary key (day_index, prompt_type, model, prompt_version)
 );
 
 -- RLS on with no policies: only the server, using the service role key, reads or writes these tables.
@@ -44,3 +45,16 @@ $$;
 
 revoke execute on function public.assistant_take_question(uuid, date, integer) from public, anon, authenticated;
 grant execute on function public.assistant_take_question(uuid, date, integer) to service_role;
+
+create or replace function public.assistant_release_question(p_user_id uuid, p_day date)
+returns void
+language sql
+set search_path = ''
+as $$
+  update public.assistant_usage
+  set count = count - 1
+  where user_id = p_user_id and day = p_day and count > 0;
+$$;
+
+revoke execute on function public.assistant_release_question(uuid, date) from public, anon, authenticated;
+grant execute on function public.assistant_release_question(uuid, date) to service_role;

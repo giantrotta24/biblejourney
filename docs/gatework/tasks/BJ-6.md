@@ -57,6 +57,7 @@ axe: e2e/a11y.spec.ts, 7 routes plus Today mid-plan, Sunday and finished, light 
 Lighthouse 12.8.2 mobile, local production build: / 91, /plan 96, /verses 96, /timeline 97, /whos-who 97, /settings 95, /account 97 performance; accessibility, best practices and SEO 100 on all; CLS 0 to 0.018 (plan was 0.168 before pre-opening week 1).
 Acceptance from clean .next, no env vars: typecheck 0, lint 0, vitest 24 files 234 tests passed, build ok, e2e 66 passed.
 Not verified: real phone, live Supabase/Anthropic/push, screen reader by ear, 312 checkboxes on a mid-range phone.
+PR 10 fix pass: (1) strip caption keeps the selected week while pointer or focus moves between strip and caption, touch pointerdown selects; e2e hover-to-caption, arrow-Tab-Enter and touch tests failed first (caption reverted to week 1). (2) keyboard traversal asserts each route's known last stop, then focus leaving the page, failing on a repeat or after 120 presses; a temporary Tab trap on Today failed it ('focus came back to Trap'). (3) SVG ring check reads computed stroke, width and opacity; with the focus CSS removed it failed ('stroke rgba(0, 0, 0, 0)'). (4) assistant test streams text, holds, then the end marker; with 'if (!received) setNotice(null)' restored it failed (loading line not found). (5) Decisions line added by hand; duplicated log date fixed. Acceptance from clean .next, no env vars: typecheck 0, lint 0, vitest 234 passed, build ok, e2e 69 passed.
 
 ## Log
 

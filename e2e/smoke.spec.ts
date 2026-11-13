@@ -22,6 +22,14 @@ for (const route of ROUTES) {
   });
 }
 
+for (const route of ROUTES) {
+  test(`${route.path} has no horizontal scroll with the root font size at 130%`, async ({ page }) => {
+    await page.goto(route.path);
+    await page.addStyleTag({ content: "html { font-size: 130%; }" });
+    expect(await pageWidth(page)).toBeLessThanOrEqual(360);
+  });
+}
+
 test("Today shows the first day, its week and a Read online link", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 2, name: /Genesis 1–4/ })).toBeVisible();

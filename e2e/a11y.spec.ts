@@ -91,34 +91,60 @@ test("each route has its own title, one h1, the main landmarks and an English la
   }
 });
 
-test("tabbing through every route shows a focus ring on each stop and never gets stuck", async ({ page }) => {
+const LAST_STOP: Record<(typeof ROUTES)[number]["path"], RegExp> = {
+  "/": /^I know it/,
+  "/plan": /^Wk 52/,
+  "/timeline": /^Open week \d+ in the plan$/,
+  "/verses": /^I know it/,
+  "/whos-who": /^Who’s who$/,
+  "/account": /^Who’s who$/,
+  "/settings": /^Reset progress…$/,
+};
+
+type Stop = { id: string; name: string; visible: boolean; why: string };
+
+function focusStop(page: Page): Promise<Stop | null> {
+  return page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    if (!element || element === document.body) return null;
+    const probe = window as unknown as { tabProbe?: number };
+    element.dataset.tabProbe ??= String((probe.tabProbe = (probe.tabProbe ?? 0) + 1));
+    const style = getComputedStyle(element);
+    const label = element instanceof HTMLInputElement || element instanceof HTMLSelectElement ? element.labels?.[0]?.textContent : null;
+    const name = (element.getAttribute("aria-label") ?? label ?? element.textContent ?? element.tagName).trim().replace(/\s+/g, " ").slice(0, 60);
+    const ring = element.closest("svg") ? element.querySelector<SVGElement>("[data-part=focus]") : null;
+    if (ring) {
+      const drawn = getComputedStyle(ring);
+      const visible = drawn.stroke !== "none" && !/rgba\(\d+, \d+, \d+, 0\)|transparent/.test(drawn.stroke) && Number(drawn.opacity) > 0 && parseFloat(drawn.strokeWidth) >= 2;
+      return { id: element.dataset.tabProbe, name, visible, why: `svg ring stroke ${drawn.stroke} width ${drawn.strokeWidth} opacity ${drawn.opacity}` };
+    }
+    const visible = style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 2;
+    return { id: element.dataset.tabProbe, name, visible, why: `outline ${style.outlineStyle} ${style.outlineWidth}` };
+  });
+}
+
+test("tabbing through every route shows a focus ring on each stop and reaches the end", async ({ page }) => {
   for (const route of ROUTES) {
     await page.goto(route.path);
     await settle(page);
-    const seen = new Set<string>();
-    for (let presses = 0; presses < 60; presses++) {
+    const order: Stop[] = [];
+    let left = false;
+    for (let presses = 0; presses < 120; presses++) {
       await page.keyboard.press("Tab");
-      const stop = await page.evaluate(() => {
-        const element = document.activeElement as HTMLElement | null;
-        if (!element || element === document.body) return null;
-        const style = getComputedStyle(element);
-        const box = element.getBoundingClientRect();
-        const ring = style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 2;
-        const svgRing = element.closest("svg") !== null && element.querySelector("[data-part=focus]") !== null;
-        const checkRing = element.matches("input[type=checkbox], input[type=radio], [role=radio]") && style.outlineStyle !== "none";
-        return {
-          key: `${element.tagName}#${element.id}|${element.getAttribute("href") ?? ""}|${element.textContent?.slice(0, 40)}|${Math.round(box.top)}`,
-          name: element.getAttribute("aria-label") ?? element.textContent?.trim().slice(0, 40) ?? element.tagName,
-          visible: ring || svgRing || checkRing,
-          size: [box.width, box.height],
-        };
-      });
-      if (!stop) break;
-      expect(stop.visible, `${route.path}: no visible focus on ${stop.name}`).toBe(true);
-      if (seen.has(stop.key)) break;
-      seen.add(stop.key);
+      const stop = await focusStop(page);
+      if (!stop) {
+        left = order.length > 0;
+        if (left) break;
+        continue;
+      }
+      expect(stop.visible, `${route.path}: no visible focus on ${stop.name} (${stop.why})`).toBe(true);
+      const repeat = order.findIndex((seen) => seen.id === stop.id);
+      expect(repeat, `${route.path}: focus came back to ${stop.name} before leaving the page`).toBe(-1);
+      order.push(stop);
     }
-    expect(seen.size, `${route.path}: too few focus stops`).toBeGreaterThan(5);
+    expect(left, `${route.path}: focus never left the page after ${order.length} stops`).toBe(true);
+    expect(order.length, `${route.path}: too few focus stops`).toBeGreaterThan(5);
+    expect(order[order.length - 1].name, `${route.path}: last stop`).toMatch(LAST_STOP[route.path]);
   }
 });
 

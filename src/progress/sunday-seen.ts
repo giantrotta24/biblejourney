@@ -30,6 +30,14 @@ export function markSundaySeen(week: number) {
   for (const listener of listeners) listener();
 }
 
+export function clearSundaySeen() {
+  memory = null;
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {}
+  for (const listener of listeners) listener();
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);

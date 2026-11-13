@@ -373,3 +373,39 @@ test("adjacent strip weeks keep a visible gap and the caption names the week und
   await caption.click();
   await expect(page).toHaveURL(/\/plan#week-2$/);
 });
+
+test("the caption keeps the inspected week when the pointer moves onto it", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const caption = page.getByTestId("strip-caption");
+  await page.locator('svg a[data-week="2"] [data-part="hit"]').hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await caption.hover();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await caption.click();
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+});
+
+test("the caption keeps the week chosen with the arrow keys when tabbing onto it", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  const strip = page.getByRole("group", { name: /weeks/i });
+  await strip.locator('a[tabindex="0"]').focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(strip.getByRole("link", { name: /^Week 2,/ })).toBeFocused();
+  await page.keyboard.press("Tab");
+  const caption = page.getByTestId("strip-caption");
+  await expect(caption).toBeFocused();
+  await expect(caption).toHaveText(/Week 2 of 52/);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/plan#week-2$/);
+});
+
+test("a touch on a week names it in the caption", async ({ page }) => {
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerup", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await page.locator('svg a[data-week="3"]').dispatchEvent("pointerout", { pointerType: "touch", isPrimary: true, bubbles: true });
+  await expect(page.getByTestId("strip-caption")).toHaveText(/Week 3 of 52/);
+});

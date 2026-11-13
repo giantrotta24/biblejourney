@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { DAY_COUNT, DAYS_PER_WEEK, getPhase, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
 import { progressStats, weekMask, weekState } from "@/lib/progress";
 import { phaseColor, weekAnchor } from "@/lib/phase";
@@ -36,10 +36,26 @@ export function ProgressStrip() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [stop, setStop] = useState<number | null>(null);
-  const [pointed, setPointed] = useState<number | null>(null);
-  const [focused, setFocused] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const pointerInside = useRef(false);
   const active = stop ?? currentWeek ?? 1;
-  const captionWeek = pointed ?? focused ?? currentWeek;
+  const captionWeek = selected ?? currentWeek;
+
+  function select(week: number) {
+    setSelected(week);
+  }
+
+  function onRegionPointerLeave(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") return;
+    pointerInside.current = false;
+    if (!regionRef.current?.contains(document.activeElement)) setSelected(null);
+  }
+
+  function onRegionBlur(event: FocusEvent<HTMLDivElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    if (!pointerInside.current) setSelected(null);
+  }
 
   function moveTo(week: number) {
     setStop(week);
@@ -77,6 +93,14 @@ export function ProgressStrip() {
           ? "Loading your progress."
           : `${currentWeek ? `You are in week ${currentWeek} of ${WEEK_COUNT}. ` : "You have read every week. "}${percentLabel} of the Bible read, ${daysDone} of ${DAY_COUNT} reading days, ${versesLearned} of ${WEEK_COUNT} verses learned. Phases: ${phaseSummary}.`}
       </p>
+      <div
+        ref={regionRef}
+        onPointerEnter={(event) => {
+          if (event.pointerType !== "touch") pointerInside.current = true;
+        }}
+        onPointerLeave={onRegionPointerLeave}
+        onBlur={onRegionBlur}
+      >
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WEEK_COUNT * SEGMENT} ${HEIGHT}`}
@@ -85,10 +109,6 @@ export function ProgressStrip() {
         role="group"
         aria-label="Weeks of the plan. Use the left and right arrow keys to move between weeks."
         onKeyDown={onKeyDown}
-        onPointerLeave={() => setPointed(null)}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(null);
-        }}
       >
         {weeks.map((week) => {
           const x = (week.week - 1) * SEGMENT;
@@ -102,10 +122,10 @@ export function ProgressStrip() {
               aria-label={`Week ${week.week}${progress.ready ? `, ${weekMaskCount(progress.days, week.week)} of ${DAYS_PER_WEEK} days read` : ""}, ${week.title}`}
               onFocus={() => {
                 setStop(week.week);
-                setFocused(week.week);
+                select(week.week);
               }}
-              onPointerEnter={() => setPointed(week.week)}
-              onPointerDown={() => setPointed(week.week)}
+              onPointerEnter={(event) => event.pointerType !== "touch" && select(week.week)}
+              onPointerDown={() => select(week.week)}
               onClick={(event) => openWeek(event, week.week)}
               data-week={week.week}
               data-state={state}
@@ -192,6 +212,7 @@ export function ProgressStrip() {
           </Link>
         )}
       </p>
+      </div>
       <p className="mt-1 mb-0 flex flex-wrap gap-x-4 gap-y-0.5 text-[0.9375rem] text-muted" aria-hidden="true" data-testid="journey-stats">
         <span className="whitespace-nowrap">
           <span className={`text-ink tabular-nums ${statsClass ?? ""}`}>{percentLabel}</span> read

@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const ROUTES = [
+const ROUTES: Array<{ path: string; tab: string; heading: string; content: RegExp; also?: RegExp }> = [
   { path: "/", tab: "Today", heading: "Today", content: /Genesis 1–4/ },
   { path: "/plan", tab: "Plan", heading: "The full plan", content: /Creation and the early world/ },
   { path: "/timeline", tab: "Timeline", heading: "The story in time", content: /Creation and the patriarchs/ },
   { path: "/verses", tab: "Verses", heading: "Memory verses", content: /Genesis 1:1/ },
-  { path: "/whos-who", tab: "Who’s who", heading: "Who’s who", content: /The prophets in their time/ },
+  { path: "/whos-who", tab: "Who’s who", heading: "Who’s who", content: /Israelites/, also: /Jonah/ },
 ];
 
 async function pageWidth(page: Page) {
@@ -17,6 +17,7 @@ for (const route of ROUTES) {
     await page.goto(route.path);
     await expect(page.getByRole("heading", { level: 1, name: route.heading })).toBeAttached();
     await expect(page.getByText(route.content).first()).toBeVisible();
+    if (route.also) await expect(page.getByText(route.also).first()).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: route.tab })).toHaveAttribute("aria-current", "page");
     expect(await pageWidth(page)).toBeLessThanOrEqual(360);
   });

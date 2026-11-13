@@ -28,11 +28,11 @@ function Timeline({ progress }: { progress: Progress }) {
               {!last && <span aria-hidden="true" className="absolute top-3 -bottom-1 left-[6px] w-0.5 bg-line" />}
               <span
                 aria-hidden="true"
-                className="absolute top-1.5 left-0 size-3.5 rounded-full border-[3px] border-bg"
+                className="absolute top-2 left-0 size-3.5 rounded-full border-[3px] border-bg"
                 style={{ background: color, boxShadow: here ? `0 0 0 3px ${color}` : undefined }}
               />
-              <p className="m-0 text-sm text-muted">{era.when}</p>
-              <h2 className="m-0 mt-0.5 text-[1.375rem] leading-tight">{era.title}</h2>
+              <h2 className="m-0 text-[1.375rem] leading-tight">{era.title}</h2>
+              <p className="m-0 mt-0.5 text-[0.9375rem] text-muted">{era.when}</p>
               <p className="mt-2 mb-0 flex flex-wrap gap-1.5 text-[0.8125rem]">
                 <span className="rounded-full bg-surface-2 px-2.5 py-0.5">{era.empire}</span>
                 <span className="rounded-full bg-surface-2 px-2.5 py-0.5">{weekRangeLabel(era.weeks)}</span>

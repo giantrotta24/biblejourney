@@ -55,7 +55,7 @@ export function PlanWeeks({ rows, phaseColor, initialOpen }: { rows: PlanWeekRow
               </span>
               <span className="flex shrink-0 gap-[3px]" role="img" aria-label={`${readCount} of ${dots.length} days read`}>
                 {dots.map((on, i) => (
-                  <i key={i} className={`block size-[7px] rounded-full ${on ? "bg-done" : "bg-line"}`} />
+                  <i key={i} className={`block size-[7px] rounded-full border ${on ? "border-done bg-done" : "border-muted"}`} />
                 ))}
               </span>
               <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="1.5">

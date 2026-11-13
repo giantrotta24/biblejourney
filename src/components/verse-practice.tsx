@@ -18,8 +18,8 @@ export function VersePractice({ reference, text, headingLevel = 2 }: { reference
 
   return (
     <section aria-label="This week’s memory verse" className="rounded-2xl border border-line bg-surface p-5">
-      <p className="m-0 text-sm text-muted">This week’s memory verse</p>
-      <Heading className="m-0 mt-1 text-[1.375rem] leading-tight">{reference}</Heading>
+      <Heading className="m-0 text-[1.375rem] leading-tight">{reference}</Heading>
+      <p className="m-0 mt-0.5 text-sm text-muted">This week’s memory verse</p>
       <p aria-live="polite" className={`mt-3 mb-5 max-w-[65ch] min-h-[3.2em] ${mode === "hidden" ? "text-base text-muted italic" : "text-lg leading-relaxed"}`}>
         {mode === "hidden" ? "Say it from memory, then reveal to check." : mode === "letters" ? firstLetters(text) : text}
       </p>

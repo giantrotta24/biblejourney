@@ -28,6 +28,52 @@ function storedKeys(page: Page, store: "day_progress" | "verse_progress") {
 const savedDays = (page: Page, expected: number[]) => expect.poll(() => storedKeys(page, "day_progress")).toEqual(expected);
 const savedVerses = (page: Page, expected: number[]) => expect.poll(() => storedKeys(page, "verse_progress")).toEqual(expected);
 
+function seedDays(page: Page, count: number) {
+  return page.evaluate(
+    (total) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("bible-journey");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("day_progress", "readwrite");
+          for (let i = 0; i < total; i++) tx.objectStore("day_progress").put({ day_index: i, completed_at: new Date().toISOString() });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    count,
+  );
+}
+
+test("the timeline marks the era of the current week and follows progress", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
+  const here = page.getByRole("listitem").filter({ hasText: "You are here" });
+
+  await page.goto("/timeline");
+  await expect(here).toHaveCount(1);
+  await expect(here).toContainText("Creation and the patriarchs");
+
+  await page.goto("/");
+  await expect(reading(page)).toBeVisible();
+  await seedDays(page, 24);
+  await page.goto("/timeline");
+  await expect(here).toHaveCount(1);
+  await expect(here).toContainText("Egypt and the Exodus");
+  await expect(here).not.toContainText("Creation and the patriarchs");
+
+  await page.goto("/");
+  await seedDays(page, 312);
+  await page.goto("/timeline");
+  await expect(here).toHaveCount(1);
+  await expect(here).toContainText("The early church");
+  expect(errors).toEqual([]);
+});
+
 test("marking a day read shows the next day and survives a reload", async ({ page }) => {
   await page.goto("/");
   await expect(reading(page)).toHaveText(/Genesis 1–4/);

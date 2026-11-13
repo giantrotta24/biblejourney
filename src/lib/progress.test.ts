@@ -3,6 +3,7 @@ import { CHAPTER_COUNT, DAY_COUNT, days, WEEK_COUNT } from "@/content/plan";
 import {
   catchUpDays,
   currentWeek,
+  currentEraIndex,
   isWeekComplete,
   nextVerseWeek,
   progressStats,
@@ -120,5 +121,26 @@ describe("catchUpDays", () => {
     done.delete(9);
     expect(catchUpDays(done, 2).map((day) => day.index)).toEqual([2, 9]);
     expect(catchUpDays(range(0, 12), 2)).toEqual([]);
+  });
+});
+
+describe("currentEraIndex", () => {
+  const eras = [{ weeks: [1, 5] as const }, { weeks: [5, 12] as const }, { weeks: [13, 15] as const }];
+
+  it("sits on the era whose week range holds the first unread day's week", () => {
+    expect(currentEraIndex(new Set(), eras)).toBe(0);
+    expect(currentEraIndex(range(0, 6 * 12 + 1), eras)).toBe(2);
+  });
+
+  it("takes the later era when ranges share a week", () => {
+    expect(currentEraIndex(range(0, 6 * 4), eras)).toBe(1);
+  });
+
+  it("stays on the last era once the plan is finished", () => {
+    expect(currentEraIndex(range(0, DAY_COUNT), eras)).toBe(2);
+  });
+
+  it("holds the previous era across a gap between ranges", () => {
+    expect(currentEraIndex(range(0, 6 * 5 + 1), [{ weeks: [1, 3] as const }, { weeks: [8, 10] as const }])).toBe(0);
   });
 });

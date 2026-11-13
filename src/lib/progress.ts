@@ -23,6 +23,12 @@ export function currentWeek(done: ReadonlySet<number>): number | null {
   return currentDay(done)?.week ?? null;
 }
 
+export function currentEraIndex(done: ReadonlySet<number>, eras: ReadonlyArray<{ weeks: readonly [number, number] }>): number {
+  const week = currentWeek(done);
+  if (week === null) return eras.length - 1;
+  return Math.max(0, eras.findLastIndex((era) => era.weeks[0] <= week));
+}
+
 export function progressStats(progress: Progress): ProgressStats {
   return {
     percent: percentRead(progress.days, days),

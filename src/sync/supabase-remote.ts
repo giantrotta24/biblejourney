@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DAY_COUNT, WEEK_COUNT } from "@/content/plan";
 import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
-import type { RemoteChange, RemoteProgress } from "./remote";
+import { RemoteRefusedError, type RemoteChange, type RemoteProgress } from "./remote";
 
 export type ProgressTable = "day_progress" | "verse_progress";
 export type ChangePayload = { eventType: string; new: Record<string, unknown>; old: Record<string, unknown> };
@@ -51,12 +51,20 @@ export function realtimeChange(table: ProgressTable, payload: ChangePayload, use
   return row && { kind: "put-verse", row };
 }
 
+const RETRYABLE = new Set([401, 408, 429]);
+
+export function remoteError(error: unknown, status: number): unknown {
+  if (status < 400 || status >= 500 || RETRYABLE.has(status)) return error;
+  const message = error instanceof Object && "message" in error ? String(error.message) : `Request refused (${status})`;
+  return new RemoteRefusedError(message, status);
+}
+
 let channelCount = 0;
 
 export function supabaseRemote(client: SupabaseClient, userId: string): RemoteProgress {
-  async function check(request: PromiseLike<{ error: unknown }>) {
-    const { error } = await request;
-    if (error) throw error;
+  async function check(request: PromiseLike<{ error: unknown; status: number }>) {
+    const { error, status } = await request;
+    if (error) throw remoteError(error, status);
   }
 
   return {
@@ -65,8 +73,8 @@ export function supabaseRemote(client: SupabaseClient, userId: string): RemotePr
         client.from("day_progress").select("day_index, completed_at").eq("user_id", userId),
         client.from("verse_progress").select("week, learned_at").eq("user_id", userId),
       ]);
-      if (days.error) throw days.error;
-      if (verses.error) throw verses.error;
+      if (days.error) throw remoteError(days.error, days.status);
+      if (verses.error) throw remoteError(verses.error, verses.status);
       return remoteRows(days.data ?? [], verses.data ?? []);
     },
     putDays: (rows) =>

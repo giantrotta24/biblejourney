@@ -88,3 +88,11 @@ export function useSyncStatus(): SyncStatus {
     () => "off",
   );
 }
+
+export function useRejectedChanges(): number {
+  return useSyncExternalStore(
+    (listener) => progressSync().subscribeStatus(listener),
+    () => progressSync().rejectedCount(),
+    () => 0,
+  );
+}

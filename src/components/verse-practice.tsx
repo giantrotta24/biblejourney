@@ -37,24 +37,18 @@ export function KnowItToggle({ week, reference }: { week: number; reference: str
 export function VersePractice({
   week,
   label = "This week’s memory verse",
-  headingLevel = 2,
 }: {
   week: Week;
   label?: string;
-  headingLevel?: 2 | 3;
 }) {
   const [mode, setMode] = useState<Mode>("hidden");
-  const Heading = `h${headingLevel}` as const;
   const { ref, textKJV } = week.memoryVerse;
 
   return (
     <section aria-label={label} className="rounded-2xl border border-line bg-surface p-5">
-      <Heading className="m-0 text-[1.375rem] leading-tight">{ref}</Heading>
+      <h2 className="m-0 text-[1.375rem] leading-tight">{ref}</h2>
       <p className="m-0 mt-0.5 text-sm text-muted">{label}</p>
-      <p aria-live="polite" className={`mt-3 mb-5 max-w-[65ch] min-h-[3.2em] ${mode === "hidden" ? "text-base text-muted italic" : "text-lg leading-relaxed"}`}>
-        {mode === "hidden" ? "Say it from memory, then reveal to check." : mode === "letters" ? firstLetters(textKJV) : textKJV}
-      </p>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <SegmentedControl aria-label="Show the verse as" value={mode} onValueChange={(next) => next && setMode(next)}>
           <SegmentedControlIndicator />
           {MODES.map(({ value, label: modeLabel }) => (
@@ -65,6 +59,9 @@ export function VersePractice({
         </SegmentedControl>
         <KnowItToggle week={week.week} reference={ref} />
       </div>
+      <p aria-live="polite" className={`mt-4 mb-0 max-w-[65ch] min-h-[3.2em] ${mode === "hidden" ? "text-base text-muted italic" : "text-lg leading-relaxed"}`}>
+        {mode === "hidden" ? "Say it from memory, then reveal to check." : mode === "letters" ? firstLetters(textKJV) : textKJV}
+      </p>
     </section>
   );
 }

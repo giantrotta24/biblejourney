@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PlanWeeks } from "@/components/plan-weeks";
-import { phases, weeks } from "@/content/plan";
+import { phases } from "@/content/plan";
 import { phaseColor, weekRangeLabel } from "@/lib/phase";
 
 export const metadata: Metadata = { title: "The full plan" };
@@ -19,7 +19,7 @@ export default function PlanPage() {
             </h2>
             <span className="text-sm text-muted">{weekRangeLabel(phase.weeks)}</span>
           </div>
-          <PlanWeeks weeks={weeks.filter((week) => week.phase === phase.id)} phaseColor={phaseColor(phase.id)} />
+          <PlanWeeks first={phase.weeks[0]} last={phase.weeks[1]} phaseColor={phaseColor(phase.id)} />
         </section>
       ))}
     </>

@@ -15,7 +15,7 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Sections" className="-mx-2 mt-1">
+    <nav aria-label="Sections" className="-mx-2 mt-1 overflow-x-auto">
       <ul className="m-0 flex list-none justify-between p-0 sm:justify-start sm:gap-2">
         {SECTIONS.map(({ href, label }) => {
           const current = pathname === href;

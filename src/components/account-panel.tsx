@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { signInWithEmail, signInWithGoogle, signOut, useAccount, useSyncStatus } from "@/account/session";
+import { signInWithEmail, signInWithGoogle, signOut, useAccount, useRejectedChanges, useSyncStatus } from "@/account/session";
 import type { SyncStatus } from "@/sync/engine";
 
 const SYNC_TEXT: Record<SyncStatus, string> = {
@@ -99,8 +99,14 @@ function SignIn() {
   );
 }
 
+function rejectedText(count: number): string | null {
+  if (count <= 0) return null;
+  return `${count === 1 ? "1 change" : `${count} changes`} could not be synced.`;
+}
+
 function SignedIn({ email }: { email: string | null }) {
   const status = useSyncStatus();
+  const rejected = rejectedText(useRejectedChanges());
   const [error, setError] = useState<string | null>(null);
 
   async function onSignOut() {
@@ -118,6 +124,7 @@ function SignedIn({ email }: { email: string | null }) {
       <p role="status" className="m-0 max-w-[65ch]" data-sync={status}>
         {SYNC_TEXT[status]}
       </p>
+      {rejected && <p className="mt-2 mb-0 max-w-[65ch] text-sm text-muted">{rejected}</p>}
       <p className="mt-6 mb-0">
         <button type="button" className="btn" onClick={onSignOut}>
           Sign out

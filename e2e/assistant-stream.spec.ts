@@ -72,3 +72,22 @@ test("a refused answer is cleared and a length stop keeps its text with a note",
   await expect(panel(page).getByText("Cut without an ending")).toBeVisible();
   await expect(panel(page).getByText(/cut off part way/)).toBeVisible();
 });
+
+test("going offline keeps a finished answer on screen with the offline note beside it", async ({ page, context }) => {
+  const api = mockAssistant(page);
+  await page.goto("/");
+  await panel(page).getByRole("button", { name: "Where on the map" }).click();
+  api.respond(`Eden sits near the Tigris and Euphrates.${END}complete`);
+  await expect(panel(page).getByText("Eden sits near the Tigris and Euphrates.")).toBeVisible();
+
+  await context.setOffline(true);
+  await expect(panel(page).locator("[aria-live=polite]")).toHaveText(
+    "You’re offline. The study assistant needs a connection; the rest of the app works as usual.",
+  );
+  await expect(panel(page).getByText("Eden sits near the Tigris and Euphrates.")).toBeVisible();
+  await expect(panel(page).getByRole("button", { name: "Historical setting" })).toHaveAttribute("aria-disabled", "true");
+
+  await context.setOffline(false);
+  await expect(panel(page).getByText("Eden sits near the Tigris and Euphrates.")).toBeVisible();
+  await expect(panel(page).locator("[aria-live=polite]")).not.toContainText("offline");
+});

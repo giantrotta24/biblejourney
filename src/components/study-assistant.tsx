@@ -94,21 +94,32 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
   const account = useAccount();
   const [notConfigured, setNotConfigured] = useState(false);
 
+  const checking = server === null || (server !== "unknown" && server.signInRequired && account.status === "loading");
+  const unavailable = notConfigured || (server !== "unknown" && server !== null && !server.configured);
+  const needsSignIn = (server === "unknown" || server?.signInRequired === true) && account.status !== "signed-in";
+
   let body;
-  if (!online) {
+  if (!online && (checking || unavailable || needsSignIn)) {
     body = (
       <p role="status" className="m-0 max-w-[65ch]">
         {NOTICE_TEXT.offline}
       </p>
     );
-  } else if (server === null || (server !== "unknown" && server.signInRequired && account.status === "loading")) {
+  } else if (checking) {
     body = <p className="sr-only">Checking whether the study assistant is available.</p>;
-  } else if (notConfigured || (server !== "unknown" && !server.configured)) {
+  } else if (unavailable) {
     body = <NotSetUp />;
-  } else if ((server === "unknown" || server.signInRequired) && account.status !== "signed-in") {
+  } else if (needsSignIn) {
     body = <SignInPrompt />;
   } else {
-    body = <AskForm dayIndex={dayIndex} signInRequired={server === "unknown" || server.signInRequired} onNotConfigured={() => setNotConfigured(true)} />;
+    body = (
+      <AskForm
+        dayIndex={dayIndex}
+        online={online}
+        signInRequired={server === "unknown" || server.signInRequired}
+        onNotConfigured={() => setNotConfigured(true)}
+      />
+    );
   }
 
   return (
@@ -122,7 +133,9 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
   );
 }
 
-function AskForm({ dayIndex, signInRequired, onNotConfigured }: { dayIndex: number; signInRequired: boolean; onNotConfigured: () => void }) {
+type AskFormProps = { dayIndex: number; online: boolean; signInRequired: boolean; onNotConfigured: () => void };
+
+function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormProps) {
   const [question, setQuestion] = useState("");
   const [raw, setRaw] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -202,10 +215,11 @@ function AskForm({ dayIndex, signInRequired, onNotConfigured }: { dayIndex: numb
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = question.trim();
-    if (trimmed && !streaming) void ask({ question: trimmed }, document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    if (trimmed && !streaming && online) void ask({ question: trimmed }, document.activeElement instanceof HTMLElement ? document.activeElement : null);
   }
 
   const answer = readStream(raw).text;
+  const blocked = streaming || !online;
 
   return (
     <>
@@ -215,9 +229,9 @@ function AskForm({ dayIndex, signInRequired, onNotConfigured }: { dayIndex: numb
             key={prompt.type}
             type="button"
             className="btn aria-disabled:opacity-60"
-            aria-disabled={streaming || undefined}
+            aria-disabled={blocked || undefined}
             onClick={(event) => {
-              if (!streaming) void ask({ type: prompt.type }, event.currentTarget);
+              if (!blocked) void ask({ type: prompt.type }, event.currentTarget);
             }}
           >
             {prompt.label}
@@ -241,7 +255,7 @@ function AskForm({ dayIndex, signInRequired, onNotConfigured }: { dayIndex: numb
             aria-describedby="ask-question-count"
             className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-ink"
           />
-          <button type="submit" className="btn btn-primary aria-disabled:opacity-60" aria-disabled={streaming || !question.trim() || undefined}>
+          <button type="submit" className="btn btn-primary aria-disabled:opacity-60" aria-disabled={blocked || !question.trim() || undefined}>
             Ask
           </button>
         </div>
@@ -251,7 +265,9 @@ function AskForm({ dayIndex, signInRequired, onNotConfigured }: { dayIndex: numb
       </form>
 
       <div aria-live="polite" className="mt-4 max-w-[65ch]">
-        {notice &&
+        {!online && !streaming ? (
+          <p className="m-0">{NOTICE_TEXT.offline}</p>
+        ) : notice &&
           (notice.kind === "signed-out" ? (
             <SignInPrompt expired />
           ) : (

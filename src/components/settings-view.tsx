@@ -13,7 +13,7 @@ import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } fro
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useAccount } from "@/account/session";
-import { progressStore } from "@/progress/client";
+import { progressStore, progressSync } from "@/progress/client";
 import { RESET_WORD, resetConfirmed, resetProgress } from "@/progress/reset";
 import { clearSundaySeen } from "@/progress/sunday-seen";
 import {
@@ -211,7 +211,7 @@ function ResetSetting() {
   const confirmed = resetConfirmed(typed);
 
   async function reset() {
-    await resetProgress(progressStore());
+    await resetProgress(progressStore(), progressSync());
     clearSundaySeen();
     setDone(true);
   }

@@ -1,7 +1,7 @@
 import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
 import { RemoteRefusedError, type RemoteChange, type RemoteProgress, type RemotePull } from "./remote";
 
-type Account = { days: Map<number, DayRow>; verses: Map<number, VerseRow> };
+type Account = { days: Map<number, DayRow>; verses: Map<number, VerseRow>; resetAt: string | null };
 
 export type FakeDevice = RemoteProgress & {
   online: boolean;
@@ -22,7 +22,7 @@ export function createFakeServer() {
   function account(userId: string): Account {
     let found = accounts.get(userId);
     if (!found) {
-      found = { days: new Map(), verses: new Map() };
+      found = { days: new Map(), verses: new Map(), resetAt: null };
       accounts.set(userId, found);
     }
     return found;
@@ -83,7 +83,9 @@ export function createFakeServer() {
       },
       async pull() {
         guard("pull");
-        const snapshot: RemotePull = self.sessionDropped ? { days: [], verses: [], userId: null } : { ...structuredClone(rows(userId)), userId };
+        const snapshot: RemotePull = self.sessionDropped
+          ? { days: [], verses: [], userId: null, resetAt: null }
+          : { ...structuredClone(rows(userId)), userId, resetAt: account(userId).resetAt };
         const gate = held;
         held = null;
         if (gate) await gate;
@@ -123,6 +125,12 @@ export function createFakeServer() {
           if (account(userId).verses.delete(week)) broadcast(userId, { kind: "delete-verse", week });
         });
       },
+      async markReset(at) {
+        guard("markReset");
+        ifSignedIn(() => {
+          account(userId).resetAt = at;
+        });
+      },
       subscribe(onChange) {
         let set = listeners.get(userId);
         if (!set) listeners.set(userId, (set = new Set()));
@@ -136,5 +144,7 @@ export function createFakeServer() {
     return self;
   }
 
-  return { device, rows };
+  const resetAt = (userId: string) => account(userId).resetAt;
+
+  return { device, rows, resetAt };
 }

@@ -11,6 +11,8 @@ export type PendingQueue = {
   setLinkedUser(userId: string | null): Promise<void>;
   rejectedCount(): Promise<number>;
   setRejectedCount(count: number): Promise<void>;
+  resetSeen(): Promise<string | null>;
+  setResetSeen(at: string | null): Promise<void>;
 };
 
 const DB_NAME = "bible-journey-sync";
@@ -19,12 +21,14 @@ const OPS = "pending_ops";
 const META = "meta";
 const LINKED = "linked_user";
 const REJECTED = "rejected_count";
+const RESET_SEEN = "reset_seen";
 
 export function memoryQueue(): PendingQueue {
   const ops: QueuedOp[] = [];
   let next = 1;
   let linked: string | null = null;
   let rejected = 0;
+  let resetSeen: string | null = null;
   return {
     async list(userId) {
       return ops.filter((op) => op.user_id === userId).map((op) => ({ ...op }));
@@ -47,6 +51,12 @@ export function memoryQueue(): PendingQueue {
     },
     async setRejectedCount(count) {
       rejected = count;
+    },
+    async resetSeen() {
+      return resetSeen;
+    },
+    async setResetSeen(at) {
+      resetSeen = at;
     },
   };
 }
@@ -107,6 +117,14 @@ function indexedDbQueue(db: IDBDatabase): PendingQueue {
     async setRejectedCount(count) {
       await run(db, "readwrite", (store) => store.put(count, REJECTED), META);
     },
+    async resetSeen() {
+      const value = await run(db, "readonly", (store) => store.get(RESET_SEEN), META);
+      return typeof value === "string" ? value : null;
+    },
+    async setResetSeen(at) {
+      if (at === null) await run(db, "readwrite", (store) => store.delete(RESET_SEEN), META);
+      else await run(db, "readwrite", (store) => store.put(at, RESET_SEEN), META);
+    },
   };
 }
 
@@ -128,5 +146,7 @@ export function localQueue(factory: IDBFactory | null): PendingQueue {
     setLinkedUser: async (userId) => (await ready).setLinkedUser(userId),
     rejectedCount: async () => (await ready).rejectedCount(),
     setRejectedCount: async (count) => (await ready).setRejectedCount(count),
+    resetSeen: async () => (await ready).resetSeen(),
+    setResetSeen: async (at) => (await ready).setResetSeen(at),
   };
 }

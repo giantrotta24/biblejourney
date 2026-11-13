@@ -79,10 +79,11 @@ describe("Supabase error classes", () => {
   });
 });
 
-function fakeClient(sessionUser: string | null) {
+function fakeClient(sessionUser: string | null, profile: Record<string, unknown> | null = null) {
   const result = { data: [], error: null, status: 200 };
   const query = {
     select: vi.fn(() => query),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: profile, error: null, status: 200 })),
     eq: vi.fn(() => query),
     upsert: vi.fn(() => query),
     delete: vi.fn(() => query),
@@ -107,6 +108,7 @@ describe("Supabase remote session guard", () => {
         () => remote.deleteDay(1),
         () => remote.putVerses([{ week: 1, learned_at: "2026-11-13T12:00:00.000Z" }]),
         () => remote.deleteVerse(1),
+        () => remote.markReset("2026-11-13T12:00:00.000Z"),
       ]) {
         const error = await call().then(
           () => null,
@@ -121,7 +123,12 @@ describe("Supabase remote session guard", () => {
 
   it("reads as the signed-in user and says so", async () => {
     const { client, from } = fakeClient(ME);
-    await expect(supabaseRemote(client, ME).pull()).resolves.toEqual({ days: [], verses: [], userId: ME });
-    expect(from).toHaveBeenCalledTimes(2);
+    await expect(supabaseRemote(client, ME).pull()).resolves.toEqual({ days: [], verses: [], userId: ME, resetAt: null });
+    expect(from).toHaveBeenCalledTimes(3);
+  });
+
+  it("returns the account's last reset time with the pull, as an ISO time", async () => {
+    const { client } = fakeClient(ME, { progress_reset_at: "2026-11-13T12:30:00.123+00:00" });
+    await expect(supabaseRemote(client, ME).pull()).resolves.toMatchObject({ resetAt: "2026-11-13T12:30:00.123Z" });
   });
 });

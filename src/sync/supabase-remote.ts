@@ -92,13 +92,15 @@ export function supabaseRemote(client: SupabaseClient, userId: string): RemotePr
   return {
     async pull() {
       await signedIn();
-      const [days, verses] = await Promise.all([
+      const [days, verses, profile] = await Promise.all([
         client.from("day_progress").select("day_index, completed_at").eq("user_id", userId),
         client.from("verse_progress").select("week, learned_at").eq("user_id", userId),
+        client.from("profiles").select("progress_reset_at").eq("user_id", userId).maybeSingle<{ progress_reset_at: unknown }>(),
       ]);
       if (days.error) throw remoteError(days.error, days.status);
       if (verses.error) throw remoteError(verses.error, verses.status);
-      return { ...remoteRows(days.data ?? [], verses.data ?? []), userId };
+      if (profile.error) throw remoteError(profile.error, profile.status);
+      return { ...remoteRows(days.data ?? [], verses.data ?? []), userId, resetAt: isoTime(profile.data?.progress_reset_at) };
     },
     putDays: (rows) =>
       check(() =>
@@ -116,6 +118,8 @@ export function supabaseRemote(client: SupabaseClient, userId: string): RemotePr
         ),
       ),
     deleteVerse: (week) => check(() => client.from("verse_progress").delete().eq("user_id", userId).eq("week", week)),
+    markReset: (at) =>
+      check(() => client.from("profiles").upsert({ user_id: userId, progress_reset_at: at }, { onConflict: "user_id" })),
     subscribe(onChange) {
       const channel = client.channel(progressTopic(userId), { config: { private: true } });
       channel.on("broadcast", { event: "*" }, (message: { payload?: BroadcastPayload }) => {

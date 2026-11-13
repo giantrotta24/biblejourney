@@ -222,3 +222,20 @@ test("the plan page does not serialize week objects into client props", async ({
   expect(html).not.toContain("textKJV");
   expect(html).not.toContain("deepDive");
 });
+
+test("a closed hash-linked week stays closed when progress changes", async ({ page }) => {
+  await page.goto("/plan#week-13");
+  const week13 = page.getByRole("button", { name: /Wk 13 / });
+  await expect(week13).toHaveAttribute("aria-expanded", "true");
+  await week13.click();
+  await expect(week13).toHaveAttribute("aria-expanded", "false");
+
+  const week2 = page.getByRole("button", { name: /Wk 2 / });
+  await week2.click();
+  await expect(week2).toHaveAttribute("aria-expanded", "true");
+  await planWeek(page, 2).getByRole("checkbox").first().check();
+  await expect(page.getByRole("img", { name: "1 of 6 days read" }).first()).toBeVisible();
+  await savedDays(page, [6]);
+
+  await expect(week13).toHaveAttribute("aria-expanded", "false");
+});

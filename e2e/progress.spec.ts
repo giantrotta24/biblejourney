@@ -197,3 +197,22 @@ test("practice draws from every verse up to the current week", async ({ page }) 
   await practice.getByRole("button", { name: "Reveal" }).click();
   await expect(practice.getByRole("button", { name: "Hide" })).toBeVisible();
 });
+
+test("the verse controls stay put when the verse text changes height", async ({ page }) => {
+  await page.goto("/verses");
+  const card = page.getByRole("region", { name: "This week’s memory verse" });
+  const modeSwitch = card.getByRole("radiogroup", { name: "Show the verse as" });
+  const top = async () => (await modeSwitch.boundingBox())!.y;
+  const start = await top();
+
+  for (const name of ["First letters", "Full text", "Hide"]) {
+    await card.getByRole("radio", { name }).click();
+    expect(await top()).toBe(start);
+  }
+
+  const practice = page.getByRole("region", { name: /Practice/ });
+  const reveal = practice.getByRole("button", { name: /^(Reveal|Hide)$/ });
+  const revealTop = (await reveal.boundingBox())!.y;
+  await reveal.click();
+  expect((await reveal.boundingBox())!.y).toBe(revealTop);
+});

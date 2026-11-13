@@ -16,7 +16,6 @@ const marcellus = Marcellus({
 const literata = Literata({
   variable: "--font-literata",
   subsets: ["latin"],
-  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {

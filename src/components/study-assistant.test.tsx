@@ -48,11 +48,37 @@ describe("assistant invitations", () => {
     }));
   });
 
-  it("removes the form when access is revoked after the availability check", async () => {
-    fetchMock.mockResolvedValueOnce(status(true)).mockResolvedValueOnce(Response.json({ code: "not_enabled", error: INVITATION }, { status: 403 }));
+  it("does not take focus when the initial availability check returns disabled", async () => {
+    fetchMock.mockResolvedValue(status(false));
+    render(<><button type="button">Keep reading</button><StudyAssistant dayIndex={0} /></>);
+    const outside = screen.getByRole("button", { name: "Keep reading" });
+    outside.focus();
+    const invitation = await screen.findByText(INVITATION);
+    expect(document.activeElement).toBe(outside);
+    expect(invitation.tagName).toBe("P");
+    expect(invitation.getAttribute("role")).toBe("status");
+    expect(invitation.tabIndex).toBe(-1);
+    expect(invitation.classList.contains("focus-heading")).toBe(true);
+  });
+
+  it("removes the form and focuses the invitation when access is revoked after the availability check", async () => {
+    let finish!: (response: Response) => void;
+    fetchMock.mockResolvedValueOnce(status(true)).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     render(<StudyAssistant dayIndex={0} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
-    await screen.findByText(INVITATION);
+    const question = await screen.findByRole("textbox");
+    question.focus();
+    expect(document.activeElement).toBe(question);
+    fireEvent.change(question, { target: { value: "Who is Abraham?" } });
+    fireEvent.submit(question.closest("form")!);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Stop" }));
+    await act(async () => finish(Response.json({ code: "not_enabled", error: INVITATION }, { status: 403 })));
+    const invitation = await screen.findByText(INVITATION);
+    expect(document.activeElement).toBe(invitation);
+    expect(invitation.tagName).toBe("P");
+    expect(invitation.getAttribute("role")).toBe("status");
+    expect(invitation.tabIndex).toBe(-1);
+    expect(invitation.classList.contains("focus-heading")).toBe(true);
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
   });

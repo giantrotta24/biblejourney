@@ -110,6 +110,11 @@ function AssistantPanel({ dayIndex, account }: { dayIndex: number; account: Acco
   const server = useServerStatus(online, account.status === "signed-in" ? account.userId : null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [notEnabled, setNotEnabled] = useState(false);
+  const invitationRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (notEnabled) invitationRef.current?.focus({ preventScroll: true });
+  }, [notEnabled]);
 
   const checking = server === null || (server !== "unknown" && server.signInRequired && account.status === "loading");
   const unavailable = notConfigured || (server !== "unknown" && server !== null && !server.configured);
@@ -129,7 +134,7 @@ function AssistantPanel({ dayIndex, account }: { dayIndex: number; account: Acco
   } else if (needsSignIn) {
     body = <SignInPrompt />;
   } else if (notEnabled || (server !== "unknown" && server.enabled === false)) {
-    body = <p className="m-0 max-w-[65ch]">{INVITATION_TEXT}</p>;
+    body = <p ref={invitationRef} role="status" tabIndex={-1} className="focus-heading m-0 max-w-[65ch]">{INVITATION_TEXT}</p>;
   } else {
     body = (
       <AskForm

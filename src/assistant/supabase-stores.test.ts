@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { supabaseAuth, supabaseCache, supabaseLimiter } from "./supabase-stores";
+import { supabaseAccess, supabaseAuth, supabaseCache, supabaseLimiter } from "./supabase-stores";
 
 function fakeClient(result: { data: unknown; error: unknown }) {
   const calls: unknown[][] = [];
@@ -31,6 +31,25 @@ describe("supabaseLimiter", () => {
       used: 30,
     });
     await expect(supabaseLimiter(fakeClient({ data: null, error: { code: "42501" } }).client, 30).take("u1", new Date())).rejects.toThrow("42501");
+  });
+});
+
+describe("supabaseAccess", () => {
+  it("looks up only the verified user in assistant_access", async () => {
+    const { client, calls } = fakeClient({ data: { user_id: "u1" }, error: null });
+    expect(await supabaseAccess(client).allowed("u1")).toBe(true);
+    expect(calls).toEqual([["from", "assistant_access"], ["select", "user_id"], ["eq", "user_id", "u1"]]);
+  });
+
+  it("denies a missing or unexpected row", async () => {
+    for (const data of [null, {}, { user_id: "someone-else" }]) {
+      expect(await supabaseAccess(fakeClient({ data, error: null }).client).allowed("u1")).toBe(false);
+    }
+  });
+
+  it("throws on lookup failure even if a row is also returned", async () => {
+    const { client } = fakeClient({ data: { user_id: "u1" }, error: { code: "42501", message: "private detail" } });
+    await expect(supabaseAccess(client).allowed("u1")).rejects.toThrow("42501");
   });
 });
 

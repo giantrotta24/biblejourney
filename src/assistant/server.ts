@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { memoryAccess } from "./access";
 import { memoryCache } from "./cache";
 import { assistantModelId, assistantSetup } from "./config";
 import { consoleLog, type AskDeps, type AssistantLog } from "./handler";
 import { memoryLimiter } from "./limiter";
 import { anthropicModel } from "./model";
-import { supabaseAuth, supabaseCache, supabaseLimiter } from "./supabase-stores";
+import { supabaseAccess, supabaseAuth, supabaseCache, supabaseLimiter } from "./supabase-stores";
 import { DAILY_QUESTION_LIMIT } from "./types";
 
 type Env = Record<string, string | undefined>;
@@ -30,6 +31,7 @@ export function createAskDeps(env: Env, log: AssistantLog): AskDeps {
   return {
     model: setup.ready && apiKey ? anthropicModel({ apiKey, model: modelId }) : null,
     auth: url && anonKey ? supabaseAuth(createClient(url, anonKey, serverClientOptions)) : null,
+    access: service ? supabaseAccess(service) : memoryAccess(env.NODE_ENV === "development" ? "everyone" : []),
     allowAnonymous: setup.anonymous,
     limiter: service ? supabaseLimiter(service, DAILY_QUESTION_LIMIT) : memoryLimiter(DAILY_QUESTION_LIMIT),
     anonymousLimiter: memoryLimiter(DAILY_QUESTION_LIMIT),

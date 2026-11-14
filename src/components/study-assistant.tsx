@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
-import { useAccount } from "@/account/session";
+import { useAccount, type AccountState } from "@/account/session";
 import { getAccessToken } from "@/account/supabase";
 import { QUESTION_MAX_LENGTH, type AskErrorCode, type QuickPromptType } from "@/assistant/types";
 import { readStream } from "@/assistant/wire";
@@ -13,7 +13,9 @@ const QUICK_PROMPTS: { type: QuickPromptType; label: string }[] = [
   { type: "people", label: "Who’s who" },
 ];
 
-type ServerStatus = { configured: boolean; signInRequired: boolean };
+type ServerStatus = { configured: boolean; signInRequired: boolean; enabled?: boolean };
+
+const INVITATION_TEXT = "The study assistant is by invitation for now.";
 
 type Notice =
   | { kind: "loading" }
@@ -51,19 +53,28 @@ function useOnline(): boolean {
   return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
 
-function useServerStatus(online: boolean): ServerStatus | "unknown" | null {
+function useServerStatus(online: boolean, userId: string | null): ServerStatus | "unknown" | null {
   const [status, setStatus] = useState<ServerStatus | "unknown" | null>(null);
   useEffect(() => {
     if (!online) return;
     let live = true;
-    fetch("/api/ask", { cache: "no-store" })
-      .then((response) => (response.ok ? (response.json() as Promise<ServerStatus>) : Promise.reject(new Error(String(response.status)))))
+    async function check() {
+      const headers: Record<string, string> = {};
+      if (userId) {
+        const token = await getAccessToken();
+        if (token) headers.authorization = `Bearer ${token}`;
+      }
+      const response = await fetch("/api/ask", { cache: "no-store", headers });
+      if (!response.ok) throw new Error(String(response.status));
+      return response.json() as Promise<ServerStatus>;
+    }
+    check()
       .then((value) => live && setStatus(value))
       .catch(() => live && setStatus("unknown"));
     return () => {
       live = false;
     };
-  }, [online]);
+  }, [online, userId]);
   return status;
 }
 
@@ -89,10 +100,16 @@ function SignInPrompt({ expired = false }: { expired?: boolean }) {
 }
 
 export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
-  const online = useOnline();
-  const server = useServerStatus(online);
   const account = useAccount();
+  const identity = account.status === "signed-in" ? account.userId : account.status;
+  return <AssistantPanel key={identity} dayIndex={dayIndex} account={account} />;
+}
+
+function AssistantPanel({ dayIndex, account }: { dayIndex: number; account: AccountState }) {
+  const online = useOnline();
+  const server = useServerStatus(online, account.status === "signed-in" ? account.userId : null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [notEnabled, setNotEnabled] = useState(false);
 
   const checking = server === null || (server !== "unknown" && server.signInRequired && account.status === "loading");
   const unavailable = notConfigured || (server !== "unknown" && server !== null && !server.configured);
@@ -111,6 +128,8 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
     body = <NotSetUp />;
   } else if (needsSignIn) {
     body = <SignInPrompt />;
+  } else if (notEnabled || (server !== "unknown" && server.enabled === false)) {
+    body = <p className="m-0 max-w-[65ch]">{INVITATION_TEXT}</p>;
   } else {
     body = (
       <AskForm
@@ -118,6 +137,7 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
         online={online}
         signInRequired={server === "unknown" || server.signInRequired}
         onNotConfigured={() => setNotConfigured(true)}
+        onNotEnabled={() => setNotEnabled(true)}
       />
     );
   }
@@ -133,9 +153,9 @@ export function StudyAssistant({ dayIndex }: { dayIndex: number }) {
   );
 }
 
-type AskFormProps = { dayIndex: number; online: boolean; signInRequired: boolean; onNotConfigured: () => void };
+type AskFormProps = { dayIndex: number; online: boolean; signInRequired: boolean; onNotConfigured: () => void; onNotEnabled: () => void };
 
-function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormProps) {
+function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabled }: AskFormProps) {
   const [question, setQuestion] = useState("");
   const [raw, setRaw] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -180,6 +200,7 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured }: AskFormP
         const failure = (await response.json().catch(() => null)) as { error?: string; code?: AskErrorCode } | null;
         if (response.status === 503 && failure?.code === "not_configured") return onNotConfigured();
         if (response.status === 401) return setNotice({ kind: "signed-out" });
+        if (response.status === 403 && failure?.code === "not_enabled") return onNotEnabled();
         if ((response.status === 429 || response.status === 400) && failure?.error) return setNotice({ kind: "server", text: failure.error });
         return setNotice({ kind: "error" });
       }

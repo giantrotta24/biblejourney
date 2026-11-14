@@ -44,6 +44,17 @@ describe("assistantSetup", () => {
 });
 
 describe("createAskDeps", () => {
+  it("allows all users in development without the service role key", async () => {
+    const deps = createAskDeps(without("SUPABASE_SERVICE_ROLE_KEY", { NODE_ENV: "development" }), { info: vi.fn(), error: vi.fn() });
+    expect(await deps.access.allowed("any-local-reader")).toBe(true);
+  });
+
+  it("never allows the in-memory development fallback in production", async () => {
+    const deps = createAskDeps(without("SUPABASE_SERVICE_ROLE_KEY", { NODE_ENV: "production", ASSISTANT_ALLOW_ANONYMOUS: "1" }), { info: vi.fn(), error: vi.fn() });
+    expect(await deps.access.allowed("any-reader")).toBe(false);
+    expect(deps.allowAnonymous).toBe(false);
+  });
+
   it("in production without the service role key reports not configured, returns 503 and logs the missing name once", async () => {
     const log = { info: vi.fn(), error: vi.fn() };
     const deps = createAskDeps(without("SUPABASE_SERVICE_ROLE_KEY", { NODE_ENV: "production" }), log);

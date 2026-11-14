@@ -1,8 +1,24 @@
 import { describe, expect, it } from "vitest";
+import { memoryAccess } from "./access";
 import { memoryCache } from "./cache";
 import { memoryLimiter, utcDay } from "./limiter";
 
 const at = (iso: string) => new Date(iso);
+
+describe("memoryAccess", () => {
+  it("only allows the named users and denies by default", async () => {
+    const access = memoryAccess(["invited"]);
+    expect(await access.allowed("invited")).toBe(true);
+    expect(await access.allowed("stranger")).toBe(false);
+    expect(await memoryAccess().allowed("invited")).toBe(false);
+  });
+
+  it("can explicitly allow everyone for local development", async () => {
+    const access = memoryAccess("everyone");
+    expect(await access.allowed("reader-a")).toBe(true);
+    expect(await access.allowed("reader-b")).toBe(true);
+  });
+});
 
 describe("utcDay", () => {
   it("uses the UTC calendar day", () => {

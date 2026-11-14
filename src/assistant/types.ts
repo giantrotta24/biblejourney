@@ -22,4 +22,4 @@ export const askRequestSchema = z.union([
 
 export type AskRequest = z.infer<typeof askRequestSchema>;
 
-export type AskErrorCode = "not_configured" | "unauthorized" | "rate_limited" | "invalid" | "upstream";
+export type AskErrorCode = "not_configured" | "unauthorized" | "not_enabled" | "rate_limited" | "invalid" | "upstream";

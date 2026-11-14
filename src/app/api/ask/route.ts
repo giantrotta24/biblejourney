@@ -1,10 +1,10 @@
 import { connection } from "next/server";
-import { assistantStatus, handleAsk } from "@/assistant/handler";
+import { handleAssistantStatus, handleAsk } from "@/assistant/handler";
 import { serverAskDeps } from "@/assistant/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   await connection();
-  return Response.json(assistantStatus(serverAskDeps()), { headers: { "cache-control": "no-store" } });
+  return handleAssistantStatus(request, serverAskDeps());
 }
 
 export async function POST(request: Request) {

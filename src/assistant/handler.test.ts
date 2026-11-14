@@ -31,6 +31,7 @@ function deps(overrides: Partial<AskDeps> = {}): AskDeps {
   return {
     model: fakeModel().model,
     auth: { userId: async (token) => (token === TOKEN ? "user-1" : null) },
+    access: { allowed: async (userId) => userId === "user-1" },
     allowAnonymous: false,
     limiter: memoryLimiter(DAILY_QUESTION_LIMIT),
     anonymousLimiter: memoryLimiter(DAILY_QUESTION_LIMIT),
@@ -54,6 +55,74 @@ function ask(body: unknown, token: string | null = TOKEN, signal?: AbortSignal) 
 }
 
 describe("handleAsk", () => {
+  it("checks the verified user before answering", async () => {
+    const access = { allowed: vi.fn(async () => true) };
+    const response = await handleAsk(ask({ dayIndex: 0, type: "history" }), deps({ access }));
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(access.allowed).toHaveBeenCalledExactlyOnceWith("user-1");
+  });
+
+  it("denies an uninvited user before reading a cached answer or spending a question", async () => {
+    const { model, prompts } = fakeModel();
+    const cache = memoryCache();
+    await cache.set({ dayIndex: 0, type: "history", model: "test-model", promptVersion: PROMPT_VERSION }, "Already cached");
+    const read = vi.spyOn(cache, "get");
+    const limiter = memoryLimiter(1);
+    const take = vi.spyOn(limiter, "take");
+    const response = await handleAsk(ask({ dayIndex: 0, type: "history" }), deps({ model, cache, limiter, access: { allowed: async () => false } }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ code: "not_enabled", error: "The study assistant is by invitation for now." });
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(read).not.toHaveBeenCalled();
+    expect(take).not.toHaveBeenCalled();
+    expect(prompts).toHaveLength(0);
+  });
+
+  it("checks access again after revocation even when an answer was cached", async () => {
+    const access = { allowed: vi.fn().mockResolvedValueOnce(true).mockResolvedValue(false) };
+    const d = deps({ access });
+    await (await handleAsk(ask({ dayIndex: 0, type: "history" }), d)).text();
+    const response = await handleAsk(ask({ dayIndex: 0, type: "history" }), d);
+    expect(response.status).toBe(403);
+    expect(access.allowed).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails closed on access errors and logs only the error name", async () => {
+    const error = Object.assign(new TypeError("private database detail and user-1"), { status: 500 });
+    const access = { allowed: vi.fn().mockRejectedValue(error) };
+    const { model, prompts } = fakeModel();
+    const log = { info: vi.fn(), error: vi.fn() };
+    const limiter = { take: vi.fn(async () => ({ allowed: true, used: 1 })), release: vi.fn(async () => {}) };
+    const cache = { get: vi.fn(async () => null), set: vi.fn(async () => {}) };
+    const response = await handleAsk(ask({ dayIndex: 0, question: "Why?" }), deps({ access, model, log, limiter, cache }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "not_enabled" });
+    expect(log.error.mock.calls).toEqual([[{ event: "assistant.error", stage: "access", name: "TypeError" }]]);
+    expect(log.info).not.toHaveBeenCalled();
+    expect(limiter.take).not.toHaveBeenCalled();
+    expect(cache.get).not.toHaveBeenCalled();
+    expect(prompts).toHaveLength(0);
+  });
+
+  it("does not look up access for a forged token, even with anonymous use allowed", async () => {
+    const access = { allowed: vi.fn(async () => true) };
+    const response = await handleAsk(ask({ dayIndex: 0, type: "history" }, "forged"), deps({ access, allowAnonymous: true }));
+    expect(response.status).toBe(401);
+    expect(access.allowed).not.toHaveBeenCalled();
+  });
+
+  it("skips access for the local anonymous caller but still checks signed-in callers", async () => {
+    const access = { allowed: vi.fn(async () => false) };
+    const d = deps({ access, allowAnonymous: true });
+    const anonymous = await handleAsk(ask({ dayIndex: 0, type: "history" }, null), d);
+    expect(anonymous.status).toBe(200);
+    await anonymous.text();
+    expect(access.allowed).not.toHaveBeenCalled();
+    expect((await handleAsk(ask({ dayIndex: 0, type: "history" }), d)).status).toBe(403);
+    expect(access.allowed).toHaveBeenCalledExactlyOnceWith("user-1");
+  });
+
   it("streams the answer as plain text", async () => {
     const response = await handleAsk(ask({ dayIndex: 0, type: "history" }), deps());
     expect(response.status).toBe(200);

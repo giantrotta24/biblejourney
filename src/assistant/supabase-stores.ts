@@ -1,7 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AccessCheck } from "./access";
 import type { AnswerCache } from "./cache";
 import type { AuthVerifier } from "./handler";
 import { utcDay, type UsageLimiter } from "./limiter";
+
+export function supabaseAccess(client: SupabaseClient): AccessCheck {
+  return {
+    async allowed(userId) {
+      const { data, error } = await client.from("assistant_access").select("user_id").eq("user_id", userId).maybeSingle();
+      if (error) throw new Error(`assistant_access read failed: ${error.code ?? "unknown"}`);
+      return data?.user_id === userId;
+    },
+  };
+}
 
 export function supabaseLimiter(client: SupabaseClient, limit: number): UsageLimiter {
   return {

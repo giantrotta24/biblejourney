@@ -1,3 +1,4 @@
+import type { AccessCheck } from "./access";
 import type { AnswerCache, AnswerKey } from "./cache";
 import type { UsageLimiter } from "./limiter";
 import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
@@ -27,6 +28,7 @@ export type AssistantLog = {
 export type AskDeps = {
   model: ModelClient | null;
   auth: AuthVerifier | null;
+  access: AccessCheck;
   allowAnonymous: boolean;
   limiter: UsageLimiter;
   anonymousLimiter: UsageLimiter;
@@ -36,7 +38,7 @@ export type AskDeps = {
   log?: AssistantLog;
 };
 
-export type AssistantStatus = { configured: boolean; signInRequired: boolean };
+export type AssistantStatus = { configured: boolean; signInRequired: boolean; enabled?: boolean };
 
 const ANONYMOUS_USER = "local-anonymous";
 
@@ -48,6 +50,7 @@ export const consoleLog: AssistantLog = {
 const MESSAGES: Record<AskErrorCode, string> = {
   not_configured: "The study assistant isn’t set up on this copy of the app.",
   unauthorized: "Please sign in to ask the study assistant.",
+  not_enabled: "The study assistant is by invitation for now.",
   rate_limited: `You’ve asked ${DAILY_QUESTION_LIMIT} questions today. The assistant will be ready again tomorrow.`,
   invalid: "That question couldn’t be read. Questions can be up to 500 characters.",
   upstream: "The study assistant couldn’t answer just now. Please try again in a moment.",
@@ -56,6 +59,7 @@ const MESSAGES: Record<AskErrorCode, string> = {
 const STATUS: Record<AskErrorCode, number> = {
   not_configured: 503,
   unauthorized: 401,
+  not_enabled: 403,
   rate_limited: 429,
   invalid: 400,
   upstream: 502,
@@ -85,12 +89,21 @@ function bearerToken(request: Request): string | null {
   return match ? match[1] : null;
 }
 
-async function identify(request: Request, deps: AskDeps): Promise<{ userId: string; limiter: UsageLimiter } | null> {
+async function identify(request: Request, deps: AskDeps): Promise<{ userId: string; limiter: UsageLimiter; anonymous: boolean } | null> {
   const token = bearerToken(request);
-  if (!token) return deps.allowAnonymous ? { userId: ANONYMOUS_USER, limiter: deps.anonymousLimiter } : null;
+  if (!token) return deps.allowAnonymous ? { userId: ANONYMOUS_USER, limiter: deps.anonymousLimiter, anonymous: true } : null;
   if (!deps.auth) return null;
   const userId = await deps.auth.userId(token);
-  return userId ? { userId, limiter: deps.limiter } : null;
+  return userId ? { userId, limiter: deps.limiter, anonymous: false } : null;
+}
+
+async function hasAccess(userId: string, deps: AskDeps): Promise<boolean> {
+  try {
+    return await deps.access.allowed(userId);
+  } catch (error) {
+    (deps.log ?? consoleLog).error({ event: "assistant.error", stage: "access", name: error instanceof Error ? error.name : "Error" });
+    return false;
+  }
 }
 
 async function readRequest(request: Request): Promise<AskRequest | null> {
@@ -105,6 +118,21 @@ async function readRequest(request: Request): Promise<AskRequest | null> {
 export function assistantStatus(deps: AskDeps): AssistantStatus {
   const reachable = deps.auth !== null || deps.allowAnonymous;
   return { configured: deps.model !== null && reachable, signInRequired: !deps.allowAnonymous };
+}
+
+export async function handleAssistantStatus(request: Request, deps: AskDeps): Promise<Response> {
+  const status = assistantStatus(deps);
+  const token = bearerToken(request);
+  if (token && deps.auth) {
+    let userId: string | null = null;
+    try {
+      userId = await deps.auth.userId(token);
+    } catch (error) {
+      (deps.log ?? consoleLog).error({ event: "assistant.error", stage: "auth", name: errorName(error) });
+    }
+    if (userId) status.enabled = await hasAccess(userId, deps);
+  }
+  return Response.json(status, { headers: { "cache-control": "no-store" } });
 }
 
 export async function handleAsk(request: Request, deps: AskDeps): Promise<Response> {
@@ -148,6 +176,7 @@ async function answer(
     return fail("upstream");
   }
   if (!caller) return fail("unauthorized");
+  if (!caller.anonymous && !(await hasAccess(caller.userId, deps))) return fail("not_enabled");
 
   const ask = await readRequest(request);
   if (!ask) return fail("invalid");

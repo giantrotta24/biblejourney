@@ -1,7 +1,10 @@
 import type { AccessCheck } from "./access";
+import { CARE_TEXT } from "./care";
 import type { AnswerCache, AnswerKey } from "./cache";
+import type { FlagCategory, FlagLog } from "./flags";
 import type { UsageLimiter } from "./limiter";
 import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
+import type { SafetyClient, ScreenCategory } from "./screen";
 import { askRequestSchema, DAILY_QUESTION_LIMIT, type AskErrorCode, type AskRequest } from "./types";
 import { endFrame, withoutMarker, type StreamEnd } from "./wire";
 
@@ -34,6 +37,8 @@ export type AskDeps = {
   anonymousLimiter: UsageLimiter;
   cache: AnswerCache;
   modelId: string;
+  screen: SafetyClient | null;
+  flags: FlagLog;
   now?: () => Date;
   log?: AssistantLog;
 };
@@ -209,13 +214,17 @@ async function answer(
     return fail("rate_limited");
   }
   const used = limit.used;
-
-  if (signal.aborted) {
-    await caller.limiter.release(caller.userId, now()).catch((error) => {
+  const release = () =>
+    caller.limiter.release(caller.userId, now()).catch((error: unknown) => {
       log.error({ event: "assistant.error", stage: "limit-release", name: errorName(error) });
     });
+
+  if (signal.aborted) {
+    await release();
     return cancelled("before-model");
   }
+
+  if (!("type" in ask)) return answerQuestion({ ask, userId: caller.userId, deps, signal, log, model, used, kind, release, cancelled });
 
   const chunks = model.stream(buildPrompt(ask), signal)[Symbol.asyncIterator]();
 
@@ -284,6 +293,115 @@ async function answer(
 
   streamStarted();
   return textResponse(body, "miss");
+}
+
+type QuestionAsk = Extract<AskRequest, { question: string }>;
+
+async function answerQuestion(input: {
+  ask: QuestionAsk;
+  userId: string;
+  deps: AskDeps;
+  signal: AbortSignal;
+  log: AssistantLog;
+  model: ModelClient;
+  used: number;
+  kind: string;
+  release: () => Promise<void>;
+  cancelled: (stage: string) => Response;
+}): Promise<Response> {
+  const { ask, userId, deps, signal, log, model, used, kind, release, cancelled } = input;
+
+  if (!deps.screen) {
+    await release();
+    log.error({ event: "assistant.error", stage: "screen", name: "Error" });
+    return fail("upstream");
+  }
+  const screen = deps.screen;
+
+  let category: ScreenCategory;
+  try {
+    category = await screen.screen(ask.question, signal);
+  } catch (error) {
+    await release();
+    if (signal.aborted) return cancelled("screen");
+    log.error({ event: "assistant.error", stage: "screen", name: errorName(error) });
+    return fail("upstream");
+  }
+  if (signal.aborted) {
+    await release();
+    return cancelled("screen");
+  }
+
+  if (category === "crisis") {
+    await release();
+    await recordFlag(deps, log, { userId: null, dayIndex: ask.dayIndex, category: "crisis" });
+    log.info({ event: "assistant.answer", kind, cached: false, chars: CARE_TEXT.length, used, end: "care" });
+    return textResponse(CARE_TEXT + endFrame("care"), "miss");
+  }
+
+  if (category !== "ok") {
+    await recordFlag(deps, log, { userId, dayIndex: ask.dayIndex, category });
+    log.info({ event: "assistant.answer", kind, cached: false, chars: 0, used, end: "refused" });
+    return textResponse(endFrame("refused"), "miss");
+  }
+
+  let collected: { text: string; end: StreamEnd };
+  try {
+    collected = await collectAnswer(model, buildPrompt(ask), signal, log);
+  } catch (error) {
+    if (signal.aborted) return cancelled("model");
+    log.error({ event: "assistant.error", stage: "model", name: errorName(error) });
+    return fail("upstream");
+  }
+
+  if (collected.end !== "complete") {
+    log.info({ event: "assistant.answer", kind, cached: false, chars: collected.text.length, used, end: collected.end });
+    return textResponse(collected.text + endFrame(collected.end), "miss");
+  }
+
+  let verdict: "ok" | "withhold";
+  try {
+    verdict = await screen.check(collected.text, signal);
+  } catch (error) {
+    if (signal.aborted) return cancelled("check");
+    log.error({ event: "assistant.error", stage: "check", name: errorName(error) });
+    return fail("upstream");
+  }
+
+  if (verdict === "withhold") {
+    await recordFlag(deps, log, { userId, dayIndex: ask.dayIndex, category: "withheld" });
+    log.info({ event: "assistant.answer", kind, cached: false, chars: 0, used, end: "refused" });
+    return textResponse(endFrame("refused"), "miss");
+  }
+
+  log.info({ event: "assistant.answer", kind, cached: false, chars: collected.text.length, used, end: "complete" });
+  return textResponse(collected.text + endFrame("complete"), "miss");
+}
+
+async function collectAnswer(model: ModelClient, prompt: Prompt, signal: AbortSignal, log: AssistantLog): Promise<{ text: string; end: StreamEnd }> {
+  const chunks = model.stream(prompt, signal)[Symbol.asyncIterator]();
+  let text = "";
+  try {
+    for (;;) {
+      const next = await chunks.next();
+      if (next.done) return { text, end: "complete" };
+      text += withoutMarker(next.value);
+    }
+  } catch (error) {
+    if (signal.aborted) throw error;
+    if (error instanceof AnswerStoppedError) return { text, end: stopEnd(error) };
+    if (!text) throw error;
+    log.error({ event: "assistant.error", stage: "model", name: errorName(error), chars: text.length });
+    return { text, end: "error" };
+  }
+}
+
+async function recordFlag(deps: AskDeps, log: AssistantLog, flag: { userId: string | null; dayIndex: number; category: FlagCategory }) {
+  try {
+    await deps.flags.write(flag);
+  } catch (error) {
+    log.error({ event: "assistant.error", stage: "flag", name: errorName(error) });
+  }
 }
 
 function errorName(error: unknown): string {

@@ -77,7 +77,7 @@ describe("handleReport", () => {
       { dayIndex: 4, kind: "question", answer: "Because." },
       { dayIndex: 4, kind: "question", question: "   ", answer: "Because." },
       { dayIndex: 4, kind: "map", answer: "" },
-      { dayIndex: 4, kind: "map", answer: "x".repeat(4001) },
+      { dayIndex: 4, kind: "map", answer: "x".repeat(32001) },
       { dayIndex: 4, kind: "map", answer: "Fine.", note: "n".repeat(301) },
       { dayIndex: 312, kind: "people", answer: "Fine." },
       { dayIndex: 1, kind: "history", answer: "Fine.", extra: true },
@@ -89,6 +89,17 @@ describe("handleReport", () => {
       expect(await response.json()).toMatchObject({ code: "invalid" });
     }
     expect(reports.rows).toHaveLength(0);
+  });
+
+  it("accepts an answer of 32,000 characters and rejects one more", async () => {
+    const reports = memoryReports();
+    const answer = "x".repeat(32000);
+    const accepted = await handleReport(report({ dayIndex: 4, kind: "map", answer }), deps({ reports }));
+    expect(accepted.status).toBe(200);
+    expect(reports.rows[0]?.answer).toBe(answer);
+    const rejected = await handleReport(report({ dayIndex: 4, kind: "map", answer: `${answer}x` }), deps({ reports }));
+    expect(rejected.status).toBe(400);
+    expect(reports.rows).toHaveLength(1);
   });
 
   it("stores a question report with the server’s model and prompt version", async () => {

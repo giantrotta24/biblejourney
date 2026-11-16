@@ -63,3 +63,4 @@ Record decisions here, newest last: the date, the decision, and the reason.
 - 2026-11-13: closed task BJ-9: Sage redesign shipped in PR 15
 - 2026-11-13: closed task BJ-10: Icon and header logo shipped in PR 16
 - 2026-11-14: closed task BJ-11: Emailed-code sign-in shipped in PRs 17 and 18
+- 2026-11-15: closed task BJ-12: Assistant gated to enabled accounts, shipped in PR 19

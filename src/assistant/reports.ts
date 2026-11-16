@@ -20,8 +20,7 @@ export type StoredReport = {
 };
 
 export interface ReportLog {
-  count(userId: string, now: Date): Promise<number>;
-  write(report: StoredReport, now: Date): Promise<void>;
+  submit(report: StoredReport, now: Date): Promise<boolean>;
 }
 
 export type SavedReport = StoredReport & { day: string };
@@ -30,12 +29,12 @@ export function memoryReports(): ReportLog & { rows: SavedReport[] } {
   const rows: SavedReport[] = [];
   return {
     rows,
-    async count(userId, now) {
+    async submit(report, now) {
       const day = utcDay(now);
-      return rows.filter((row) => row.userId === userId && row.day === day).length;
-    },
-    async write(report, now) {
-      rows.push({ ...report, day: utcDay(now) });
+      const used = rows.filter((row) => row.userId === report.userId && row.day === day).length;
+      if (used >= DAILY_REPORT_LIMIT) return false;
+      rows.push({ ...report, day });
+      return true;
     },
   };
 }
@@ -61,9 +60,3 @@ export const reportRequestSchema = z.union([
 ]);
 
 export type ReportRequest = z.infer<typeof reportRequestSchema>;
-
-export function utcDayBounds(now: Date): { start: string; end: string } {
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start: start.toISOString(), end: end.toISOString() };
-}

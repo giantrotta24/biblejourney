@@ -117,6 +117,29 @@ describe("handleReport", () => {
     expect(reports.rows[0]).toMatchObject({ kind: "history", question: null, note: null, answer: "Ur was a city." });
   });
 
+  it("stores a report only while that reader is under the daily limit", async () => {
+    const reports = memoryReports();
+    const row = {
+      userId: "user-1",
+      dayIndex: 0,
+      kind: "map" as const,
+      question: null,
+      answer: "Answer",
+      note: null,
+      model: "test-model",
+      promptVersion: PROMPT_VERSION,
+    };
+    for (let i = 0; i < DAILY_REPORT_LIMIT - 1; i++) expect(await reports.submit({ ...row, answer: `Answer ${i}` }, NOW)).toBe(true);
+    const [kept, dropped] = await Promise.all([
+      reports.submit({ ...row, answer: "Ninth" }, NOW),
+      reports.submit({ ...row, answer: "Tenth" }, NOW),
+    ]);
+    expect([kept, dropped].filter(Boolean)).toHaveLength(1);
+    expect(reports.rows).toHaveLength(DAILY_REPORT_LIMIT);
+    expect(await reports.submit({ ...row, answer: "One more" }, NOW)).toBe(false);
+    expect(reports.rows).toHaveLength(DAILY_REPORT_LIMIT);
+  });
+
   it("returns 429 on the 11th report in a UTC day and still accepts another reader", async () => {
     const reports = memoryReports();
     const d = deps({ reports });
@@ -164,8 +187,7 @@ describe("handleReport", () => {
   it("logs only the error name when the write fails", async () => {
     const log = { info: vi.fn(), error: vi.fn() };
     const reports = {
-      count: async () => 0,
-      write: async () => {
+      submit: async () => {
         throw Object.assign(new Error("row included The story is about judgment"), { name: "PostgrestError" });
       },
     };

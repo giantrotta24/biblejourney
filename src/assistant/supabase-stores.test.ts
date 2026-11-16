@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
+import { DAILY_REPORT_LIMIT } from "./limits";
 import { supabaseAccess, supabaseAuth, supabaseCache, supabaseFlags, supabaseLimiter, supabaseReports } from "./supabase-stores";
 
 function fakeClient(result: { data: unknown; error: unknown }) {
@@ -111,6 +112,17 @@ describe("assistant safety migration", () => {
     expect(flags).not.toMatch(/question|answer/);
     expect(flags).toMatch(/user_id uuid/);
   });
+
+  it("inserts a report under a per-reader lock only when the reader is under the daily limit", () => {
+    expect(sql).toMatch(/create index if not exists assistant_reports_user_id_created_at_idx on public\.assistant_reports \(user_id, created_at\)/);
+    expect(sql).toMatch(/create or replace function public\.assistant_submit_report\(/);
+    expect(sql).toMatch(/returns boolean/);
+    expect(sql).toMatch(/language plpgsql/);
+    expect(sql).toMatch(/set search_path = ''/);
+    expect(sql).toMatch(/pg_advisory_xact_lock\(pg_catalog\.hashtextextended\(p_user_id::text, 0\)\)/);
+    expect(sql).toMatch(/revoke execute on function public\.assistant_submit_report\(uuid, integer, text, text, text, text, text, text, integer, timestamptz\) from public, anon, authenticated/);
+    expect(sql).toMatch(/grant execute on function public\.assistant_submit_report\(uuid, integer, text, text, text, text, text, text, integer, timestamptz\) to service_role/);
+  });
 });
 
 describe("supabaseFlags", () => {
@@ -128,46 +140,55 @@ describe("supabaseFlags", () => {
   });
 });
 
+const storedReport = {
+  userId: "u1",
+  dayIndex: 8,
+  kind: "question" as const,
+  question: "Why a flood?",
+  answer: "The story is about judgment.",
+  note: null,
+  model: "claude-sonnet-5-5",
+  promptVersion: "2026-11-15",
+};
+
 describe("supabaseReports", () => {
-  it("counts a reader’s reports for the UTC day and inserts the row", async () => {
-    const { client, calls } = tableClient({ error: null, count: 3 });
-    const reports = supabaseReports(client);
-    expect(await reports.count("u1", new Date("2026-11-13T23:30:00-05:00"))).toBe(3);
-    await reports.write(
-      {
-        userId: "u1",
-        dayIndex: 8,
-        kind: "question",
-        question: "Why a flood?",
-        answer: "The story is about judgment.",
-        note: null,
-        model: "claude-sonnet-5-5",
-        promptVersion: "2026-11-15",
-      },
-      new Date("2026-11-14T00:00:00Z"),
-    );
-    expect(calls).toContainEqual(["from", "assistant_reports"]);
-    expect(calls).toContainEqual(["eq", "user_id", "u1"]);
-    expect(calls).toContainEqual(["gte", "created_at", "2026-11-14T00:00:00.000Z"]);
-    expect(calls).toContainEqual(["lt", "created_at", "2026-11-15T00:00:00.000Z"]);
-    expect(calls).toContainEqual([
-      "insert",
-      {
-        user_id: "u1",
-        day_index: 8,
-        kind: "question",
-        question: "Why a flood?",
-        answer: "The story is about judgment.",
-        note: null,
-        model: "claude-sonnet-5-5",
-        prompt_version: "2026-11-15",
-      },
+  it("stores a report through one function call", async () => {
+    const now = new Date("2026-11-13T23:30:00-05:00");
+    const { client, calls } = fakeClient({ data: true, error: null });
+    expect(await supabaseReports(client).submit(storedReport, now)).toBe(true);
+    expect(calls).toEqual([
+      [
+        "rpc",
+        "assistant_submit_report",
+        {
+          p_user_id: "u1",
+          p_day_index: 8,
+          p_kind: "question",
+          p_question: "Why a flood?",
+          p_answer: "The story is about judgment.",
+          p_note: null,
+          p_model: "claude-sonnet-5-5",
+          p_prompt_version: "2026-11-15",
+          p_limit: DAILY_REPORT_LIMIT,
+          p_now: now.toISOString(),
+        },
+      ],
     ]);
   });
 
-  it("throws the error code when the count fails", async () => {
-    const { client } = tableClient({ error: { code: "42501" }, count: 0 });
-    await expect(supabaseReports(client).count("u1", new Date("2026-11-14T00:00:00Z"))).rejects.toThrow("42501");
+  it("returns false when the function did not store the row", async () => {
+    const { client } = fakeClient({ data: false, error: null });
+    expect(await supabaseReports(client).submit(storedReport, new Date("2026-11-14T00:00:00Z"))).toBe(false);
+  });
+
+  it("treats a null result as a failure and never as a stored report", async () => {
+    const { client } = fakeClient({ data: null, error: null });
+    await expect(supabaseReports(client).submit(storedReport, new Date("2026-11-14T00:00:00Z"))).rejects.toThrow(/assistant_submit_report/);
+  });
+
+  it("throws the error code when the function fails", async () => {
+    const { client } = fakeClient({ data: null, error: { code: "42501" } });
+    await expect(supabaseReports(client).submit(storedReport, new Date("2026-11-14T00:00:00Z"))).rejects.toThrow("42501");
   });
 });
 

@@ -4,7 +4,7 @@ import type { AnswerCache } from "./cache";
 import type { FlagLog } from "./flags";
 import type { AuthVerifier } from "./handler";
 import { utcDay, type UsageLimiter } from "./limiter";
-import { utcDayBounds, type ReportLog } from "./reports";
+import { DAILY_REPORT_LIMIT, type ReportLog } from "./reports";
 
 export function supabaseAccess(client: SupabaseClient): AccessCheck {
   return {
@@ -69,29 +69,22 @@ export function supabaseFlags(client: SupabaseClient): FlagLog {
 
 export function supabaseReports(client: SupabaseClient): ReportLog {
   return {
-    async count(userId, now) {
-      const { start, end } = utcDayBounds(now);
-      const { count, error } = await client
-        .from("assistant_reports")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .gte("created_at", start)
-        .lt("created_at", end);
-      if (error) throw new Error(`assistant_reports count failed: ${error.code ?? "unknown"}`);
-      return typeof count === "number" ? count : 0;
-    },
-    async write(report) {
-      const { error } = await client.from("assistant_reports").insert({
-        user_id: report.userId,
-        day_index: report.dayIndex,
-        kind: report.kind,
-        question: report.question,
-        answer: report.answer,
-        note: report.note,
-        model: report.model,
-        prompt_version: report.promptVersion,
+    async submit(report, now) {
+      const { data, error } = await client.rpc("assistant_submit_report", {
+        p_user_id: report.userId,
+        p_day_index: report.dayIndex,
+        p_kind: report.kind,
+        p_question: report.question,
+        p_answer: report.answer,
+        p_note: report.note,
+        p_model: report.model,
+        p_prompt_version: report.promptVersion,
+        p_limit: DAILY_REPORT_LIMIT,
+        p_now: now.toISOString(),
       });
-      if (error) throw new Error(`assistant_reports write failed: ${error.code ?? "unknown"}`);
+      if (error) throw new Error(`assistant_submit_report failed: ${error.code ?? "unknown"}`);
+      if (typeof data !== "boolean") throw new Error("assistant_submit_report failed: empty");
+      return data;
     },
   };
 }

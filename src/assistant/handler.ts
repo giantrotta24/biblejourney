@@ -4,7 +4,7 @@ import type { AnswerCache, AnswerKey } from "./cache";
 import type { FlagCategory, FlagLog } from "./flags";
 import type { UsageLimiter } from "./limiter";
 import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
-import { DAILY_REPORT_LIMIT, reportRequestSchema, type ReportLog } from "./reports";
+import { reportRequestSchema, type ReportLog } from "./reports";
 import type { SafetyClient, ScreenCategory } from "./screen";
 import { askRequestSchema, DAILY_QUESTION_LIMIT, type AskErrorCode, type AskRequest } from "./types";
 import { endFrame, withoutMarker, type StreamEnd } from "./wire";
@@ -172,10 +172,8 @@ export async function handleReport(request: Request, deps: AskDeps): Promise<Res
   }
 
   try {
-    const count = await reports.count(caller.userId, now());
-    if (count >= DAILY_REPORT_LIMIT) return jsonError("rate_limited", "You’ve sent 10 reports today. You can send more tomorrow.");
     const note = body.note?.trim() ? body.note.trim() : null;
-    await reports.write(
+    const stored = await reports.submit(
       {
         userId: caller.userId,
         dayIndex: body.dayIndex,
@@ -188,6 +186,7 @@ export async function handleReport(request: Request, deps: AskDeps): Promise<Res
       },
       now(),
     );
+    if (!stored) return jsonError("rate_limited", "You’ve sent 10 reports today. You can send more tomorrow.");
   } catch (error) {
     log.error({ event: "assistant.error", stage: "report", name: errorName(error) });
     return fail("upstream");

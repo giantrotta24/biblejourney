@@ -94,9 +94,10 @@ describe("anthropicSafety", () => {
     expect(request.headers.get("authorization")).toBe("Bearer test-key");
     expect(request.body).toMatchObject({
       model: "claude-haiku-5-5",
-      max_tokens: 32,
+      max_tokens: 256,
       system: SCREEN_SYSTEM,
       messages: [{ role: "user", content: "<question>\nWhy would God allow this?\n</question>" }],
+      thinking: { type: "disabled" },
       output_config: { effort: "low" },
     });
     expect(request.body).not.toHaveProperty("fallbacks");

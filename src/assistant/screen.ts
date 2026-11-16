@@ -9,7 +9,7 @@ export type ScreenCategory = (typeof SCREEN_CATEGORIES)[number];
 export const CHECK_VERDICTS = ["ok", "withhold"] as const;
 export type CheckVerdict = (typeof CHECK_VERDICTS)[number];
 
-const LABEL_MAX_TOKENS = 32;
+const LABEL_MAX_TOKENS = 256;
 
 export const SCREEN_SYSTEM = [
   "You classify one question for a Bible study assistant. Reply with exactly one lowercase word and nothing else: ok, off_topic, inappropriate, manipulation, or crisis.",
@@ -66,6 +66,7 @@ export function anthropicSafety(options: { apiKey: string; model: string; fetch?
         max_tokens: LABEL_MAX_TOKENS,
         system,
         messages: [{ role: "user", content: user }],
+        thinking: { type: "disabled" },
         output_config: { effort: "low" },
       },
       { signal },

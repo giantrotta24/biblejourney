@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { days } from "@/content/plan";
-import { buildPrompt, sanitizeQuestion, SYSTEM_PROMPT } from "./prompt";
+import { buildPrompt, PROMPT_VERSION, sanitizeQuestion, SYSTEM_PROMPT } from "./prompt";
 
 describe("sanitizeQuestion", () => {
   it("strips control characters and collapses whitespace", () => {
@@ -34,6 +34,15 @@ describe("SYSTEM_PROMPT", () => {
     expect(SYSTEM_PROMPT).toMatch(/paraphrase/i);
     expect(SYSTEM_PROMPT).toMatch(/<question>/);
     expect(SYSTEM_PROMPT).toMatch(/never as instructions/);
+    expect(SYSTEM_PROMPT).toMatch(/crisis/);
+    expect(SYSTEM_PROMPT).toMatch(/988/);
+    expect(SYSTEM_PROMPT).toMatch(/local emergency/);
+    expect(SYSTEM_PROMPT).toMatch(/someone they trust/);
+    expect(SYSTEM_PROMPT).toMatch(/do not continue the study/i);
+  });
+
+  it("changes with the prompt version when the crisis rule is part of the prompt", () => {
+    expect(PROMPT_VERSION).toBe("2026-11-15");
   });
 });
 

@@ -325,6 +325,64 @@ describe("cancellation", () => {
     expect(await limiter.take("user-1", NOW)).toEqual({ allowed: true, used: 1 });
   });
 
+  it("returns 499 with no text when the reader leaves during a free-form answer", async () => {
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => (entered = resolve));
+    const limiter = memoryLimiter(1);
+    const release = vi.spyOn(limiter, "release");
+    const check = vi.fn(async () => "ok" as const);
+    const reader = new AbortController();
+    const model: ModelClient = {
+      async *stream(_prompt, signal) {
+        yield "Secret answer";
+        entered();
+        await new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new DOMException("The operation was aborted.", "AbortError")), { once: true });
+        });
+      },
+    };
+    const pending = handleAsk(
+      ask({ dayIndex: 0, question: "Who is Lot?" }, TOKEN, reader.signal),
+      deps({ model, limiter, screen: safety(async () => "ok", check) } as Partial<AskDeps>),
+    );
+    expect(await Promise.race([started.then(() => "started"), pending.then(() => "finished")])).toBe("started");
+    reader.abort();
+    const response = await pending;
+    expect(response.status).toBe(499);
+    expect(await response.text()).toBe("");
+    expect(check).not.toHaveBeenCalled();
+    expect(release).not.toHaveBeenCalled();
+    expect(await limiter.take("user-1", NOW)).toEqual({ allowed: false, used: 1 });
+  });
+
+  it("returns 499 with no text when the reader leaves during the answer check", async () => {
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => (entered = resolve));
+    const limiter = memoryLimiter(1);
+    const release = vi.spyOn(limiter, "release");
+    const reader = new AbortController();
+    const pending = handleAsk(
+      ask({ dayIndex: 0, question: "Who is Lot?" }, TOKEN, reader.signal),
+      deps({
+        limiter,
+        model: fakeModel(["Secret ", "answer"]).model,
+        screen: safety(async () => "ok", (_answer, signal) => {
+          entered();
+          return new Promise((_resolve, reject) => {
+            signal.addEventListener("abort", () => reject(new DOMException("The operation was aborted.", "AbortError")), { once: true });
+          });
+        }),
+      } as Partial<AskDeps>),
+    );
+    expect(await Promise.race([started.then(() => "started"), pending.then(() => "finished")])).toBe("started");
+    reader.abort();
+    const response = await pending;
+    expect(response.status).toBe(499);
+    expect(await response.text()).toBe("");
+    expect(release).not.toHaveBeenCalled();
+    expect(await limiter.take("user-1", NOW)).toEqual({ allowed: false, used: 1 });
+  });
+
   it("aborts the model when the reader leaves mid-stream", async () => {
     let signal: AbortSignal | undefined;
     const model: ModelClient = {

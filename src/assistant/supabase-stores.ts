@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AccessCheck } from "./access";
 import type { AnswerCache } from "./cache";
+import type { FlagLog } from "./flags";
 import type { AuthVerifier } from "./handler";
 import { utcDay, type UsageLimiter } from "./limiter";
+import { utcDayBounds, type ReportLog } from "./reports";
 
 export function supabaseAccess(client: SupabaseClient): AccessCheck {
   return {
@@ -48,6 +50,48 @@ export function supabaseCache(client: SupabaseClient): AnswerCache {
         .from("assistant_answers")
         .upsert({ day_index: key.dayIndex, prompt_type: key.type, model: key.model, prompt_version: key.promptVersion, answer });
       if (error) throw new Error(`assistant_answers write failed: ${error.code ?? "unknown"}`);
+    },
+  };
+}
+
+export function supabaseFlags(client: SupabaseClient): FlagLog {
+  return {
+    async write(flag) {
+      const { error } = await client.from("assistant_flags").insert({
+        user_id: flag.userId,
+        day_index: flag.dayIndex,
+        category: flag.category,
+      });
+      if (error) throw new Error(`assistant_flags write failed: ${error.code ?? "unknown"}`);
+    },
+  };
+}
+
+export function supabaseReports(client: SupabaseClient): ReportLog {
+  return {
+    async count(userId, now) {
+      const { start, end } = utcDayBounds(now);
+      const { count, error } = await client
+        .from("assistant_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("created_at", start)
+        .lt("created_at", end);
+      if (error) throw new Error(`assistant_reports count failed: ${error.code ?? "unknown"}`);
+      return typeof count === "number" ? count : 0;
+    },
+    async write(report) {
+      const { error } = await client.from("assistant_reports").insert({
+        user_id: report.userId,
+        day_index: report.dayIndex,
+        kind: report.kind,
+        question: report.question,
+        answer: report.answer,
+        note: report.note,
+        model: report.model,
+        prompt_version: report.promptVersion,
+      });
+      if (error) throw new Error(`assistant_reports write failed: ${error.code ?? "unknown"}`);
     },
   };
 }

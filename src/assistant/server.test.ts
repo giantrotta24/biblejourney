@@ -76,6 +76,13 @@ describe("createAskDeps", () => {
     expect(JSON.stringify(log.error.mock.calls)).toContain("NEXT_PUBLIC_SUPABASE_URL");
   });
 
+  it("keeps an in-memory report log in development and none in production without the service role", () => {
+    const dev = createAskDeps({ ANTHROPIC_API_KEY: "k", ASSISTANT_ALLOW_ANONYMOUS: "1", NODE_ENV: "development" }, { info: vi.fn(), error: vi.fn() });
+    expect(dev.reports).toEqual(expect.any(Object));
+    const prod = createAskDeps(without("SUPABASE_SERVICE_ROLE_KEY", { NODE_ENV: "production" }), { info: vi.fn(), error: vi.fn() });
+    expect(prod.reports).toBeNull();
+  });
+
   it("is configured in production with everything set", () => {
     const log = { info: vi.fn(), error: vi.fn() };
     const deps = createAskDeps({ ...FULL, NODE_ENV: "production" }, log);

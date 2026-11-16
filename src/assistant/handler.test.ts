@@ -3,6 +3,7 @@ import { memoryCache } from "./cache";
 import { CARE_TEXT } from "./care";
 import { AnswerStoppedError, assistantStatus, handleAsk, type AskDeps, type ModelClient } from "./handler";
 import { memoryLimiter, type UsageLimiter } from "./limiter";
+import { memoryReports } from "./reports";
 import { PROMPT_VERSION, type Prompt } from "./prompt";
 import type { ScreenCategory } from "./screen";
 import { DAILY_QUESTION_LIMIT } from "./types";
@@ -41,6 +42,7 @@ function deps(overrides: Partial<AskDeps> = {}): AskDeps {
     modelId: "test-model",
     screen: { screen: async () => "ok", check: async () => "ok" },
     flags: { write: async () => {} },
+    reports: memoryReports(),
     now: () => NOW,
     log: { info: vi.fn(), error: vi.fn() },
     ...overrides,

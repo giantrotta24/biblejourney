@@ -4,6 +4,7 @@ import type { AnswerCache, AnswerKey } from "./cache";
 import type { FlagCategory, FlagLog } from "./flags";
 import type { UsageLimiter } from "./limiter";
 import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
+import type { ReportLog } from "./reports";
 import type { SafetyClient, ScreenCategory } from "./screen";
 import { askRequestSchema, DAILY_QUESTION_LIMIT, type AskErrorCode, type AskRequest } from "./types";
 import { endFrame, withoutMarker, type StreamEnd } from "./wire";
@@ -39,6 +40,7 @@ export type AskDeps = {
   modelId: string;
   screen: SafetyClient | null;
   flags: FlagLog;
+  reports: ReportLog | null;
   now?: () => Date;
   log?: AssistantLog;
 };

@@ -85,7 +85,7 @@ function useServerStatus(online: boolean, userId: string | null): ServerStatus |
 function CareReply() {
   const parts = CARE_TEXT.split(/(call 988|text 988)/);
   return (
-    <p className="m-0" role="status">
+    <p className="m-0">
       {parts.map((part, index) =>
         part === "call 988" ? (
           <a key={index} href="tel:988" className="inline-flex min-h-11 items-center underline underline-offset-4">
@@ -411,22 +411,16 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       <div aria-live="polite" className="mt-4 max-w-[65ch]">
         {!online && !streaming ? (
           <p className="m-0">{NOTICE_TEXT.offline}</p>
-        ) : notice &&
-          notice.kind !== "care" &&
-          (notice.kind === "signed-out" ? (
-            <SignInPrompt expired />
-          ) : (
-            <p role={notice.kind === "loading" ? "status" : undefined} className={`m-0 ${notice.kind === "ready" ? "sr-only" : ""} ${notice.kind === "loading" ? "text-muted" : ""}`}>
-              {notice.kind === "server" ? notice.text : NOTICE_TEXT[notice.kind]}
-            </p>
-          ))}
-      </div>
-
-      {notice?.kind === "care" && (
-        <div className="mt-3 max-w-[65ch]">
+        ) : notice?.kind === "care" ? (
           <CareReply />
-        </div>
-      )}
+        ) : notice?.kind === "signed-out" ? (
+          <SignInPrompt expired />
+        ) : notice ? (
+          <p className={`m-0 ${notice.kind === "ready" ? "sr-only" : ""} ${notice.kind === "loading" ? "text-muted" : ""}`}>
+            {notice.kind === "server" ? notice.text : NOTICE_TEXT[notice.kind]}
+          </p>
+        ) : null}
+      </div>
 
       {answer && (
         <div aria-busy={streaming} className="mt-3 max-w-[65ch]">

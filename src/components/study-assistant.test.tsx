@@ -119,8 +119,9 @@ describe("assistant invitations", () => {
     const question = await screen.findByRole("textbox", { name: "Or ask your own question" });
     fireEvent.change(question, { target: { value: "Why a flood?" } });
     fireEvent.submit(question.closest("form")!);
-    const pending = await screen.findByRole("status");
-    expect(pending.textContent).toMatch(/Looking into today’s reading/);
+    const pending = await screen.findByText(/Looking into today’s reading/);
+    expect(pending.closest("[aria-live='polite']")).not.toBeNull();
+    expect(pending.getAttribute("role")).toBeNull();
     expect(pending.classList.contains("sr-only")).toBe(false);
     await act(async () => finish(new Response("The flood story is about judgment.\u001Ecomplete")));
     await screen.findByText("The flood story is about judgment.");
@@ -134,7 +135,12 @@ describe("assistant invitations", () => {
     const question = await screen.findByRole("textbox", { name: "Or ask your own question" });
     fireEvent.change(question, { target: { value: "I can't keep going" } });
     fireEvent.submit(question.closest("form")!);
-    expect((await screen.findByRole("link", { name: "call 988" })).getAttribute("href")).toBe("tel:988");
+    const call = await screen.findByRole("link", { name: "call 988" });
+    const live = call.closest("[aria-live]");
+    expect(call.getAttribute("href")).toBe("tel:988");
+    expect(live?.getAttribute("aria-live")).toBe("polite");
+    expect(live?.textContent).toMatch(/call 911 or your local emergency number/);
+    expect(call.closest("[role='status']")).toBeNull();
     expect(screen.getByRole("link", { name: "text 988" }).getAttribute("href")).toBe("sms:988");
     expect(screen.getByText(/call 911 or your local emergency number/)).toBeTruthy();
     expect(screen.getByText(/pastor or someone you trust/)).toBeTruthy();

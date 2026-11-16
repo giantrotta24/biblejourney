@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useAccount, type AccountState } from "@/account/session";
 import { getAccessToken } from "@/account/supabase";
+import { CARE_TEXT } from "@/assistant/care";
+import { REPORT_NOTE_MAX } from "@/assistant/limits";
 import { QUESTION_MAX_LENGTH, type AskErrorCode, type QuickPromptType } from "@/assistant/types";
 import { readStream } from "@/assistant/wire";
 
@@ -27,6 +29,7 @@ type Notice =
   | { kind: "refused" }
   | { kind: "truncated" }
   | { kind: "error" }
+  | { kind: "care" }
   | { kind: "server"; text: string };
 
 const NOTICE_TEXT: Record<Exclude<Notice["kind"], "server" | "signed-out">, string> = {
@@ -38,6 +41,7 @@ const NOTICE_TEXT: Record<Exclude<Notice["kind"], "server" | "signed-out">, stri
   refused: "The study assistant can’t help with that one. It answers questions about the history, places and people in today’s reading.",
   truncated: "This answer reached its length limit, so it ends part way.",
   error: "That didn’t go through. Please try again in a moment.",
+  care: "",
 };
 
 function subscribeOnline(listener: () => void) {
@@ -76,6 +80,27 @@ function useServerStatus(online: boolean, userId: string | null): ServerStatus |
     };
   }, [online, userId]);
   return status;
+}
+
+function CareReply() {
+  const parts = CARE_TEXT.split(/(call 988|text 988)/);
+  return (
+    <p className="m-0" role="status">
+      {parts.map((part, index) =>
+        part === "call 988" ? (
+          <a key={index} href="tel:988" className="inline-flex min-h-11 items-center underline underline-offset-4">
+            call 988
+          </a>
+        ) : part === "text 988" ? (
+          <a key={index} href="sms:988" className="inline-flex min-h-11 items-center underline underline-offset-4">
+            text 988
+          </a>
+        ) : (
+          <span key={index}>{part}</span>
+        ),
+      )}
+    </p>
+  );
 }
 
 function NotSetUp() {
@@ -160,11 +185,18 @@ function AssistantPanel({ dayIndex, account }: { dayIndex: number; account: Acco
 
 type AskFormProps = { dayIndex: number; online: boolean; signInRequired: boolean; onNotConfigured: () => void; onNotEnabled: () => void };
 
+type ReportTarget = { kind: QuickPromptType | "question"; question?: string; answer: string };
+
 function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabled }: AskFormProps) {
   const [question, setQuestion] = useState("");
   const [raw, setRaw] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [streaming, setStreaming] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportNote, setReportNote] = useState("");
+  const [reportThanks, setReportThanks] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
   const stopButton = useRef<HTMLButtonElement>(null);
@@ -186,6 +218,11 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
     if (controller.current) return;
     trigger.current = from;
     setRaw("");
+    setReportTarget(null);
+    setReportOpen(false);
+    setReportNote("");
+    setReportThanks(false);
+    setReportError(null);
     if (!navigator.onLine) return setNotice({ kind: "offline" });
 
     const abort = new AbortController();
@@ -219,15 +256,20 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       }
 
       const { end, text } = readStream(received);
+      const reported: ReportTarget = "type" in body ? { kind: body.type, answer: text } : { kind: "question", question: body.question, answer: text };
       if (end === "complete" && !text.trim()) {
         setRaw("");
         setNotice({ kind: "error" });
-      } else if (end === "complete") setNotice({ kind: "ready" });
-      else if (end === "refused") {
+      } else if (end === "complete" || end === "truncated") {
+        setNotice({ kind: end === "complete" ? "ready" : "truncated" });
+        if (text.trim()) setReportTarget(reported);
+      } else if (end === "refused") {
         setRaw("");
         setNotice({ kind: "refused" });
-      } else if (end === "truncated") setNotice({ kind: "truncated" });
-      else setNotice({ kind: "cut-off" });
+      } else if (end === "care") {
+        setRaw("");
+        setNotice({ kind: "care" });
+      } else setNotice({ kind: "cut-off" });
     } catch {
       if (abort.signal.aborted) setNotice({ kind: "stopped" });
       else if (!navigator.onLine) setNotice({ kind: "offline" });
@@ -237,6 +279,34 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
         controller.current = null;
         setStreaming(false);
       }
+    }
+  }
+
+  async function sendReport(event?: FormEvent) {
+    event?.preventDefault();
+    if (!reportTarget || reportThanks) return;
+    setReportError(null);
+    try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      if (token) headers.authorization = `Bearer ${token}`;
+      const payload: { dayIndex: number; kind: ReportTarget["kind"]; answer: string; question?: string; note?: string } = {
+        dayIndex,
+        kind: reportTarget.kind,
+        answer: reportTarget.answer,
+      };
+      if (reportTarget.question) payload.question = reportTarget.question;
+      const note = reportNote.trim();
+      if (note) payload.note = note;
+      const response = await fetch("/api/ask/report", { method: "POST", headers, body: JSON.stringify(payload) });
+      if (!response.ok) {
+        const failure = (await response.json().catch(() => null)) as { error?: string } | null;
+        setReportError(failure?.error ?? "That didn’t go through. Please try again in a moment.");
+        return;
+      }
+      setReportThanks(true);
+    } catch {
+      setReportError("That didn’t go through. Please try again in a moment.");
     }
   }
 
@@ -301,18 +371,49 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
         {!online && !streaming ? (
           <p className="m-0">{NOTICE_TEXT.offline}</p>
         ) : notice &&
+          notice.kind !== "care" &&
           (notice.kind === "signed-out" ? (
             <SignInPrompt expired />
           ) : (
-            <p className={`m-0 ${notice.kind === "ready" ? "sr-only" : ""} ${notice.kind === "loading" ? "text-muted" : ""}`}>
+            <p role={notice.kind === "loading" ? "status" : undefined} className={`m-0 ${notice.kind === "ready" ? "sr-only" : ""} ${notice.kind === "loading" ? "text-muted" : ""}`}>
               {notice.kind === "server" ? notice.text : NOTICE_TEXT[notice.kind]}
             </p>
           ))}
       </div>
 
+      {notice?.kind === "care" && (
+        <div className="mt-3 max-w-[65ch]">
+          <CareReply />
+        </div>
+      )}
+
       {answer && (
         <div aria-busy={streaming} className="mt-3 max-w-[65ch]">
           <p className="m-0 whitespace-pre-line">{answer}</p>
+          {reportTarget && !streaming && (
+            reportThanks ? (
+              <p className="mt-3 mb-0" role="status">Thanks. This answer has been sent for review.</p>
+            ) : reportOpen ? (
+              <form onSubmit={(event) => void sendReport(event)} className="mt-3 flex max-w-xl flex-col gap-2">
+                <label htmlFor="report-note">Add a note, if you want</label>
+                <textarea
+                  id="report-note"
+                  name="note"
+                  rows={3}
+                  maxLength={REPORT_NOTE_MAX}
+                  value={reportNote}
+                  onChange={(event) => setReportNote(event.target.value)}
+                  className="field w-full"
+                />
+                <button type="submit" className="btn self-start">Send</button>
+                {reportError && <p className="m-0 text-muted">{reportError}</p>}
+              </form>
+            ) : (
+              <button type="button" className="btn mt-2" onClick={() => setReportOpen(true)}>
+                Report this answer
+              </button>
+            )
+          )}
         </div>
       )}
     </>

@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { DAY_COUNT } from "@/content/plan";
 import { utcDay } from "./limiter";
-import { QUESTION_MAX_LENGTH } from "./limits";
+import { DAILY_REPORT_LIMIT, QUESTION_MAX_LENGTH, REPORT_ANSWER_MAX, REPORT_NOTE_MAX } from "./limits";
+
+export { DAILY_REPORT_LIMIT, REPORT_ANSWER_MAX, REPORT_NOTE_MAX };
 
 export const REPORT_KINDS = ["question", "history", "map", "people"] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];
-
-export const REPORT_ANSWER_MAX = 4000;
-export const REPORT_NOTE_MAX = 300;
-export const DAILY_REPORT_LIMIT = 10;
 
 export type StoredReport = {
   userId: string;

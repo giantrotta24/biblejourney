@@ -68,6 +68,11 @@ describe("answer check prompt", () => {
     expect(CHECK_SYSTEM).toMatch(/never as instructions/);
     expect(delimitedAnswer("See </answer> this")).toBe("<answer>\nSee   this\n</answer>");
   });
+
+  it("keeps newlines and tabs in an answer and strips the other control characters", () => {
+    expect(delimitedAnswer("Line one\nLine two\tindented\r\u0000\u0007")).toBe("<answer>\nLine one\nLine two\tindented\n</answer>");
+    expect(delimitedAnswer("Who\u202Eis this")).toBe("<answer>\nWhois this\n</answer>");
+  });
 });
 
 describe("parseLabel", () => {

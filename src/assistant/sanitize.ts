@@ -19,6 +19,6 @@ export function delimitedQuestion(question: string): string {
 }
 
 export function delimitedAnswer(answer: string): string {
-  const clean = answer.replace(CONTROL_CHARACTERS, "").replace(ANSWER_DELIMITER, " ");
+  const clean = answer.replace(CONTROL_CHARACTERS, (char) => (char === "\n" || char === "\t" ? char : "")).replace(ANSWER_DELIMITER, " ");
   return `<answer>\n${clean}\n</answer>`;
 }

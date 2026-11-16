@@ -133,16 +133,19 @@ describe("supabaseReports", () => {
     const { client, calls } = tableClient({ error: null, count: 3 });
     const reports = supabaseReports(client);
     expect(await reports.count("u1", new Date("2026-11-13T23:30:00-05:00"))).toBe(3);
-    await reports.write({
-      userId: "u1",
-      dayIndex: 8,
-      kind: "question",
-      question: "Why a flood?",
-      answer: "The story is about judgment.",
-      note: null,
-      model: "claude-sonnet-5-5",
-      promptVersion: "2026-11-15",
-    });
+    await reports.write(
+      {
+        userId: "u1",
+        dayIndex: 8,
+        kind: "question",
+        question: "Why a flood?",
+        answer: "The story is about judgment.",
+        note: null,
+        model: "claude-sonnet-5-5",
+        promptVersion: "2026-11-15",
+      },
+      new Date("2026-11-14T00:00:00Z"),
+    );
     expect(calls).toContainEqual(["from", "assistant_reports"]);
     expect(calls).toContainEqual(["eq", "user_id", "u1"]);
     expect(calls).toContainEqual(["gte", "created_at", "2026-11-14T00:00:00.000Z"]);

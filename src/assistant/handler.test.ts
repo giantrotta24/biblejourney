@@ -43,6 +43,7 @@ function deps(overrides: Partial<AskDeps> = {}): AskDeps {
     screen: { screen: async () => "ok", check: async () => "ok" },
     flags: { write: async () => {} },
     reports: memoryReports(),
+    anonymousReports: memoryReports(),
     now: () => NOW,
     log: { info: vi.fn(), error: vi.fn() },
     ...overrides,

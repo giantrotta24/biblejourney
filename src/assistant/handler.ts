@@ -41,6 +41,7 @@ export type AskDeps = {
   screen: SafetyClient | null;
   flags: FlagLog;
   reports: ReportLog | null;
+  anonymousReports: ReportLog;
   now?: () => Date;
   log?: AssistantLog;
 };
@@ -173,7 +174,7 @@ export async function handleReport(request: Request, deps: AskDeps): Promise<Res
 
   try {
     const note = body.note?.trim() ? body.note.trim() : null;
-    const stored = await reports.submit(
+    const stored = await (caller.anonymous ? deps.anonymousReports : reports).submit(
       {
         userId: caller.userId,
         dayIndex: body.dayIndex,

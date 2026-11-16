@@ -21,6 +21,7 @@ function deps(overrides: Partial<AskDeps> = {}): AskDeps {
     screen: { screen: async () => "ok", check: async () => "ok" },
     flags: { write: async () => {} },
     reports: memoryReports(),
+    anonymousReports: memoryReports(),
     now: () => NOW,
     log: { info: vi.fn(), error: vi.fn() },
     ...overrides,
@@ -172,16 +173,22 @@ describe("handleReport", () => {
     });
   });
 
-  it("accepts an anonymous report in development without an access check", async () => {
-    const reports = memoryReports();
+  it("stores an anonymous development report in memory instead of the service-role store", async () => {
+    const reports = {
+      submit: vi.fn(async () => {
+        throw new Error("invalid input syntax for type uuid: local-anonymous");
+      }),
+    };
+    const anonymousReports = memoryReports();
     const access = { allowed: vi.fn(async () => false) };
     const response = await handleReport(
       report({ dayIndex: 0, kind: "people", answer: "A name." }, null),
-      deps({ reports, access, allowAnonymous: true, auth: null }),
+      deps({ reports, anonymousReports, access, allowAnonymous: true, auth: null }),
     );
     expect(response.status).toBe(200);
     expect(access.allowed).not.toHaveBeenCalled();
-    expect(reports.rows[0]?.userId).toBe("local-anonymous");
+    expect(reports.submit).not.toHaveBeenCalled();
+    expect(anonymousReports.rows[0]).toMatchObject({ userId: "local-anonymous", kind: "people", answer: "A name.", question: null });
   });
 
   it("logs only the error name when the write fails", async () => {

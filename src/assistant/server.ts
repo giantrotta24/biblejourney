@@ -37,6 +37,7 @@ export function createAskDeps(env: Env, log: AssistantLog): AskDeps {
     screen: setup.ready && apiKey ? anthropicSafety({ apiKey, model: screenId }) : null,
     flags: service ? supabaseFlags(service) : memoryFlags(),
     reports: service ? supabaseReports(service) : env.NODE_ENV === "production" ? null : memoryReports(),
+    anonymousReports: memoryReports(),
     auth: url && anonKey ? supabaseAuth(createClient(url, anonKey, serverClientOptions)) : null,
     access: service ? supabaseAccess(service) : memoryAccess(env.NODE_ENV === "development" ? "everyone" : []),
     allowAnonymous: setup.anonymous,

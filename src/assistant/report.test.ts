@@ -46,6 +46,20 @@ const questionReport = {
 };
 
 describe("handleReport", () => {
+  it("returns 403 for a signed-in reader without access and stores nothing", async () => {
+    const reports = memoryReports();
+    const access = { allowed: vi.fn(async () => false) };
+    const response = await handleReport(report(questionReport), deps({ reports, access }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      code: "not_enabled",
+      error: "The study assistant is by invitation for now.",
+    });
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(access.allowed).toHaveBeenCalledExactlyOnceWith("user-1");
+    expect(reports.rows).toHaveLength(0);
+  });
+
   it("returns 401 without a token or with a bad token", async () => {
     for (const token of [null, "forged"]) {
       const response = await handleReport(report(questionReport, token), deps());
@@ -135,10 +149,15 @@ describe("handleReport", () => {
     });
   });
 
-  it("accepts an anonymous report in development", async () => {
+  it("accepts an anonymous report in development without an access check", async () => {
     const reports = memoryReports();
-    const response = await handleReport(report({ dayIndex: 0, kind: "people", answer: "A name." }, null), deps({ reports, allowAnonymous: true, auth: null }));
+    const access = { allowed: vi.fn(async () => false) };
+    const response = await handleReport(
+      report({ dayIndex: 0, kind: "people", answer: "A name." }, null),
+      deps({ reports, access, allowAnonymous: true, auth: null }),
+    );
     expect(response.status).toBe(200);
+    expect(access.allowed).not.toHaveBeenCalled();
     expect(reports.rows[0]?.userId).toBe("local-anonymous");
   });
 

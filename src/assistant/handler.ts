@@ -160,6 +160,7 @@ export async function handleReport(request: Request, deps: AskDeps): Promise<Res
     return fail("upstream");
   }
   if (!caller) return jsonError("unauthorized", "Please sign in to report an answer.");
+  if (!caller.anonymous && !(await hasAccess(caller.userId, deps))) return fail("not_enabled");
 
   let body;
   try {

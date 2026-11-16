@@ -197,7 +197,14 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
   const [reportNote, setReportNote] = useState("");
   const [reportThanks, setReportThanks] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
+  const reportNoteRef = useRef<HTMLTextAreaElement>(null);
+  const reportButtonRef = useRef<HTMLButtonElement>(null);
+  const reportThanksRef = useRef<HTMLParagraphElement>(null);
+  const reportSending = useRef(false);
+  const reportSession = useRef(0);
+  const restoreReportFocus = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
   const stopButton = useRef<HTMLButtonElement>(null);
   const wasStreaming = useRef(false);
@@ -213,6 +220,21 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
     }
     wasStreaming.current = streaming;
   }, [streaming]);
+
+  useEffect(() => {
+    if (reportOpen) reportNoteRef.current?.focus();
+  }, [reportOpen]);
+
+  useEffect(() => {
+    if (!reportOpen && restoreReportFocus.current) {
+      restoreReportFocus.current = false;
+      reportButtonRef.current?.focus();
+    }
+  }, [reportOpen]);
+
+  useEffect(() => {
+    if (reportThanks) reportThanksRef.current?.focus({ preventScroll: true });
+  }, [reportThanks]);
 
   async function ask(body: { type: QuickPromptType } | { question: string }, from: HTMLElement | null) {
     if (controller.current) return;
@@ -282,9 +304,22 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
     }
   }
 
+  function cancelReport() {
+    reportSession.current += 1;
+    reportSending.current = false;
+    setReportBusy(false);
+    restoreReportFocus.current = true;
+    setReportOpen(false);
+    setReportNote("");
+    setReportError(null);
+  }
+
   async function sendReport(event?: FormEvent) {
     event?.preventDefault();
-    if (!reportTarget || reportThanks) return;
+    if (!reportTarget || reportThanks || reportSending.current) return;
+    const session = reportSession.current;
+    reportSending.current = true;
+    setReportBusy(true);
     setReportError(null);
     try {
       const token = await getAccessToken();
@@ -299,6 +334,7 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       const note = reportNote.trim();
       if (note) payload.note = note;
       const response = await fetch("/api/ask/report", { method: "POST", headers, body: JSON.stringify(payload) });
+      if (session !== reportSession.current) return;
       if (!response.ok) {
         const failure = (await response.json().catch(() => null)) as { error?: string } | null;
         setReportError(failure?.error ?? "That didn’t go through. Please try again in a moment.");
@@ -306,7 +342,12 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       }
       setReportThanks(true);
     } catch {
-      setReportError("That didn’t go through. Please try again in a moment.");
+      if (session === reportSession.current) setReportError("That didn’t go through. Please try again in a moment.");
+    } finally {
+      if (session === reportSession.current) {
+        reportSending.current = false;
+        setReportBusy(false);
+      }
     }
   }
 
@@ -392,11 +433,14 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
           <p className="m-0 whitespace-pre-line">{answer}</p>
           {reportTarget && !streaming && (
             reportThanks ? (
-              <p className="mt-3 mb-0" role="status">Thanks. This answer has been sent for review.</p>
+              <p ref={reportThanksRef} tabIndex={-1} role="status" className="focus-heading mt-3 mb-0">
+                Thanks. This answer has been sent for review.
+              </p>
             ) : reportOpen ? (
               <form onSubmit={(event) => void sendReport(event)} className="mt-3 flex max-w-xl flex-col gap-2">
                 <label htmlFor="report-note">Add a note, if you want</label>
                 <textarea
+                  ref={reportNoteRef}
                   id="report-note"
                   name="note"
                   rows={3}
@@ -405,11 +449,22 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
                   onChange={(event) => setReportNote(event.target.value)}
                   className="field w-full"
                 />
-                <button type="submit" className="btn self-start">Send</button>
-                {reportError && <p className="m-0 text-muted">{reportError}</p>}
+                <div className="flex flex-wrap gap-x-4">
+                  <button type="submit" className="btn" aria-disabled={reportBusy || undefined}>
+                    Send
+                  </button>
+                  <button type="button" className="btn" onClick={cancelReport}>
+                    Cancel
+                  </button>
+                </div>
+                {reportError && (
+                  <p role="alert" className="m-0 text-muted">
+                    {reportError}
+                  </p>
+                )}
               </form>
             ) : (
-              <button type="button" className="btn mt-2" onClick={() => setReportOpen(true)}>
+              <button ref={reportButtonRef} type="button" className="btn mt-2" onClick={() => setReportOpen(true)}>
                 Report this answer
               </button>
             )

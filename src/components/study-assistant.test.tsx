@@ -168,6 +168,75 @@ describe("assistant invitations", () => {
     });
   });
 
+  it("focuses the note when a report opens", async () => {
+    fetchMock.mockResolvedValueOnce(status(true)).mockResolvedValueOnce(new Response("An answer.\u001Ecomplete"));
+    render(<StudyAssistant dayIndex={3} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
+    await screen.findByText("An answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Report this answer" }));
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /note/i }));
+  });
+
+  it("closes the note on Cancel and returns focus to the report link", async () => {
+    fetchMock.mockResolvedValueOnce(status(true)).mockResolvedValueOnce(new Response("An answer.\u001Ecomplete"));
+    render(<StudyAssistant dayIndex={3} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
+    await screen.findByText("An answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Report this answer" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /note/i }), { target: { value: "Wrong date" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("textbox", { name: /note/i })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Report this answer" }));
+  });
+
+  it("focuses the thank-you line after a report is sent", async () => {
+    fetchMock
+      .mockResolvedValueOnce(status(true))
+      .mockResolvedValueOnce(new Response("An answer.\u001Ecomplete"))
+      .mockResolvedValueOnce(Response.json({ ok: true }));
+    render(<StudyAssistant dayIndex={3} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
+    await screen.findByText("An answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Report this answer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    const thanks = await screen.findByText("Thanks. This answer has been sent for review.");
+    expect(thanks.getAttribute("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(thanks);
+  });
+
+  it("announces a report error", async () => {
+    fetchMock
+      .mockResolvedValueOnce(status(true))
+      .mockResolvedValueOnce(new Response("An answer.\u001Ecomplete"))
+      .mockResolvedValueOnce(Response.json({ error: "You’ve sent 10 reports today. You can send more tomorrow.", code: "rate_limited" }, { status: 429 }));
+    render(<StudyAssistant dayIndex={3} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
+    await screen.findByText("An answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Report this answer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/10 reports/);
+  });
+
+  it("sends one request when Send is clicked twice", async () => {
+    let release!: (response: Response) => void;
+    fetchMock
+      .mockResolvedValueOnce(status(true))
+      .mockResolvedValueOnce(new Response("An answer.\u001Ecomplete"))
+      .mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+    render(<StudyAssistant dayIndex={3} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Historical setting" }));
+    await screen.findByText("An answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Report this answer" }));
+    const send = screen.getByRole("button", { name: "Send" });
+    fireEvent.click(send);
+    fireEvent.click(send);
+    await waitFor(() => expect(fetchMock.mock.calls.filter((call) => String(call[0]).includes("/api/ask/report"))).toHaveLength(1));
+    expect(send.getAttribute("aria-disabled")).toBe("true");
+    await act(async () => release(Response.json({ ok: true })));
+    await screen.findByText("Thanks. This answer has been sent for review.");
+    expect(fetchMock.mock.calls.filter((call) => String(call[0]).includes("/api/ask/report"))).toHaveLength(1);
+  });
+
   it("includes the question when reporting an answer to one", async () => {
     fetchMock
       .mockResolvedValueOnce(status(true))

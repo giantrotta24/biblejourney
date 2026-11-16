@@ -1,5 +1,8 @@
 import { days, getPhase, getWeek, WEEKDAY_NAMES } from "@/content/plan";
-import { QUESTION_MAX_LENGTH, type AskRequest, type QuickPromptType } from "./types";
+import { delimitedQuestion } from "./sanitize";
+import type { AskRequest, QuickPromptType } from "./types";
+
+export { sanitizeQuestion } from "./sanitize";
 
 export const PROMPT_VERSION = "2026-11-15";
 
@@ -22,19 +25,6 @@ const QUICK_TASKS: Record<QuickPromptType, string> = {
     "Introduce the key people and groups in this reading: who they are, how they connect to the wider biblical story, and anything a newcomer is likely to find confusing.",
 };
 
-const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F​-‏‪-‮⁠-⁯﻿]/g;
-const DELIMITER = /<\s*\/?\s*question\s*>/gi;
-
-export function sanitizeQuestion(question: string): string {
-  return question
-    .replace(/[\t\n\r\f\v]/g, " ")
-    .replace(CONTROL_CHARACTERS, "")
-    .replace(DELIMITER, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, QUESTION_MAX_LENGTH);
-}
-
 export type Prompt = { system: string; user: string };
 
 export function buildPrompt(request: AskRequest): Prompt {
@@ -52,7 +42,7 @@ export function buildPrompt(request: AskRequest): Prompt {
   const task =
     "type" in request
       ? QUICK_TASKS[request.type]
-      : `Answer the reader’s question about this reading.\n\n<question>\n${sanitizeQuestion(request.question)}\n</question>`;
+      : `Answer the reader’s question about this reading.\n\n${delimitedQuestion(request.question)}`;
 
   return { system: SYSTEM_PROMPT, user: `${context}\n\n${task}` };
 }

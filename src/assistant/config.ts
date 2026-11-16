@@ -1,4 +1,5 @@
 export const DEFAULT_ASSISTANT_MODEL = "claude-sonnet-5-5";
+export const DEFAULT_SCREEN_MODEL = "claude-haiku-5-5";
 
 type Env = Record<string, string | undefined>;
 
@@ -6,6 +7,10 @@ export type AssistantSetup = { ready: boolean; missing: string[]; anonymous: boo
 
 export function assistantModelId(env: Env): string {
   return env.ANTHROPIC_MODEL?.trim() || DEFAULT_ASSISTANT_MODEL;
+}
+
+export function screenModelId(env: Env): string {
+  return env.ANTHROPIC_SCREEN_MODEL?.trim() || DEFAULT_SCREEN_MODEL;
 }
 
 export function anonymousAllowed(env: Env): boolean {

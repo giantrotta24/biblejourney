@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { DAY_COUNT } from "@/content/plan";
+import { QUESTION_MAX_LENGTH } from "./limits";
 
-export const QUESTION_MAX_LENGTH = 500;
+export { QUESTION_MAX_LENGTH };
 export const DAILY_QUESTION_LIMIT = 30;
 
 export const QUICK_PROMPT_TYPES = ["history", "map", "people"] as const;

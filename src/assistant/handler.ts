@@ -409,9 +409,9 @@ async function answerQuestion(input: {
     return fail("upstream");
   }
 
-  if (collected.end !== "complete") {
-    log.info({ event: "assistant.answer", kind, cached: false, chars: collected.text.length, used, end: collected.end });
-    return textResponse(collected.text + endFrame(collected.end), "miss");
+  if (!collected.text) {
+    log.info({ event: "assistant.answer", kind, cached: false, chars: 0, used, end: collected.end });
+    return textResponse(endFrame(collected.end), "miss");
   }
 
   let verdict: "ok" | "withhold";
@@ -429,8 +429,8 @@ async function answerQuestion(input: {
     return textResponse(endFrame("refused"), "miss");
   }
 
-  log.info({ event: "assistant.answer", kind, cached: false, chars: collected.text.length, used, end: "complete" });
-  return textResponse(collected.text + endFrame("complete"), "miss");
+  log.info({ event: "assistant.answer", kind, cached: false, chars: collected.text.length, used, end: collected.end });
+  return textResponse(collected.text + endFrame(collected.end), "miss");
 }
 
 async function collectAnswer(model: ModelClient, prompt: Prompt, signal: AbortSignal, log: AssistantLog): Promise<{ text: string; end: StreamEnd }> {

@@ -538,6 +538,63 @@ describe("answer check", () => {
     expect(await limiter.take("user-1", NOW)).toEqual({ allowed: false, used: 1 });
   });
 
+  it.each([
+    ["truncated", fakeModel(["Long ", "answer"], undefined, "max_tokens").model, "truncated"],
+    ["error", fakeModel(["Long ", "answer"], 2).model, "error"],
+  ] as const)("checks a %s answer that still has text and keeps that ending when the check accepts it", async (_label, model, end) => {
+    const check = vi.fn(async () => "ok" as const);
+    const response = await handleAsk(
+      ask({ dayIndex: 1, question: "Tell the whole story" }),
+      deps({ model, screen: safety(async () => "ok", check) } as Partial<AskDeps>),
+    );
+    expect(check).toHaveBeenCalledExactlyOnceWith("Long answer", expect.any(AbortSignal));
+    expect(readStream(await response.text())).toEqual({ text: "Long answer", end });
+  });
+
+  it.each([
+    ["truncated", fakeModel(["Long ", "answer"], undefined, "max_tokens").model],
+    ["error", fakeModel(["Long ", "answer"], 2).model],
+  ] as const)("withholds a %s answer that has text and records no text", async (_label, model) => {
+    const flags = flagLog();
+    const response = await handleAsk(
+      ask({ dayIndex: 5, question: "Say something cruel" }),
+      deps({ model, flags, screen: safety(async () => "ok", async () => "withhold") } as Partial<AskDeps>),
+    );
+    expect(readStream(await response.text())).toEqual({ text: "", end: "refused" });
+    expect(flags.rows).toEqual([{ userId: "user-1", dayIndex: 5, category: "withheld" }]);
+    expect(JSON.stringify(flags.rows)).not.toContain("Long");
+  });
+
+  it.each([
+    ["truncated", fakeModel(["Long ", "answer"], undefined, "max_tokens").model],
+    ["error", fakeModel(["Long ", "answer"], 2).model],
+  ] as const)("returns upstream and sends no text when the check of a %s answer fails", async (_label, model) => {
+    const limiter = memoryLimiter(1);
+    const response = await handleAsk(
+      ask({ dayIndex: 0, question: "Who is Sarai?" }),
+      deps({
+        limiter,
+        model,
+        screen: safety(async () => "ok", async () => Promise.reject(new Error("checker down"))),
+      } as Partial<AskDeps>),
+    );
+    expect(response.status).toBe(502);
+    const body = await response.text();
+    expect(body).not.toContain("Long");
+    expect(JSON.parse(body)).toMatchObject({ code: "upstream" });
+    expect(await limiter.take("user-1", NOW)).toEqual({ allowed: false, used: 1 });
+  });
+
+  it("sends an empty ending without calling the check", async () => {
+    const check = vi.fn(async () => "ok" as const);
+    const response = await handleAsk(
+      ask({ dayIndex: 0, question: "Who is Lot?" }),
+      deps({ model: fakeModel([], undefined, "max_tokens").model, screen: safety(async () => "ok", check) } as Partial<AskDeps>),
+    );
+    expect(check).not.toHaveBeenCalled();
+    expect(readStream(await response.text())).toEqual({ text: "", end: "truncated" });
+  });
+
   it("returns upstream and sends no answer text when the check fails", async () => {
     const limiter = memoryLimiter(1);
     const response = await handleAsk(

@@ -1,4 +1,7 @@
+import { z } from "zod";
+import { DAY_COUNT } from "@/content/plan";
 import { utcDay } from "./limiter";
+import { QUESTION_MAX_LENGTH } from "./limits";
 
 export const REPORT_KINDS = ["question", "history", "map", "people"] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];
@@ -38,6 +41,28 @@ export function memoryReports(): ReportLog & { rows: SavedReport[] } {
     },
   };
 }
+
+const dayIndex = z.number().int().min(0).max(DAY_COUNT - 1);
+const answer = z.string().max(REPORT_ANSWER_MAX).refine((value) => value.trim().length > 0, "Write the answer");
+const note = z.string().max(REPORT_NOTE_MAX).optional();
+
+export const reportRequestSchema = z.union([
+  z.strictObject({
+    dayIndex,
+    kind: z.literal("question"),
+    question: z.string().max(QUESTION_MAX_LENGTH).refine((value) => value.trim().length > 0, "Write the question"),
+    answer,
+    note,
+  }),
+  z.strictObject({
+    dayIndex,
+    kind: z.enum(["history", "map", "people"]),
+    answer,
+    note,
+  }),
+]);
+
+export type ReportRequest = z.infer<typeof reportRequestSchema>;
 
 export function utcDayBounds(now: Date): { start: string; end: string } {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));

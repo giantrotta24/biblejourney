@@ -4,7 +4,7 @@ import type { AnswerCache, AnswerKey } from "./cache";
 import type { FlagCategory, FlagLog } from "./flags";
 import type { UsageLimiter } from "./limiter";
 import { buildPrompt, PROMPT_VERSION, type Prompt } from "./prompt";
-import type { ReportLog } from "./reports";
+import { DAILY_REPORT_LIMIT, reportRequestSchema, type ReportLog } from "./reports";
 import type { SafetyClient, ScreenCategory } from "./screen";
 import { askRequestSchema, DAILY_QUESTION_LIMIT, type AskErrorCode, type AskRequest } from "./types";
 import { endFrame, withoutMarker, type StreamEnd } from "./wire";
@@ -85,6 +85,10 @@ function stopEnd(error: unknown): StreamEnd {
   return "error";
 }
 
+function jsonError(code: AskErrorCode, error: string): Response {
+  return Response.json({ error, code }, { status: STATUS[code], headers: { "cache-control": "no-store" } });
+}
+
 function textResponse(body: BodyInit, cache: "hit" | "miss"): Response {
   return new Response(body, {
     headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-assistant-cache": cache },
@@ -140,6 +144,55 @@ export async function handleAssistantStatus(request: Request, deps: AskDeps): Pr
     if (userId) status.enabled = await hasAccess(userId, deps);
   }
   return Response.json(status, { headers: { "cache-control": "no-store" } });
+}
+
+export async function handleReport(request: Request, deps: AskDeps): Promise<Response> {
+  if (!deps.reports) return fail("not_configured");
+  const reports = deps.reports;
+  const log = deps.log ?? consoleLog;
+  const now = deps.now ?? (() => new Date());
+
+  let caller;
+  try {
+    caller = await identify(request, deps);
+  } catch (error) {
+    log.error({ event: "assistant.error", stage: "report-auth", name: errorName(error) });
+    return fail("upstream");
+  }
+  if (!caller) return jsonError("unauthorized", "Please sign in to report an answer.");
+
+  let body;
+  try {
+    const parsed = reportRequestSchema.safeParse(await request.json());
+    if (!parsed.success) return jsonError("invalid", "That report couldn’t be read.");
+    body = parsed.data;
+  } catch {
+    return jsonError("invalid", "That report couldn’t be read.");
+  }
+
+  try {
+    const count = await reports.count(caller.userId, now());
+    if (count >= DAILY_REPORT_LIMIT) return jsonError("rate_limited", "You’ve sent 10 reports today. You can send more tomorrow.");
+    const note = body.note?.trim() ? body.note.trim() : null;
+    await reports.write(
+      {
+        userId: caller.userId,
+        dayIndex: body.dayIndex,
+        kind: body.kind,
+        question: body.kind === "question" ? body.question.trim() : null,
+        answer: body.answer,
+        note,
+        model: deps.modelId,
+        promptVersion: PROMPT_VERSION,
+      },
+      now(),
+    );
+  } catch (error) {
+    log.error({ event: "assistant.error", stage: "report", name: errorName(error) });
+    return fail("upstream");
+  }
+
+  return Response.json({ ok: true }, { headers: { "cache-control": "no-store" } });
 }
 
 export async function handleAsk(request: Request, deps: AskDeps): Promise<Response> {

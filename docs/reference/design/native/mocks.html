@@ -97,7 +97,7 @@
   .android .close { width: 48px; height: 48px; }
   .android .primary { height: 48px; line-height: 48px; font: 500 15px/48px var(--ui); letter-spacing: 0.01em; }
   .verse { margin-top: 20px; padding-top: 14px; position: relative; }
-  .verse::before, .cut::before { content: ""; position: absolute; left: -22px; right: -22px; top: 0; height: 2px; background-image: radial-gradient(circle, var(--ink-3) 1.2px, transparent 1.5px); background-size: 7px 3px; height: 3px; }
+  .verse::before, .cut::before { content: ""; position: absolute; left: -22px; right: -22px; top: 0; background-image: radial-gradient(circle, var(--ink-3) 1.2px, transparent 1.5px); background-size: 7px 3px; height: 3px; }
   .verse h3 { font: 600 15px/1.3 "Source Serif 4", serif; margin: 0 0 6px; }
   .verse p { font: italic 16px/1.45 "Source Serif 4", serif; margin: 0; }
   .verse small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 6px; }
@@ -264,7 +264,6 @@
   .input.ph { color: var(--ink-2); }
   .code { font: 600 30px/56px var(--ui); letter-spacing: 0.32em; height: 56px; font-variant-numeric: tabular-nums; text-align: center; }
   .smallprint { font-size: 13px; color: var(--ink-2); margin-top: 12px; line-height: 1.45; }
-  .inline-note { position: absolute; left: 24px; right: 24px; bottom: 34px; z-index: 5; background: var(--ink); color: var(--paper); font-size: 14px; padding: 10px 14px; border-radius: 10px; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 20px -10px rgba(0,0,0,0.5); }
 
   .vwrap { background: var(--under); margin: 6px -20px 0; padding: 12px 12px 18px; position: relative; }
   .vwrap .vpage { margin: 0; padding: 18px 16px 6px; box-shadow: 0 1px 0 var(--rule), 0 2px 6px -3px rgba(0,0,0,0.2); }

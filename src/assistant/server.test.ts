@@ -76,6 +76,33 @@ describe("createAskDeps", () => {
     expect(JSON.stringify(log.error.mock.calls)).toContain("NEXT_PUBLIC_SUPABASE_URL");
   });
 
+  it("keeps anonymous reports in memory when the service role key is set", async () => {
+    const deps = createAskDeps({ ...FULL, NODE_ENV: "development", ASSISTANT_ALLOW_ANONYMOUS: "1" }, { info: vi.fn(), error: vi.fn() });
+    expect(deps.anonymousReports).not.toBe(deps.reports);
+    expect(
+      await deps.anonymousReports.submit(
+        {
+          userId: "local-anonymous",
+          dayIndex: 0,
+          kind: "people",
+          question: null,
+          answer: "A name.",
+          note: null,
+          model: "test-model",
+          promptVersion: "2026-11-15",
+        },
+        new Date("2026-11-15T00:00:00Z"),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps an in-memory report log in development and none in production without the service role", () => {
+    const dev = createAskDeps({ ANTHROPIC_API_KEY: "k", ASSISTANT_ALLOW_ANONYMOUS: "1", NODE_ENV: "development" }, { info: vi.fn(), error: vi.fn() });
+    expect(dev.reports).toEqual(expect.any(Object));
+    const prod = createAskDeps(without("SUPABASE_SERVICE_ROLE_KEY", { NODE_ENV: "production" }), { info: vi.fn(), error: vi.fn() });
+    expect(prod.reports).toBeNull();
+  });
+
   it("is configured in production with everything set", () => {
     const log = { info: vi.fn(), error: vi.fn() };
     const deps = createAskDeps({ ...FULL, NODE_ENV: "production" }, log);

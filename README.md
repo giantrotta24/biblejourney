@@ -43,9 +43,10 @@ Copy `.env.example` to `.env.local` for local development, and add the same valu
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Accounts and sync; also needed by the assistant | Supabase → Project Settings → API → Project URL | Public |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Accounts and sync; also needed by the assistant | Supabase → Project Settings → API → anon public key | Public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Assistant access, limit and cache; reminders | Supabase → Project Settings → API → service_role key | Server |
+| `SUPABASE_SERVICE_ROLE_KEY` | Assistant access, limit, cache, flags and reports; reminders | Supabase → Project Settings → API → service_role key | Server |
 | `ANTHROPIC_API_KEY` | Study assistant | [console.anthropic.com](https://console.anthropic.com) → API keys | Server |
 | `ANTHROPIC_MODEL` | Study assistant (optional) | Defaults to `claude-sonnet-5-5` | Server |
+| `ANTHROPIC_SCREEN_MODEL` | Study assistant screen and answer check (optional) | Defaults to `claude-haiku-5-5` | Server |
 | `ASSISTANT_ALLOW_ANONYMOUS` | Trying the assistant locally without accounts | Set to `1`; ignored in production | Server |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Reminders | `npx web-push generate-vapid-keys` | Public |
 | `VAPID_PRIVATE_KEY` | Reminders | The same command | Server |
@@ -61,13 +62,14 @@ GitHub needs these too, under Settings → Secrets and variables → Actions:
 
 ## Supabase database
 
-Run the five migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push`, which runs them in order. Each file is safe to run again.
+Run the six migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push`, which runs them in order. Each file is safe to run again.
 
 1. `20261113000000_init.sql`: the `profiles`, `day_progress`, `verse_progress` and `push_subscriptions` tables, with row-level security and a profile for each new user. It also sets up private Realtime Broadcast channels, one per user (`progress:<user id>`), with a policy so each user can only listen to their own. The progress tables are deliberately not in the `supabase_realtime` publication, because Postgres Changes would send every user’s deletes to everyone.
 2. `20261113010000_assistant.sql`: `assistant_usage`, `assistant_answers` and the functions that keep the assistant’s daily limit. Only the service role key can use them.
 3. `20261114000000_reminders.sql`: `profiles.last_reminded_on`, which keeps a reader to one reminder a day.
 4. `20261114010000_progress_reset.sql`: `profiles.progress_reset_at` and the `reset_progress()` function. Sync reads the reset time with every pull, so accounts need this one too.
 5. `20261114020000_assistant_access.sql`: `assistant_access`, the accounts the owner has invited to use the assistant. Row-level security has no policies; only the service role and database owner can use it.
+6. `20261115000000_assistant_safety.sql`: `assistant_flags` and `assistant_reports`. Same lockdown as `assistant_access`. Run this before the assistant’s screen and report path can store anything. Paste it into the SQL editor, or let `supabase db push` run it with the others.
 
 ## Accounts and sync
 
@@ -87,7 +89,11 @@ On first sign-in, anything already marked on the device is merged into the accou
 
 ## Study assistant
 
-On Today, a signed-in reader whom the owner has enabled can tap Historical setting, Where on the map or Who’s who, or type a question of up to 500 characters. A short answer about the day’s reading streams in from `POST /api/ask`. Other signed-in readers see “The study assistant is by invitation for now.” Sign-up and everything else in the app stay open.
+On Today, a signed-in reader whom the owner has enabled can tap Historical setting, Where on the map or Who’s who, or type a question of up to 500 characters. Quick prompts still stream in from `POST /api/ask`. Other signed-in readers see “The study assistant is by invitation for now.” Sign-up and everything else in the app stay open.
+
+A typed question goes to a smaller model first (`ANTHROPIC_SCREEN_MODEL`, default `claude-haiku-5-5`). Questions about the Bible, faith, or the reading, including hard ones, are answered by the main model. That answer is checked by the same small model, and Today shows the whole reply at once. The line “Looking into today’s reading…” stays on screen while it waits.
+
+A question that is off topic, asks for something sexual or hateful beyond the text, or tries to change the assistant’s rules comes back as the usual decline. It still counts toward the day’s 30. If the reader may be in danger, the main model is not called. The reply is a fixed note with links to call or text 988 in the US, to call 911 or the local emergency number, and to talk with a pastor or someone they trust. That question is not counted. If the screen or the check fails, Today shows the usual “couldn’t answer just now” error and no answer text. A screen failure is not counted. A failed check still counts.
 
 In production the assistant turns on only when `ANTHROPIC_API_KEY`, both `NEXT_PUBLIC_SUPABASE_` variables and `SUPABASE_SERVICE_ROLE_KEY` are set. If any is missing, it stays off and the server logs one line naming what is missing. The server verifies the reader’s Supabase access token and checks `assistant_access` on every question, before the cache, daily limit or model. An access lookup error denies access and logs only the error name. `GET /api/ask` also reports `enabled` for a verified bearer token, so Today can check before showing the prompts.
 
@@ -121,9 +127,31 @@ order by access.granted_at desc;
 
 The browser cannot read or change this table, so readers cannot enable themselves. Keep the service role key on the server.
 
-Each reader gets 30 questions per UTC day. The count is kept in Supabase, so the limit holds across server instances. Quick prompts count too. A cached answer is free: the same quick prompt for the same day, model and prompt version comes back without calling the model. A request cancelled before the model starts doesn’t count. Server logs carry counts and errors, never question or answer text.
+Each reader gets 30 questions per UTC day. The count is kept in Supabase, so the limit holds across server instances. Quick prompts count too. A cached answer is free: the same quick prompt for the same day, model and prompt version comes back without calling the model. A request cancelled before the model starts, or during the screen, doesn’t count. Server logs carry counts and error names, never question or answer text.
 
-In development (`npm run dev`) the service role key is optional. Without it, access allows everyone locally and the limit and cache live in memory. With it, signed-in readers use the database access check, limit and cache. To try the assistant with only an Anthropic key, also set `ASSISTANT_ALLOW_ANONYMOUS=1`; anonymous requests skip the access check. This flag only works when `NODE_ENV` isn’t `production`. Production never uses the allow-everyone fallback.
+Questions and answers are not stored. The exception is a report. Under a finished answer, Report this answer can send that answer, the typed question when there was one, and an optional note of up to 300 characters to `POST /api/ask/report`. A reader can send 10 reports per UTC day. `assistant_flags` is separate. A row is written when a question is declined, when the reply is the crisis note, or when the check holds an answer back. The row stores the category (`off_topic`, `inappropriate`, `manipulation`, `crisis`, `withheld`) and the day. It does not store the question or the answer. Crisis rows leave `user_id` empty. A failed flag write is logged by error name and the reader’s reply does not change.
+
+Recent flags:
+
+```sql
+select id, user_id, day_index, category, created_at
+from public.assistant_flags
+order by created_at desc
+limit 50;
+```
+
+Recent reports:
+
+```sql
+select id, user_id, day_index, kind, question, answer, note, model, prompt_version, created_at
+from public.assistant_reports
+order by created_at desc
+limit 50;
+```
+
+`npm run eval:assistant` sends the questions in `evals/assistant/cases.json` through the real screen. It needs `ANTHROPIC_API_KEY`. It prints a table of mismatches and exits non-zero if any case comes back as the wrong category. Without the key it prints one line and exits 0. It is not part of `npm test` or CI.
+
+In development (`npm run dev`) the service role key is optional. Without it, access allows everyone locally, and the limit, cache, flags and reports live in memory. With it, signed-in readers use the database. To try the assistant with only an Anthropic key, also set `ASSISTANT_ALLOW_ANONYMOUS=1`; anonymous requests skip the access check. This flag only works when `NODE_ENV` isn’t `production`. Production never uses the allow-everyone fallback. In production, reports need the service role key. Without it, `POST /api/ask/report` returns 503.
 
 ## Reminders
 
@@ -168,7 +196,7 @@ Set `APP_URL` in GitHub to the production address once it exists, so reminders c
 
 None of these has been run against live services yet. The tests cover them with fakes only. Check each after the first deploy.
 
-- [ ] **Migrations.** Run all five in order. In the SQL editor, `select progress_reset_at, last_reminded_on from profiles limit 1;` should run without error.
+- [ ] **Migrations.** Run all six in order. In the SQL editor, `select progress_reset_at, last_reminded_on from profiles limit 1;` should run without error. `select id from assistant_flags limit 1;` and `select id from assistant_reports limit 1;` should run without error too.
 - [ ] **Sign-in.** Send yourself a magic link from `/account` on the deployed site. It should land back on `/account`, signed in. If it lands elsewhere, check the Site URL and Redirect URLs.
 - [ ] **Google sign-in**, if enabled. Continue with Google should come back signed in.
 - [ ] **Sync across devices.** Sign in on a phone and a laptop. Tick a day on one. It should appear on the other within a few seconds, and after a reload.

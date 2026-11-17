@@ -19,6 +19,10 @@ beforeEach(() => {
     anonymousLimiter: memoryLimiter(30),
     cache: memoryCache(),
     modelId: "test",
+    screen: { screen: async () => "ok", check: async () => "ok" },
+    flags: { write: async () => {} },
+    reports: { submit: async () => true },
+    anonymousReports: { submit: async () => true },
     log: { info: vi.fn(), error: vi.fn() },
   };
 });

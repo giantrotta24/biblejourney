@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AccessCheck } from "./access";
 import type { AnswerCache } from "./cache";
+import type { FlagLog } from "./flags";
 import type { AuthVerifier } from "./handler";
 import { utcDay, type UsageLimiter } from "./limiter";
+import { DAILY_REPORT_LIMIT, type ReportLog } from "./reports";
 
 export function supabaseAccess(client: SupabaseClient): AccessCheck {
   return {
@@ -48,6 +50,41 @@ export function supabaseCache(client: SupabaseClient): AnswerCache {
         .from("assistant_answers")
         .upsert({ day_index: key.dayIndex, prompt_type: key.type, model: key.model, prompt_version: key.promptVersion, answer });
       if (error) throw new Error(`assistant_answers write failed: ${error.code ?? "unknown"}`);
+    },
+  };
+}
+
+export function supabaseFlags(client: SupabaseClient): FlagLog {
+  return {
+    async write(flag) {
+      const { error } = await client.from("assistant_flags").insert({
+        user_id: flag.userId,
+        day_index: flag.dayIndex,
+        category: flag.category,
+      });
+      if (error) throw new Error(`assistant_flags write failed: ${error.code ?? "unknown"}`);
+    },
+  };
+}
+
+export function supabaseReports(client: SupabaseClient): ReportLog {
+  return {
+    async submit(report, now) {
+      const { data, error } = await client.rpc("assistant_submit_report", {
+        p_user_id: report.userId,
+        p_day_index: report.dayIndex,
+        p_kind: report.kind,
+        p_question: report.question,
+        p_answer: report.answer,
+        p_note: report.note,
+        p_model: report.model,
+        p_prompt_version: report.promptVersion,
+        p_limit: DAILY_REPORT_LIMIT,
+        p_now: now.toISOString(),
+      });
+      if (error) throw new Error(`assistant_submit_report failed: ${error.code ?? "unknown"}`);
+      if (typeof data !== "boolean") throw new Error("assistant_submit_report failed: empty");
+      return data;
     },
   };
 }

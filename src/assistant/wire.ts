@@ -1,6 +1,6 @@
 export const END_MARKER = "\u001E";
 
-export const STREAM_ENDS = ["complete", "refused", "truncated", "error"] as const;
+export const STREAM_ENDS = ["complete", "refused", "truncated", "error", "care"] as const;
 export type StreamEnd = (typeof STREAM_ENDS)[number];
 
 export function endFrame(end: StreamEnd): string {

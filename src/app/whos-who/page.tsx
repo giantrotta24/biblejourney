@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { peoples, prophets } from "@/content/plan";
+import { peoples, prophets } from "@server/content/plan";
 
 export const metadata: Metadata = { title: "Who’s who" };
 

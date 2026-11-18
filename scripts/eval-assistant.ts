@@ -6,8 +6,8 @@ if (!key) {
   process.exit(0);
 }
 
-const { screenModelId } = await import("../src/assistant/config");
-const { anthropicSafety } = await import("../src/assistant/screen");
+const { screenModelId } = await import("../supabase/functions/_shared/assistant/config.ts");
+const { anthropicSafety } = await import("../supabase/functions/_shared/assistant/screen.ts");
 
 const cases = JSON.parse(readFileSync(new URL("../evals/assistant/cases.json", import.meta.url), "utf8")) as {
   question: string;

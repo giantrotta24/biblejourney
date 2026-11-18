@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { currentDay, eras } from "@/content/plan";
+import { currentDay, eras } from "@server/content/plan";
 import { currentEraIndex, sundayPassedWeek, weekMask } from "@/lib/progress";
 import { createProgressSync, type ProgressSync } from "@/sync/engine";
 import { localQueue } from "@/sync/queue";

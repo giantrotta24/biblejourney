@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { WEEKDAY_NAMES, type Day } from "@/content/plan";
+import { WEEKDAY_NAMES, type Day } from "@server/content/plan";
 import { setDayDone, useDayDone, useIsCurrentDay, useProgressReady } from "@/progress/client";
 
 type DayItem = Pick<Day, "index" | "weekday" | "reading"> & { week?: number };

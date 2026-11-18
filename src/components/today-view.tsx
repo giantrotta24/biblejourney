@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { currentDay, getPhase, getWeek, WEEK_COUNT, WEEKDAY_NAMES, type PlanDay } from "@/content/plan";
+import { currentDay, getPhase, getWeek, WEEK_COUNT, WEEKDAY_NAMES, type PlanDay } from "@server/content/plan";
 import { catchUpDays, sundayWeek } from "@/lib/progress";
 import { bibleGatewayUrl, estimatedMinutes } from "@/lib/reading";
 import { setDayDone, useProgress } from "@/progress/client";

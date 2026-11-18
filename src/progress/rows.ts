@@ -1,4 +1,4 @@
-import type { Progress } from "@/content/plan";
+import type { Progress } from "@server/content/plan";
 
 export type DayRow = { day_index: number; completed_at: string };
 export type VerseRow = { week: number; learned_at: string };

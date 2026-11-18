@@ -5,7 +5,7 @@ import { accountsConfigured, supabaseClient } from "@/account/supabase";
 import { registerServiceWorker } from "@/pwa/service-worker";
 import { readerTimeZone } from "@/settings/client";
 import { forgetThisDevice, remindersOnHere, type SubscriptionRows } from "./device";
-import { isPushEndpoint } from "./endpoints";
+import { isPushEndpoint } from "@server/reminders/endpoints";
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 

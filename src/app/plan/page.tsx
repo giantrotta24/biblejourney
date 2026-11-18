@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PlanWeeks } from "@/components/plan-weeks";
-import { phases } from "@/content/plan";
+import { phases } from "@server/content/plan";
 import { weekRangeLabel } from "@/lib/phase";
 
 export const metadata: Metadata = { title: "The full plan" };

@@ -2,7 +2,7 @@
 
 import { SegmentedControl, SegmentedControlItem } from "@ui-sdk/react/segmented-control";
 import { useId, useState } from "react";
-import type { Week } from "@/content/plan";
+import type { Week } from "@server/content/plan";
 import { firstLetters } from "@/lib/reading";
 import { setVerseLearned, useProgressReady, useVerseLearned } from "@/progress/client";
 

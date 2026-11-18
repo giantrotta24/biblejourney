@@ -1,0 +1,9 @@
+project_id = "biblejourney"
+
+[functions.ask]
+import_map = "./functions/deno.json"
+verify_jwt = false
+
+[functions.reminders-send]
+import_map = "./functions/deno.json"
+verify_jwt = false

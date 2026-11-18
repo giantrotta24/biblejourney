@@ -4,7 +4,7 @@ Bible Journey is a mobile-first web app that takes one reader through the whole 
 
 Today always shows the first unread day, not a calendar date. Missing a day is never treated as failure.
 
-The plan content lives in [`content/bible-journey-seed.json`](content/bible-journey-seed.json). It is built into the app, so there is no database seeding step. `npm test` validates it against the schema in `src/content/schema.ts` (`src/content/seed.test.ts`); run that after editing the file. The original build brief and the single-file prototype are in [`docs/reference/`](docs/reference/).
+The plan content lives in [`content/bible-journey-seed.json`](content/bible-journey-seed.json). It is built into the app, so there is no database seeding step. `npm test` validates it against the schema in `supabase/functions/_shared/content/schema.ts` (`supabase/functions/_shared/content/seed.test.ts`); run that after editing the file. The original build brief and the single-file prototype are in [`docs/reference/`](docs/reference/).
 
 ## Run it locally
 
@@ -62,7 +62,7 @@ GitHub needs these too, under Settings → Secrets and variables → Actions:
 
 ## Supabase database
 
-Run the six migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push`, which runs them in order. Each file is safe to run again.
+Run the six migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push`, which runs them in order. For an existing project where these were applied by hand, first repair migration history as described under Server on Supabase Edge Functions below, before running `db push`. Keep future migrations additive.
 
 1. `20261113000000_init.sql`: the `profiles`, `day_progress`, `verse_progress` and `push_subscriptions` tables, with row-level security and a profile for each new user. It also sets up private Realtime Broadcast channels, one per user (`progress:<user id>`), with a policy so each user can only listen to their own. The progress tables are deliberately not in the `supabase_realtime` publication, because Postgres Changes would send every user’s deletes to everyone.
 2. `20261113010000_assistant.sql`: `assistant_usage`, `assistant_answers` and the functions that keep the assistant’s daily limit. Only the service role key can use them.
@@ -162,9 +162,61 @@ A daily reminder is optional and needs an account. It arrives as a web push noti
 3. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` locally and in Vercel.
 4. In GitHub, add the variable `APP_URL` and the secret `CRON_SECRET` (the same value).
 
-`.github/workflows/reminders.yml` runs every 15 minutes. It calls `POST /api/reminders/send` with `CRON_SECRET` as a bearer token, and skips quietly until `APP_URL` and `CRON_SECRET` are both set. GitHub Actions does the scheduling because Vercel’s free plan runs cron jobs only once a day. GitHub may delay scheduled runs at busy times; the one-hour window below absorbs ordinary delays.
+`.github/workflows/reminders.yml` runs every 15 minutes. It calls `POST /api/reminders/send` with `CRON_SECRET` as a bearer token, and skips until `CRON_SECRET` and either `REMINDERS_URL` or `APP_URL` are set. When `REMINDERS_URL` is set, it calls that complete endpoint instead. GitHub Actions does the scheduling because Vercel’s free plan runs cron jobs only once a day. GitHub may delay scheduled runs at busy times; the one-hour window below absorbs ordinary delays.
 
-The route sends to readers whose reminder time passed within the last hour and who haven’t had a reminder that day, so running it twice sends nothing new. It sends only to `https` endpoints on known push services (listed in `src/reminders/endpoints.ts`), uses each reader’s five most recent devices, and gives each push 10 seconds. A reader whose lookup fails is skipped and counted as `failed`. Subscriptions the push service reports as gone are removed. Signing out removes this browser’s subscription for that account. To test, run the workflow by hand from the Actions tab.
+The route sends to readers whose reminder time passed within the last hour and who haven’t had a reminder that day, so running it twice sends nothing new. It sends only to `https` endpoints on known push services (listed in `supabase/functions/_shared/reminders/endpoints.ts`), uses each reader’s five most recent devices, and gives each push 10 seconds. A reader whose lookup fails is skipped and counted as `failed`. Subscriptions the push service reports as gone are removed. Signing out removes this browser’s subscription for that account. To test, run the workflow by hand from the Actions tab.
+
+## Server on Supabase Edge Functions
+
+The shared server code lives in `supabase/functions/_shared/`. The `ask` function serves GET status, POST questions and POST `/ask/report`, including streaming responses and CORS preflight. The `reminders-send` function accepts POST with the `CRON_SECRET` bearer token. Both use the same handlers as the Next API routes, which remain available during cutover. Edge adapters always use production rules: missing configuration disables the feature, and anonymous asking is disabled.
+
+`supabase/functions/deno.json` pins the runtime dependencies. Run the Edge checks locally with Deno 2.x:
+
+```bash
+deno check supabase/functions/ask/index.ts supabase/functions/reminders-send/index.ts
+deno test --config supabase/functions/deno.json --allow-env --allow-net=127.0.0.1 supabase/functions/tests/
+```
+
+The plan seed remains owned by `content/bible-journey-seed.json`. After editing it, run `cp content/bible-journey-seed.json supabase/functions/_shared/content/bible-journey-seed.json`; `npm test` checks the copies match.
+
+Use the pinned CLI with `npx supabase@3.2.0` (shown as `supabase` below). Do this one-time cutover in order:
+
+1. **Repair history before any `db push` or deploy Action.** The existing project's six migrations were applied by hand. After linking the intended project with `supabase link --project-ref <ref>`, record each existing version as applied, without executing its SQL again:
+
+   ```bash
+   supabase migration repair --status applied 20261113000000
+   supabase migration repair --status applied 20261113010000
+   supabase migration repair --status applied 20261114000000
+   supabase migration repair --status applied 20261114010000
+   supabase migration repair --status applied 20261114020000
+   supabase migration repair --status applied 20261115000000
+   ```
+
+   This repair is only for the existing database where all six already ran. A new empty project should apply the migrations normally. Future migrations must stay additive: the web app and both server adapters can be live together.
+
+2. **Set function secrets.** Supabase injects `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`; do not copy those into public variables. Create a local, untracked secrets file with these names, then upload it (never commit the values):
+
+   ```dotenv
+   ANTHROPIC_API_KEY=
+   ASSISTANT_ALLOWED_ORIGINS=
+   CRON_SECRET=
+   VAPID_PUBLIC_KEY=
+   VAPID_PRIVATE_KEY=
+   VAPID_SUBJECT=
+   ```
+
+   ```bash
+   npx supabase@3.2.0 secrets set --env-file .env.edge.local --project-ref <ref>
+   ```
+
+   `ASSISTANT_ALLOWED_ORIGINS` is a comma-separated list of exact app origins, including scheme and port where needed, with no trailing slash. Listed origins receive CORS headers; native apps and curl need no Origin header. Optional `ANTHROPIC_MODEL` and `ANTHROPIC_SCREEN_MODEL` retain the defaults documented above. Use the existing VAPID key pair: `VAPID_PUBLIC_KEY` on Edge must match the web app's `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Use the same `CRON_SECRET` in the function and GitHub Actions.
+
+3. **Enable deployment.** Add Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`, and Actions variable `SUPABASE_PROJECT_REF`. Run the Supabase workflow manually once. On pushes to `main` touching `supabase/**` it links the project, runs `supabase db push`, then deploys `ask` and `reminders-send`. It skips with an explanation when any setting is missing. Migrations must remain additive; this workflow does not perform the one-time history repair.
+4. **Check status from the app's browser origin.** With `<base>` equal to `https://<ref>.supabase.co/functions/v1`, run `fetch("<base>/ask").then(r => r.json()).then(console.log)` in the app's browser console. Confirm the browser accepts CORS and status reports `configured: true`; signed-out status also reports `signInRequired: true`. Then verify a signed-in, enabled reader can ask and report an answer.
+5. **Switch the web client.** Set `NEXT_PUBLIC_ASSISTANT_URL=<base>` in Vercel and redeploy. Empty or unset keeps `/api/ask` and `/api/ask/report`; set uses `<base>/ask` and `<base>/ask/report`. To roll back, unset it and redeploy.
+6. **Switch reminders.** Set Actions variable `REMINDERS_URL` to `<base>/reminders-send`. The schedule uses this URL when set and otherwise falls back to `${APP_URL}/api/reminders/send`. Keep the GitHub schedule; the database's atomic per-day claim prevents duplicate sends. Unset the variable to roll back.
+
+Later work includes Expo clients, any move of scheduling to Supabase Cron, and retiring the Next routes or Vercel hosting. This change does none of those. Live deployment, model calls, database/auth access and delivery to real devices still need the owner's checks after setup.
 
 ## Settings
 

@@ -6,7 +6,8 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("web-push encrypts and posts a VAPID-authenticated payload under Deno", async () => {
+for (const status of [201, 410]) {
+Deno.test(`web-push encrypts a VAPID payload and preserves delivery status ${status}`, async () => {
   let received: { encoding: string | null; authorization: string | null; body: Uint8Array } | undefined;
   const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen() {} }, async (request) => {
     received = {
@@ -14,7 +15,7 @@ Deno.test("web-push encrypts and posts a VAPID-authenticated payload under Deno"
       authorization: request.headers.get("authorization"),
       body: new Uint8Array(await request.arrayBuffer()),
     };
-    return new Response(null, { status: 201 });
+    return new Response(null, { status });
   });
   try {
     const key = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
@@ -28,7 +29,15 @@ Deno.test("web-push encrypts and posts a VAPID-authenticated payload under Deno"
     try { await createPush(config)(subscription, { title: "test", body: "reading", url: "/" }); } catch { rejected = true; }
     assert(rejected, "production endpoint validation must reject localhost");
     assert(!received, "rejected endpoint must not receive a request");
-    await createPush(config, (value) => value === endpoint)(subscription, { title: "test", body: "reading", url: "/" });
+    let deliveryError: unknown;
+    try {
+      await createPush(config, (value) => value === endpoint)(subscription, { title: "test", body: "reading", url: "/" });
+    } catch (error) { deliveryError = error; }
+    if (status === 410) {
+      assert((deliveryError as { statusCode?: number })?.statusCode === 410, `expected statusCode 410, received ${deliveryError}`);
+    } else {
+      assert(!deliveryError, `unexpected delivery failure: ${deliveryError}`);
+    }
     assert(received, "server received the encrypted notification");
     const notification = received as { encoding: string | null; authorization: string | null; body: Uint8Array };
     assert(notification.encoding === "aes128gcm", `encoding: ${notification.encoding}`);
@@ -39,3 +48,4 @@ Deno.test("web-push encrypts and posts a VAPID-authenticated payload under Deno"
     await server.shutdown();
   }
 });
+}

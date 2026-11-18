@@ -37,7 +37,7 @@ jobs:
         if: steps.settings.outputs.ready == 'true'
         with:
           persist-credentials: false
-      - uses: supabase/setup-cli@PIN_PENDING_APPROVED_SHA
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
         if: steps.settings.outputs.ready == 'true'
         with:
           version: 3.2.0
@@ -48,7 +48,7 @@ jobs:
       # see README's one-time cutover before enabling these settings.
       - name: Apply additive migrations
         if: steps.settings.outputs.ready == 'true'
-        run: supabase db push
+        run: supabase db push --remote --yes --password "$SUPABASE_DB_PASSWORD"
       - name: Deploy functions
         if: steps.settings.outputs.ready == 'true'
-        run: supabase functions deploy ask reminders-send
+        run: supabase functions deploy ask reminders-send --yes

@@ -179,17 +179,17 @@ deno test --config supabase/functions/deno.json --allow-env --allow-net=127.0.0.
 
 The plan seed remains owned by `content/bible-journey-seed.json`. After editing it, run `cp content/bible-journey-seed.json supabase/functions/_shared/content/bible-journey-seed.json`; `npm test` checks the copies match.
 
-Use the pinned CLI with `npx supabase@3.2.0` (shown as `supabase` below). Do this one-time cutover in order:
+Use the pinned CLI with `npx supabase@3.2.0` (shown as `supabase` below). From CLI 3, database commands target the local database unless given `--remote`, and hosted changes in CI need `--yes`. Do this one-time cutover in order:
 
 1. **Repair history before any `db push` or deploy Action.** The existing project's six migrations were applied by hand. After linking the intended project with `supabase link --project-ref <ref>`, record each existing version as applied, without executing its SQL again:
 
    ```bash
-   supabase migration repair --status applied 20261113000000
-   supabase migration repair --status applied 20261113010000
-   supabase migration repair --status applied 20261114000000
-   supabase migration repair --status applied 20261114010000
-   supabase migration repair --status applied 20261114020000
-   supabase migration repair --status applied 20261115000000
+   supabase migration repair --remote --status applied 20261113000000
+   supabase migration repair --remote --status applied 20261113010000
+   supabase migration repair --remote --status applied 20261114000000
+   supabase migration repair --remote --status applied 20261114010000
+   supabase migration repair --remote --status applied 20261114020000
+   supabase migration repair --remote --status applied 20261115000000
    ```
 
    This repair is only for the existing database where all six already ran. A new empty project should apply the migrations normally. Future migrations must stay additive: the web app and both server adapters can be live together.
@@ -206,12 +206,12 @@ Use the pinned CLI with `npx supabase@3.2.0` (shown as `supabase` below). Do thi
    ```
 
    ```bash
-   npx supabase@3.2.0 secrets set --env-file .env.edge.local --project-ref <ref>
+   npx supabase@3.2.0 secrets set --env-file .env.edge.local --remote=<ref>
    ```
 
    `ASSISTANT_ALLOWED_ORIGINS` is a comma-separated list of exact app origins, including scheme and port where needed, with no trailing slash. Listed origins receive CORS headers; native apps and curl need no Origin header. Optional `ANTHROPIC_MODEL` and `ANTHROPIC_SCREEN_MODEL` retain the defaults documented above. Use the existing VAPID key pair: `VAPID_PUBLIC_KEY` on Edge must match the web app's `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Use the same `CRON_SECRET` in the function and GitHub Actions.
 
-3. **Enable deployment.** Add Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`, and Actions variable `SUPABASE_PROJECT_REF`. Run the Supabase workflow manually once. On pushes to `main` touching `supabase/**` it links the project, runs `supabase db push`, then deploys `ask` and `reminders-send`. It skips with an explanation when any setting is missing. Migrations must remain additive; this workflow does not perform the one-time history repair.
+3. **Enable deployment.** Add Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`, and Actions variable `SUPABASE_PROJECT_REF`. Run the Supabase workflow manually once. On pushes to `main` touching `supabase/**` it links the project, runs `supabase db push --remote --yes`, then deploys `ask` and `reminders-send`. It skips with an explanation when any setting is missing. Migrations must remain additive; this workflow does not perform the one-time history repair.
 4. **Check status from the app's browser origin.** With `<base>` equal to `https://<ref>.supabase.co/functions/v1`, run `fetch("<base>/ask").then(r => r.json()).then(console.log)` in the app's browser console. Confirm the browser accepts CORS and status reports `configured: true`; signed-out status also reports `signInRequired: true`. Then verify a signed-in, enabled reader can ask and report an answer.
 5. **Switch the web client.** Set `NEXT_PUBLIC_ASSISTANT_URL=<base>` in Vercel and redeploy. Empty or unset keeps `/api/ask` and `/api/ask/report`; set uses `<base>/ask` and `<base>/ask/report`. To roll back, unset it and redeploy.
 6. **Switch reminders.** Set Actions variable `REMINDERS_URL` to `<base>/reminders-send`. The schedule uses this URL when set and otherwise falls back to `${APP_URL}/api/reminders/send`. Keep the GitHub schedule; the database's atomic per-day claim prevents duplicate sends. Unset the variable to roll back.

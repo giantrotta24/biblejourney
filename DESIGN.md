@@ -348,5 +348,5 @@ Radio rows between hairlines: a 22px ring in faded ink, filled by a 7px ink bord
 
 ## Open items
 
-- **Unresolved:** prices (shown as $X.XX), the store app name, the icon, and whether this phone keeps its reading progress after Delete account (the mock assumes it does).
+- **Unresolved:** prices (shown as $X.XX), the store app name, and the icon. Decided 2026-11-18: Delete account also clears the reading progress on this phone.
 - **Not drawn:** accessibility text sizes AX1 to AX5, the "new code sent" state after Send a new code, and the reminder state when notifications are off.

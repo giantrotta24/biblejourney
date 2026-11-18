@@ -6,7 +6,7 @@ import { edgeEnv } from "../_shared/env.ts";
 const env = edgeEnv(Deno.env.toObject());
 const deps = createAskDeps(env, consoleLog);
 
-Deno.serve({ hostname: Deno.env.get("HOST") ?? "0.0.0.0", port: Number(Deno.env.get("PORT") ?? 8000) }, async (request) => {
+Deno.serve(async (request) => {
   let response: Response;
   if (request.method === "OPTIONS") {
     return withCors(request, null, env.ASSISTANT_ALLOWED_ORIGINS ?? "");

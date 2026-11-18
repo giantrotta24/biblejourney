@@ -5,7 +5,7 @@ import { createPush } from "./push.ts";
 
 const env = edgeEnv(Deno.env.toObject());
 
-Deno.serve({ hostname: Deno.env.get("HOST") ?? "0.0.0.0", port: Number(Deno.env.get("PORT") ?? 8000) }, (request) => {
+Deno.serve((request) => {
   if (request.method !== "POST") return new Response(null, { status: 405, headers: { Allow: "POST" } });
   return handleReminderRequest(request, env.CRON_SECRET, () => {
     const config = reminderServerConfig(env);

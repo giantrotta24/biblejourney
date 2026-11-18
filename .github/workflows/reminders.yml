@@ -27,7 +27,8 @@ jobs:
             echo "Neither REMINDERS_URL nor APP_URL is set, or CRON_SECRET is missing; skipping."
             exit 0
           fi
-          endpoint="${REMINDERS_URL:-${APP_URL%/}/api/reminders/send}"
+          endpoint="${REMINDERS_URL%/}"
+          endpoint="${endpoint:-${APP_URL%/}/api/reminders/send}"
           curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-all-errors \
             -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \

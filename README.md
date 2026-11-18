@@ -62,7 +62,7 @@ GitHub needs these too, under Settings → Secrets and variables → Actions:
 
 ## Supabase database
 
-Run the six migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push`, which runs them in order. For an existing project where these were applied by hand, first repair migration history as described under Server on Supabase Edge Functions below, before running `db push`. Keep future migrations additive.
+Run the six migrations in [`supabase/migrations/`](supabase/migrations/) in this order. Either paste each file into the Supabase SQL editor and run it, or link the project with `supabase link --project-ref <ref>` and run `supabase db push --remote`, which runs them in order. For an existing project where these were applied by hand, first repair migration history as described under Server on Supabase Edge Functions below, before running `db push`. Keep future migrations additive.
 
 1. `20261113000000_init.sql`: the `profiles`, `day_progress`, `verse_progress` and `push_subscriptions` tables, with row-level security and a profile for each new user. It also sets up private Realtime Broadcast channels, one per user (`progress:<user id>`), with a policy so each user can only listen to their own. The progress tables are deliberately not in the `supabase_realtime` publication, because Postgres Changes would send every user’s deletes to everyone.
 2. `20261113010000_assistant.sql`: `assistant_usage`, `assistant_answers` and the functions that keep the assistant’s daily limit. Only the service role key can use them.

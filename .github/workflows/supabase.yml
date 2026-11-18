@@ -6,7 +6,8 @@ on:
     paths: ["supabase/**"]
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
 
 concurrency:
   group: supabase-deploy
@@ -51,4 +52,4 @@ jobs:
         run: supabase db push --remote --yes --password "$SUPABASE_DB_PASSWORD"
       - name: Deploy functions
         if: steps.settings.outputs.ready == 'true'
-        run: supabase functions deploy ask reminders-send --yes
+        run: supabase functions deploy ask reminders-send --no-verify-jwt --yes

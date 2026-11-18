@@ -15,6 +15,7 @@ export function createPush(config: ServerConfig, endpointCheck = isPushEndpoint)
       method: details.method,
       headers: details.headers,
       body: details.body ? new Uint8Array(details.body) : null,
+      redirect: "manual",
       signal: AbortSignal.timeout(PUSH_TIMEOUT_MS),
     });
     await response.body?.cancel();

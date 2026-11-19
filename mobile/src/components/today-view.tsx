@@ -39,6 +39,11 @@ function numeralLift(size: number): number {
   return Math.round(size * 0.08);
 }
 
+/** Space the numeral font reserves above its digits at lineHeight = fontSize (measured on device at 128pt). */
+function numeralTopInset(size: number): number {
+  return Math.round(size * 0.17);
+}
+
 export type TodayViewProps = {
   done: ReadonlySet<number>;
   dayIndex?: number | null;
@@ -258,7 +263,7 @@ function DayPage({
   const buttonSize = Platform.OS === 'android' ? 15 : 17;
 
   return (
-    <View style={{ paddingTop: 22 + lift }}>
+    <View style={{ paddingTop: 22 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         <Text
           allowFontScaling={false}
@@ -267,7 +272,7 @@ function DayPage({
             fontFamily: fonts.numeral,
             fontSize: numeral,
             lineHeight: numeral,
-            marginTop: -lift,
+            marginTop: -numeralTopInset(numeral),
             marginBottom: -lift,
             letterSpacing: numeral * -0.02,
             color: colors.ink,
@@ -426,7 +431,7 @@ function FinishedPage({ colors, onOpenPlan }: { colors: Palette; onOpenPlan: () 
   const numeral = numeralSize(useLargeText());
   const lift = numeralLift(numeral);
   return (
-    <View style={{ paddingTop: 22 + lift }}>
+    <View style={{ paddingTop: 22 }}>
       <Text
         allowFontScaling={false}
         accessibilityLabel={`Day ${DAY_COUNT}`}
@@ -434,7 +439,7 @@ function FinishedPage({ colors, onOpenPlan }: { colors: Palette; onOpenPlan: () 
           fontFamily: fonts.numeral,
           fontSize: numeral,
           lineHeight: numeral,
-          marginTop: -lift,
+          marginTop: -numeralTopInset(numeral),
           marginBottom: -lift,
           letterSpacing: numeral * -0.02,
           color: colors.ink,

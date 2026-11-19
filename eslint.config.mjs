@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     "supabase/functions/ask/**",
     "supabase/functions/reminders-send/**",
     "supabase/functions/tests/**",
+    "app/**",
   ]),
 ]);
 

@@ -1,4 +1,4 @@
-import { DAY_COUNT, WEEK_COUNT } from "@/content/plan";
+import { DAY_COUNT, WEEK_COUNT } from "@server/content/plan";
 import type { DayRow, ProgressPersistence, ProgressRows, ProgressSnapshot, VerseRow } from "./rows";
 
 export type ProgressStore = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { getWeek, WEEK_COUNT, weeks, type Week } from "@/content/plan";
+import { getWeek, WEEK_COUNT, weeks, type Week } from "@server/content/plan";
 import { nextVerseWeek, unlockedWeeks } from "@/lib/progress";
 import { useCurrentWeek, useProgress, useProgressReady } from "@/progress/client";
 import { KnowItToggle, VersePractice } from "./verse-practice";

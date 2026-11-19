@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { eras } from "@/content/plan";
+import { eras } from "@server/content/plan";
 import { weekAnchor, weekRangeLabel } from "@/lib/phase";
 import { useCurrentEraIndex } from "@/progress/client";
 

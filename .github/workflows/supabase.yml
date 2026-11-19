@@ -1,0 +1,55 @@
+name: Deploy Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Check deployment settings
+        id: settings
+        shell: bash
+        run: |
+          ready=true
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not set; skipping Supabase deployment."
+              ready=false
+            fi
+          done
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.settings.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        if: steps.settings.outputs.ready == 'true'
+        with:
+          version: 3.2.0
+      - name: Link project
+        if: steps.settings.outputs.ready == 'true'
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+      # Keep migrations additive. Repair the six hand-applied versions first;
+      # see README's one-time cutover before enabling these settings.
+      - name: Apply additive migrations
+        if: steps.settings.outputs.ready == 'true'
+        run: supabase db push --remote --yes --password "$SUPABASE_DB_PASSWORD"
+      - name: Deploy functions
+        if: steps.settings.outputs.ready == 'true'
+        run: supabase functions deploy ask reminders-send --no-verify-jwt --yes

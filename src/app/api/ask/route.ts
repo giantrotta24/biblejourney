@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { handleAssistantStatus, handleAsk } from "@/assistant/handler";
+import { handleAssistantStatus, handleAsk } from "@server/assistant/handler";
 import { serverAskDeps } from "@/assistant/server";
 
 export async function GET(request: Request) {

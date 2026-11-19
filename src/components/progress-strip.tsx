@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
-import { DAY_COUNT, DAYS_PER_WEEK, getPhase, getWeek, phases, weeks, WEEK_COUNT } from "@/content/plan";
+import { DAY_COUNT, DAYS_PER_WEEK, getPhase, getWeek, phases, weeks, WEEK_COUNT } from "@server/content/plan";
 import { progressStats, weekMask, weekState } from "@/lib/progress";
 import { weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useProgress, useProgressUnsaved } from "@/progress/client";

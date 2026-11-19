@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { assistantUrl } from "@/assistant/url";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useAccount, type AccountState } from "@/account/session";
 import { getAccessToken } from "@/account/supabase";
-import { CARE_TEXT } from "@/assistant/care";
-import { REPORT_NOTE_MAX } from "@/assistant/limits";
-import { QUESTION_MAX_LENGTH, type AskErrorCode, type QuickPromptType } from "@/assistant/types";
-import { readStream } from "@/assistant/wire";
+import { CARE_TEXT } from "@server/assistant/care";
+import { REPORT_NOTE_MAX } from "@server/assistant/limits";
+import { QUESTION_MAX_LENGTH, type AskErrorCode, type QuickPromptType } from "@server/assistant/types";
+import { readStream } from "@server/assistant/wire";
 
 const QUICK_PROMPTS: { type: QuickPromptType; label: string }[] = [
   { type: "history", label: "Historical setting" },
@@ -68,7 +69,7 @@ function useServerStatus(online: boolean, userId: string | null): ServerStatus |
         const token = await getAccessToken();
         if (token) headers.authorization = `Bearer ${token}`;
       }
-      const response = await fetch("/api/ask", { cache: "no-store", headers });
+      const response = await fetch(assistantUrl("ask"), { cache: "no-store", headers });
       if (!response.ok) throw new Error(String(response.status));
       return response.json() as Promise<ServerStatus>;
     }
@@ -258,7 +259,7 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       if (signInRequired && !token) return setNotice({ kind: "signed-out" });
       const headers: Record<string, string> = { "content-type": "application/json" };
       if (token) headers.authorization = `Bearer ${token}`;
-      const response = await fetch("/api/ask", { method: "POST", headers, body: JSON.stringify({ dayIndex, ...body }), signal: abort.signal });
+      const response = await fetch(assistantUrl("ask"), { method: "POST", headers, body: JSON.stringify({ dayIndex, ...body }), signal: abort.signal });
 
       if (!response.ok || !response.body) {
         const failure = (await response.json().catch(() => null)) as { error?: string; code?: AskErrorCode } | null;
@@ -333,7 +334,7 @@ function AskForm({ dayIndex, online, signInRequired, onNotConfigured, onNotEnabl
       if (reportTarget.question) payload.question = reportTarget.question;
       const note = reportNote.trim();
       if (note) payload.note = note;
-      const response = await fetch("/api/ask/report", { method: "POST", headers, body: JSON.stringify(payload) });
+      const response = await fetch(assistantUrl("ask/report"), { method: "POST", headers, body: JSON.stringify(payload) });
       if (session !== reportSession.current) return;
       if (!response.ok) {
         const failure = (await response.json().catch(() => null)) as { error?: string } | null;

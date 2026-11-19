@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AskDeps } from "@/assistant/handler";
-import { memoryCache } from "@/assistant/cache";
-import { memoryLimiter } from "@/assistant/limiter";
+import type { AskDeps } from "@server/assistant/handler";
+import { memoryCache } from "@server/assistant/cache";
+import { memoryLimiter } from "@server/assistant/limiter";
 
 const server = vi.hoisted(() => ({ deps: null as AskDeps | null }));
 vi.mock("next/server", () => ({ connection: async () => {} }));

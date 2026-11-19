@@ -3,9 +3,9 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: { "@server": fileURLToPath(new URL("./supabase/functions/_shared", import.meta.url)), "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    exclude: [...configDefaults.exclude, "e2e/**"],
+    exclude: [...configDefaults.exclude, "e2e/**", "supabase/functions/tests/**"],
   },
 });

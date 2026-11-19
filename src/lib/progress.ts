@@ -1,4 +1,4 @@
-import { currentDay, DAY_COUNT, DAYS_PER_WEEK, days, WEEK_COUNT, weekDayIndexes, type PlanDay, type Progress } from "@/content/plan";
+import { currentDay, DAY_COUNT, DAYS_PER_WEEK, days, WEEK_COUNT, weekDayIndexes, type PlanDay, type Progress } from "@server/content/plan";
 import { percentRead } from "./reading";
 
 export type WeekState = "empty" | "partial" | "full";

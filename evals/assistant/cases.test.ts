@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { SCREEN_CATEGORIES } from "../../src/assistant/screen";
+import { SCREEN_CATEGORIES } from "@server/assistant/screen";
 
 const cases = JSON.parse(readFileSync(new URL("./cases.json", import.meta.url), "utf8")) as { question: string; expect: string }[];
 

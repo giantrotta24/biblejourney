@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAPTER_COUNT, DAY_COUNT, days, WEEK_COUNT } from "@/content/plan";
+import { CHAPTER_COUNT, DAY_COUNT, days, WEEK_COUNT } from "@server/content/plan";
 import {
   catchUpDays,
   currentWeek,

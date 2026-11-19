@@ -9,7 +9,7 @@ import {
   createAccordionController,
 } from "@ui-sdk/react/accordion";
 import { memo, useEffect, useMemo, useState } from "react";
-import { DAYS_PER_WEEK, getWeek, type Week } from "@/content/plan";
+import { DAYS_PER_WEEK, getWeek, type Week } from "@server/content/plan";
 import { weekAnchor } from "@/lib/phase";
 import { useCurrentWeek, useWeekMask } from "@/progress/client";
 import { WeekDays } from "./week-days";

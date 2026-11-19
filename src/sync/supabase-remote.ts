@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DAY_COUNT, WEEK_COUNT } from "@/content/plan";
+import { DAY_COUNT, WEEK_COUNT } from "@server/content/plan";
 import type { DayRow, ProgressRows, VerseRow } from "@/progress/rows";
 import { RemoteRefusedError, type RemoteChange, type RemoteProgress } from "./remote";
 

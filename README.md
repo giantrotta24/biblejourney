@@ -173,7 +173,7 @@ The shared server code lives in `supabase/functions/_shared/`. The `ask` functio
 `supabase/functions/deno.json` pins the runtime dependencies. Run the Edge checks locally with Deno 2.x:
 
 ```bash
-deno check supabase/functions/ask/index.ts supabase/functions/reminders-send/index.ts
+deno check --config supabase/functions/deno.json supabase/functions/ask/index.ts supabase/functions/reminders-send/index.ts
 deno test --config supabase/functions/deno.json --allow-env --allow-net=127.0.0.1 supabase/functions/tests/
 ```
 

@@ -89,3 +89,5 @@ jobs:
         working-directory: mobile
       - run: npx expo export --platform ios
         working-directory: mobile
+      - run: npx expo export --platform android
+        working-directory: mobile

@@ -1,7 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { PixelRatio, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { createGestureController, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
+import * as Haptics from 'expo-haptics';
 
+import { ProgressProvider, useProgress } from '../progress/context';
+import { DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
 import { TodayView, type TodayViewProps } from './today-view';
 
 async function renderToday(props: Partial<TodayViewProps> & Pick<TodayViewProps, 'done'>) {
@@ -40,12 +45,128 @@ describe('Today', () => {
     expect(screen.getByText('Mark day 7 read')).toBeOnTheScreen();
   });
 
-  it('shows Read and no blue button on a day already read', async () => {
+  it('shows Read on Monday and no blue button on a day already read', async () => {
     await renderToday({ done: new Set([0]), dayIndex: 0 });
 
-    expect(screen.getByText('Read')).toBeOnTheScreen();
+    expect(screen.getByText('Read on Monday')).toBeOnTheScreen();
     expect(screen.getByText('Back to today')).toBeOnTheScreen();
     expect(screen.queryByText('Mark day 1 read')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Mark day 1 read' })).toBeNull();
   });
+
+  it('shows the whole verse', async () => {
+    await renderToday({ done: new Set() });
+    const verse = screen.getByText(/In the beginning God created/);
+    expect(verse.props.numberOfLines).toBeUndefined();
+    expect(verse.props.ellipsizeMode).toBeUndefined();
+  });
+
+  it('uses the design size once and steps the numeral down at large text', async () => {
+    jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(2);
+    await renderToday({ done: new Set() });
+
+    const numeral = screen.getByLabelText('Day 1');
+    const numeralStyle = StyleSheet.flatten(numeral.props.style);
+    expect(numeral.props.allowFontScaling).toBe(false);
+    expect(numeralStyle.fontSize).toBe(112);
+    expect(numeralStyle.lineHeight).toBeGreaterThanOrEqual(112);
+
+    const reading = screen.getByText('Genesis 1–4');
+    expect(StyleSheet.flatten(reading.props.style).fontSize).toBe(31);
+    expect(reading.props.maxFontSizeMultiplier).toBe(1.6);
+
+    const context = screen.getByText(/From the garden/);
+    expect(StyleSheet.flatten(context.props.style).fontSize).toBe(17);
+    expect(context.props.maxFontSizeMultiplier).toBe(2);
+    jest.restoreAllMocks();
+  });
+
+  it('marks the current day and shows the next one', async () => {
+    function Loop() {
+      const { days, mark } = useProgress();
+      return (
+        <TodayView done={days} onMark={mark} onBackToToday={() => {}} onOpenPlan={() => {}} onShowDay={() => {}} />
+      );
+    }
+
+    await render(
+      <GestureHandlerRootView>
+        <ProgressProvider>
+          <Loop />
+        </ProgressProvider>
+      </GestureHandlerRootView>,
+    );
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark day 1 read' }));
+    expect(await screen.findByRole('button', { name: 'Mark day 2 read' })).toBeOnTheScreen();
+    expect(screen.getByText('Genesis 5–7')).toBeOnTheScreen();
+  });
+
+  it('does not tear when a later unread day is marked', async () => {
+    const onMark = jest.fn();
+    jest.mocked(Haptics.impactAsync).mockClear();
+    await renderToday({ done: new Set(), dayIndex: 2, onMark });
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark day 3 read' }));
+
+    expect(onMark).toHaveBeenCalledWith(2);
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Mark day 3 read' })).toBeOnTheScreen();
+    expect(screen.queryByTestId('torn-page', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('hides the page that is tearing', async () => {
+    const reanimated = jest.requireMock('react-native-reanimated') as {
+      withTiming: { mockImplementation: (fn: (...args: unknown[]) => unknown) => void };
+    };
+    reanimated.withTiming.mockImplementation((...args: unknown[]) => args[0]);
+    await renderToday({ done: new Set() });
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark day 1 read' }));
+
+    const torn = screen.getByTestId('torn-page', { includeHiddenElements: true });
+    expect(torn.props.accessibilityElementsHidden).toBe(true);
+    expect(torn.props.importantForAccessibility).toBe('no-hide-descendants');
+
+    reanimated.withTiming.mockImplementation((...args: unknown[]) => {
+      const callback = args[2] as ((finished: boolean) => void) | undefined;
+      callback?.(true);
+      return args[0];
+    });
+  });
+
+  it('stops a turn before day 1 and after day 312', async () => {
+    const onShowDay = jest.fn();
+    const first = await renderToday({ done: new Set(), onShowDay });
+    swipe(80);
+    expect(onShowDay).not.toHaveBeenCalled();
+    await first.unmount();
+
+    const last = DAY_COUNT - 1;
+    const read = new Set(Array.from({ length: last }, (_, index) => index));
+    await renderToday({ done: read, onShowDay });
+    swipe(-80);
+    expect(onShowDay).not.toHaveBeenCalled();
+  });
+
+  it('shows the finished page after every day is read', async () => {
+    const onShowDay = jest.fn();
+    const done = new Set(Array.from({ length: DAY_COUNT }, (_, index) => index));
+    await renderToday({ done, onShowDay });
+
+    expect(screen.getByText('You’ve read the whole Bible.')).toBeOnTheScreen();
+    expect(screen.getByText('The whole year is in Plan')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /Mark day/ })).toBeNull();
+
+    swipe(-80);
+    expect(onShowDay).not.toHaveBeenCalled();
+    swipe(80);
+    expect(onShowDay).toHaveBeenCalledWith(DAY_COUNT - 1);
+  });
 });
+
+function swipe(translationX: number) {
+  const controller = createGestureController(getByGestureTestId('today-turn'));
+  controller.begin();
+  controller.activate();
+  controller.end({ translationX, translationY: 0 });
+}

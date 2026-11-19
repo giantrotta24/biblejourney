@@ -8,10 +8,10 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (value) => ({ value, _isReanimatedSharedValue: true }),
     useAnimatedStyle: (updater) => updater(),
     useReducedMotion: () => false,
-    withTiming: (value, _config, callback) => {
+    withTiming: jest.fn((value, _config, callback) => {
       callback?.(true);
       return value;
-    },
+    }),
     runOnJS: (fn) => fn,
     createAnimatedComponent: identity,
     isSharedValue: (value) => Boolean(value && value._isReanimatedSharedValue),

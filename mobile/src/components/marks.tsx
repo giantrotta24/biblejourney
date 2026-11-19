@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
+import Svg, { Polygon } from 'react-native-svg';
 
 export function Perforation({ color }: { color: string }) {
   const [width, setWidth] = useState(0);
@@ -55,6 +56,8 @@ export function DottedCut({ color }: { color: string }) {
   );
 }
 
+const RAGGED = '0,0 100,0 100,40 82,100 64,30 40,90 18,35 0,80';
+
 const STUBS = [
   { left: '2%', width: '9%' },
   { left: '14%', width: '6%' },
@@ -70,20 +73,19 @@ export function TornStubs({ count, color }: { count: number; color: string }) {
   const shown = Math.min(count, STUBS.length);
   if (shown === 0) return null;
   return (
-    <View style={{ height: 8, marginHorizontal: 12 }} pointerEvents="none" accessibilityElementsHidden>
+    <View
+      style={{ height: 8, marginHorizontal: 12 }}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
       {STUBS.slice(0, shown).map((stub, index) => (
-        <View
+        <Svg
           key={index}
-          style={{
-            position: 'absolute',
-            top: 0,
-            height: 6,
-            backgroundColor: color,
-            opacity: 0.92,
-            left: stub.left,
-            width: stub.width,
-          }}
-        />
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ position: 'absolute', top: 0, height: 5, opacity: 0.9, left: stub.left, width: stub.width }}>
+          <Polygon points={RAGGED} fill={color} />
+        </Svg>
       ))}
     </View>
   );

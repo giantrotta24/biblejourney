@@ -1,14 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  PROGRESS_KEY,
-  loadProgress,
-  markDay,
-  parseProgress,
-  saveProgress,
-  unmarkDay,
-  type KeyValueStore,
-} from './store';
+import { PROGRESS_KEY, loadProgress, parseProgress, saveProgress, type KeyValueStore } from './store';
 
 function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } {
   const raw = new Map<string, string>();
@@ -43,11 +35,11 @@ describe('parseProgress', () => {
 });
 
 describe('progress store', () => {
-  it('loads an empty set when nothing is stored', async () => {
-    await expect(loadProgress(memory())).resolves.toEqual(new Set());
+  it('loads an empty result when nothing is stored', async () => {
+    await expect(loadProgress(memory())).resolves.toEqual({ status: 'empty' });
   });
 
-  it('loads an empty set when storage throws', async () => {
+  it('reports a read failure instead of an empty year', async () => {
     const storage: KeyValueStore = {
       async getItem() {
         throw new Error('unavailable');
@@ -56,27 +48,23 @@ describe('progress store', () => {
         throw new Error('unavailable');
       },
     };
-    await expect(loadProgress(storage)).resolves.toEqual(new Set());
+    await expect(loadProgress(storage)).resolves.toEqual({ status: 'unavailable' });
   });
 
-  it('saves, marks, and unmarks', async () => {
-    const storage = memory();
-    await saveProgress(new Set([1]), storage);
-    expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [1] });
-
-    const marked = await markDay(4, storage);
-    expect(marked).toEqual(new Set([1, 4]));
-    await expect(loadProgress(storage)).resolves.toEqual(new Set([1, 4]));
-
-    const unmarked = await unmarkDay(1, storage);
-    expect(unmarked).toEqual(new Set([4]));
-    await expect(loadProgress(storage)).resolves.toEqual(new Set([4]));
+  it('reports a stored payload that cannot be parsed', async () => {
+    const storage = memory('{"version":1');
+    await expect(loadProgress(storage)).resolves.toEqual({ status: 'unreadable', raw: '{"version":1' });
   });
 
-  it('does not store an index outside the plan', async () => {
+  it('loads the days that were stored', async () => {
+    const storage = memory(JSON.stringify({ version: 1, days: [4, 1, 1] }));
+    await expect(loadProgress(storage)).resolves.toEqual({ status: 'ready', days: new Set([1, 4]) });
+  });
+
+  it('saves days in order and reads them back', async () => {
     const storage = memory();
-    await expect(markDay(312, storage)).resolves.toEqual(new Set());
-    await expect(markDay(-1, storage)).resolves.toEqual(new Set());
-    expect(storage.raw.get(PROGRESS_KEY)).toBe(JSON.stringify({ version: 1, days: [] }));
+    await saveProgress(new Set([4, 1]), storage);
+    expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [1, 4] });
+    await expect(loadProgress(storage)).resolves.toEqual({ status: 'ready', days: new Set([1, 4]) });
   });
 });

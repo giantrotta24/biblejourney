@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { useColors } from '@/theme/colors';
-import { fonts, useLargeText } from '@/theme/fonts';
+import { fonts } from '@/theme/fonts';
 import {
   DAY_COUNT,
   WEEK_COUNT,
@@ -25,7 +25,6 @@ type PlanViewProps = {
 
 export function PlanView({ done, onOpenDay }: PlanViewProps) {
   const colors = useColors();
-  const large = useLargeText();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([currentWeek]));
@@ -46,10 +45,37 @@ export function PlanView({ done, onOpenDay }: PlanViewProps) {
     }
   }
 
-  function scrollToWeek(week: number) {
+  const scrollToWeek = useCallback((week: number) => {
     const y = listTop.current + (offsets.current.get(week) ?? 0);
     scrollRef.current?.scrollTo({ y: Math.max(0, y - BAR), animated: true });
-  }
+  }, []);
+
+  const openDayRef = useRef(onOpenDay);
+  useEffect(() => {
+    openDayRef.current = onOpenDay;
+  }, [onOpenDay]);
+  const openDay = useCallback((index: number) => openDayRef.current(index), []);
+  const toggleWeek = useCallback((week: number) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(week)) next.delete(week);
+      else next.add(week);
+      return next;
+    });
+  }, []);
+  const placeList = useCallback((y: number) => {
+    listTop.current = y;
+  }, []);
+  const placeWeek = useCallback(
+    (week: number, y: number) => {
+      offsets.current.set(week, y);
+      if (pending.current === week) {
+        pending.current = null;
+        scrollToWeek(week);
+      }
+    },
+    [scrollToWeek],
+  );
 
   function reveal(week: number) {
     setScrub(null);
@@ -65,7 +91,7 @@ export function PlanView({ done, onOpenDay }: PlanViewProps) {
 
   const readoutWeek = scrub ?? currentWeek;
   const readoutTitle = getWeek(readoutWeek).title;
-  const body = large ? 19 : 15;
+  const body = 15;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
@@ -131,104 +157,133 @@ export function PlanView({ done, onOpenDay }: PlanViewProps) {
             </Text>
           ))}
         </View>
-        <View
-          style={{ marginTop: 16 }}
-          onLayout={(event) => {
-            listTop.current = event.nativeEvent.layout.y;
-          }}>
-          {weeks.map((week) => {
-            const expanded = open.has(week.week);
-            const today = current?.index;
-            return (
-              <View
-                key={week.week}
-                onLayout={(event) => {
-                  offsets.current.set(week.week, event.nativeEvent.layout.y);
-                  if (pending.current === week.week) {
-                    pending.current = null;
-                    scrollToWeek(week.week);
-                  }
-                }}>
-                <DottedCut color={colors.ink3} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded }}
-                  accessibilityLabel={`Week ${week.week}, ${week.title}`}
-                  onPress={() => {
-                    setOpen((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(week.week)) next.delete(week.week);
-                      else next.add(week.week);
-                      return next;
-                    });
-                  }}
-                  style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Text style={{ flex: 1, fontSize: body, lineHeight: body * 1.35 }}>
-                    <Text style={{ fontFamily: fonts.serifSemibold, fontSize: 18, color: colors.ink }}>
-                      Week {week.week}
-                    </Text>
-                    <Text style={{ color: colors.ink2 }}> {week.title}</Text>
-                  </Text>
-                  <Chevron open={expanded} color={colors.ink3} />
-                </Pressable>
-                {expanded
-                  ? week.days.map((day) => {
-                      const read = done.has(day.index);
-                      const isToday = today === day.index;
-                      const markColor = isToday ? colors.blueInk : read ? colors.ink : colors.ink3;
-                      return (
-                        <Pressable
-                          key={day.index}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}`}
-                          onPress={() => onOpenDay(day.index)}
-                          style={{
-                            minHeight: Platform.OS === 'android' ? 48 : 44,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 10,
-                          }}>
-                          <View
-                            style={{
-                              width: isToday ? 3 : 2,
-                              height: isToday ? 18 : read ? 16 : 6,
-                              backgroundColor: markColor,
-                            }}
-                          />
-                          <Text style={{ width: 42, fontSize: 14, color: isToday ? colors.blueInk : colors.ink2 }}>
-                            {day.weekday}
-                          </Text>
-                          <Text
-                            style={{
-                              flex: 1,
-                              fontSize: 16,
-                              color: isToday ? colors.blueInk : read ? colors.ink2 : colors.ink,
-                              fontWeight: isToday ? '600' : '400',
-                            }}>
-                            {day.reading}
-                          </Text>
-                        </Pressable>
-                      );
-                    })
-                  : null}
-                {expanded ? (
-                  <Text
-                    style={{
-                      fontFamily: fonts.serifItalic,
-                      fontSize: 15,
-                      lineHeight: 21,
-                      color: colors.ink2,
-                      paddingLeft: 16,
-                      paddingBottom: 12,
-                    }}>
-                    Sunday: {week.deepDive}
-                  </Text>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
+        <PlanWeeks
+          done={done}
+          open={open}
+          todayIndex={current?.index ?? null}
+          ink={colors.ink}
+          ink2={colors.ink2}
+          ink3={colors.ink3}
+          blueInk={colors.blueInk}
+          onOpenDay={openDay}
+          onToggle={toggleWeek}
+          onListTop={placeList}
+          onWeekTop={placeWeek}
+        />
       </ScrollView>
     </View>
   );
 }
+
+const PlanWeeks = memo(function PlanWeeks({
+  done,
+  open,
+  todayIndex,
+  ink,
+  ink2,
+  ink3,
+  blueInk,
+  onOpenDay,
+  onToggle,
+  onListTop,
+  onWeekTop,
+}: {
+  done: ReadonlySet<number>;
+  open: ReadonlySet<number>;
+  todayIndex: number | null;
+  ink: string;
+  ink2: string;
+  ink3: string;
+  blueInk: string;
+  onOpenDay: (index: number) => void;
+  onToggle: (week: number) => void;
+  onListTop: (y: number) => void;
+  onWeekTop: (week: number, y: number) => void;
+}) {
+  return (
+    <View
+      style={{ marginTop: 16 }}
+      onLayout={(event) => {
+        onListTop(event.nativeEvent.layout.y);
+      }}>
+      {weeks.map((week) => {
+        const expanded = open.has(week.week);
+        return (
+          <View
+            key={week.week}
+            onLayout={(event) => {
+              onWeekTop(week.week, event.nativeEvent.layout.y);
+            }}>
+            <DottedCut color={ink3} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+              accessibilityLabel={`Week ${week.week}, ${week.title}`}
+              onPress={() => onToggle(week.week)}
+              style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ flex: 1, fontSize: 15, lineHeight: 15 * 1.35 }}>
+                <Text maxFontSizeMultiplier={2} style={{ fontFamily: fonts.serifSemibold, fontSize: 18, color: ink }}>
+                  Week {week.week}
+                </Text>
+                <Text style={{ color: ink2 }}> {week.title}</Text>
+              </Text>
+              <Chevron open={expanded} color={ink3} />
+            </Pressable>
+            {expanded
+              ? week.days.map((day) => {
+                  const read = done.has(day.index);
+                  const isToday = todayIndex === day.index;
+                  const markColor = isToday ? blueInk : read ? ink : ink3;
+                  return (
+                    <Pressable
+                      key={day.index}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}`}
+                      onPress={() => onOpenDay(day.index)}
+                      style={{
+                        minHeight: Platform.OS === 'android' ? 48 : 44,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}>
+                      <View
+                        style={{
+                          width: isToday ? 3 : 2,
+                          height: isToday ? 18 : read ? 16 : 6,
+                          backgroundColor: markColor,
+                        }}
+                      />
+                      <Text style={{ width: 42, fontSize: 14, color: isToday ? blueInk : ink2 }}>{day.weekday}</Text>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 16,
+                          color: isToday ? blueInk : read ? ink2 : ink,
+                          fontWeight: isToday ? '600' : '400',
+                        }}>
+                        {day.reading}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              : null}
+            {expanded ? (
+              <Text
+                maxFontSizeMultiplier={2}
+                style={{
+                  fontFamily: fonts.serifItalic,
+                  fontSize: 15,
+                  lineHeight: 21,
+                  color: ink2,
+                  paddingLeft: 16,
+                  paddingBottom: 12,
+                }}>
+                Sunday: {week.deepDive}
+              </Text>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+});

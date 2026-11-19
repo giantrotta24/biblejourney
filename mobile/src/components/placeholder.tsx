@@ -2,13 +2,11 @@ import { ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/theme/colors';
-import { fonts, useLargeText } from '@/theme/fonts';
+import { fonts } from '@/theme/fonts';
 
 export function PlaceholderScreen({ title, line }: { title: string; line: string }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const large = useLargeText();
-  const body = large ? 23 : 17;
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.paper }}
@@ -26,10 +24,11 @@ export function PlaceholderScreen({ title, line }: { title: string; line: string
         {title}
       </Text>
       <Text
+        maxFontSizeMultiplier={2}
         style={{
           fontFamily: fonts.serif,
-          fontSize: body,
-          lineHeight: body * 1.5,
+          fontSize: 17,
+          lineHeight: 17 * 1.5,
           color: colors.ink,
         }}>
         {line}

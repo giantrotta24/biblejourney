@@ -7,7 +7,6 @@ import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -15,6 +14,7 @@ import Animated, {
 import { eraForWeek } from '@/lib/era';
 import { bibleGatewayUrl } from '@/lib/reading';
 import { fonts, hitSize, useLargeText } from '@/theme/fonts';
+import { useReduceMotion } from '@/theme/motion';
 import { useColors, type Palette } from '@/theme/colors';
 import {
   DAY_COUNT,
@@ -28,6 +28,17 @@ import {
 
 import { DottedCut, PageEdges, Perforation, TornStubs } from './marks';
 
+/** Tear-lift shadow extends past the page: offset 18 plus radius 16. */
+const TEAR_SHADOW = 18 + 16;
+
+function numeralSize(large: boolean): number {
+  return large ? 112 : 128;
+}
+
+function numeralLift(size: number): number {
+  return Math.round(size * 0.08);
+}
+
 export type TodayViewProps = {
   done: ReadonlySet<number>;
   dayIndex?: number | null;
@@ -39,7 +50,7 @@ export type TodayViewProps = {
 
 export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpenPlan, onShowDay }: TodayViewProps) {
   const colors = useColors();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReduceMotion();
   const current = currentDay(done);
   const selected = dayIndex == null ? current : (days.find((day) => day.index === dayIndex) ?? current);
   const finished = selected == null;
@@ -47,6 +58,7 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
   const leaving = leavingIndex == null ? null : (days.find((day) => day.index === leavingIndex) ?? null);
   const lift = useSharedValue(0);
   const fade = useSharedValue(1);
+  const pageHeight = useSharedValue(0);
 
   const finishTear = () => {
     setLeavingIndex(null);
@@ -93,6 +105,7 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
     turnRef.current = turn;
   });
   const pan = usePanGesture({
+    testID: 'today-turn',
     activeOffsetX: [-24, 24],
     failOffsetY: [-16, 16],
     runOnJS: true,
@@ -117,7 +130,7 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
     opacity: fade.value,
     transform: reducedMotion
       ? []
-      : [{ translateY: -lift.value * 720 }, { rotate: `${-lift.value * 8}deg` }],
+      : [{ translateY: -lift.value * (pageHeight.value + TEAR_SHADOW) }, { rotate: `${-lift.value * 8}deg` }],
   }));
 
   return (
@@ -135,7 +148,11 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
       <TornStubs count={done.size} color={colors.paper} />
       <View style={{ flex: 1, marginHorizontal: 12, marginTop: done.size > 0 ? 0 : 5 }}>
         <GestureDetector gesture={pan}>
-          <View style={{ flex: 1, marginBottom: 2 }}>
+          <View
+            style={{ flex: 1, marginBottom: 2 }}
+            onLayout={(event) => {
+              pageHeight.value = event.nativeEvent.layout.height;
+            }}>
             <Sheet colors={colors}>
               {finished || !selected ? (
                 <FinishedPage colors={colors} onOpenPlan={onOpenPlan} />
@@ -151,7 +168,10 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
             </Sheet>
             {leaving ? (
               <Animated.View
+                testID="torn-page"
                 pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
                 style={[StyleSheet.absoluteFill, { transformOrigin: '18% 0%', zIndex: 2 }, tearStyle]}>
                 <Sheet colors={colors} lifted>
                   <DayPage
@@ -226,50 +246,52 @@ function DayPage({
   onBackToToday: () => void;
   frozen?: boolean;
 }) {
-  const large = useLargeText();
+  const numeral = numeralSize(useLargeText());
+  const lift = numeralLift(numeral);
   const week = getWeek(day.week);
   const era = eraForWeek(day.week, eras);
   const number = day.index + 1;
   const current = currentDay(done);
   const isCurrent = current?.index === day.index;
   const isRead = done.has(day.index);
-  const numeral = large ? 112 : 128;
-  const readingSize = large ? 36 : 31;
-  const metaSize = large ? 19 : 14;
-  const contextSize = large ? 23 : 17;
-  const linkSize = large ? 19 : 15;
-  const buttonHeight = large ? 58 : Platform.OS === 'android' ? 48 : 50;
-  const buttonSize = large ? 22 : Platform.OS === 'android' ? 15 : 17;
+  const buttonHeight = Platform.OS === 'android' ? 48 : 50;
+  const buttonSize = Platform.OS === 'android' ? 15 : 17;
 
   return (
-    <View>
+    <View style={{ paddingTop: 22 + lift }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         <Text
+          allowFontScaling={false}
           accessibilityLabel={`Day ${number}`}
           style={{
             fontFamily: fonts.numeral,
             fontSize: numeral,
-            lineHeight: numeral * 0.84,
+            lineHeight: numeral,
+            marginTop: -lift,
+            marginBottom: -lift,
             letterSpacing: numeral * -0.02,
             color: colors.ink,
+            includeFontPadding: false,
           }}>
           {number}
         </Text>
         <View style={{ flex: 1, minWidth: 96, justifyContent: 'space-between', paddingTop: 6, paddingBottom: 4 }}>
           <Text
+            allowFontScaling={false}
             style={{
               fontFamily: fonts.numeral,
               fontSize: 30,
               lineHeight: 30,
               color: colors.ink,
+              includeFontPadding: false,
             }}>
             Day
           </Text>
           <View>
-            <Text style={{ fontSize: metaSize, lineHeight: metaSize * 1.35, fontWeight: '600', color: colors.ink }}>
+            <Text style={{ fontSize: 14, lineHeight: 14 * 1.35, fontWeight: '600', color: colors.ink }}>
               of {DAY_COUNT}
             </Text>
-            <Text style={{ fontSize: metaSize, lineHeight: metaSize * 1.35, color: colors.ink2 }}>
+            <Text style={{ fontSize: 14, lineHeight: 14 * 1.35, color: colors.ink2 }}>
               {WEEKDAY_NAMES[day.weekday]}, week {day.week}
             </Text>
           </View>
@@ -277,24 +299,26 @@ function DayPage({
       </View>
 
       <Text
+        maxFontSizeMultiplier={1.6}
         style={{
           fontFamily: fonts.serifSemibold,
-          fontSize: readingSize,
-          lineHeight: readingSize * 1.12,
-          letterSpacing: readingSize * -0.005,
+          fontSize: 31,
+          lineHeight: 31 * 1.12,
+          letterSpacing: 31 * -0.005,
           color: colors.ink,
           marginTop: 16,
         }}>
         {day.reading}
       </Text>
-      <Text style={{ fontSize: large ? 19 : 15, lineHeight: (large ? 19 : 15) * 1.35, color: colors.ink2, marginTop: 4 }}>
+      <Text style={{ fontSize: 15, lineHeight: 15 * 1.35, color: colors.ink2, marginTop: 4 }}>
         {week.title} · {era.title}
       </Text>
       <Text
+        maxFontSizeMultiplier={2}
         style={{
           fontFamily: fonts.serif,
-          fontSize: contextSize,
-          lineHeight: contextSize * (large ? 1.42 : 1.5),
+          fontSize: 17,
+          lineHeight: 17 * 1.5,
           color: colors.ink,
           marginTop: 14,
         }}>
@@ -309,7 +333,7 @@ function DayPage({
           void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading));
         }}
         style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
-        <Text style={{ fontSize: linkSize, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
+        <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
           Read on Bible Gateway
         </Text>
       </Pressable>
@@ -317,7 +341,7 @@ function DayPage({
       {isRead ? (
         <View style={{ minHeight: hitSize(), flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ width: 2, height: 14, backgroundColor: colors.ink }} accessibilityElementsHidden />
-          <Text style={{ fontSize: 15, color: colors.ink }}>Read</Text>
+          <Text style={{ fontSize: 15, color: colors.ink }}>Read on {WEEKDAY_NAMES[day.weekday]}</Text>
           <Pressable
             accessibilityRole="link"
             accessibilityLabel="Back to today"
@@ -326,7 +350,7 @@ function DayPage({
             style={{ marginLeft: 'auto', minHeight: hitSize(), justifyContent: 'center' }}>
             <Text
               style={{
-                fontSize: linkSize,
+                fontSize: 15,
                 color: colors.ink,
                 textDecorationLine: 'underline',
                 textDecorationColor: colors.ink3,
@@ -364,59 +388,66 @@ function DayPage({
         </Pressable>
       )}
 
-      <View style={{ marginTop: 16 }}>
+      <View style={{ marginTop: 16, marginHorizontal: -22 }}>
         <DottedCut color={colors.ink3} />
-        <Text
-          style={{
-            fontFamily: fonts.serifSemibold,
-            fontSize: 15,
-            lineHeight: 20,
-            color: colors.ink,
-            marginTop: 12,
-          }}>
-          This week’s verse
-        </Text>
-        <Text
-          numberOfLines={3}
-          ellipsizeMode="tail"
-          style={{
-            fontFamily: fonts.serifItalic,
-            fontSize: 16,
-            lineHeight: 16 * 1.45,
-            color: colors.ink,
-            marginTop: 6,
-          }}>
-          “{week.memoryVerse.textKJV}”
-        </Text>
-        <Text style={{ fontSize: 13, lineHeight: 19, color: colors.ink2, marginTop: 6 }}>
-          {week.memoryVerse.ref} · KJV
-        </Text>
+        <View style={{ paddingHorizontal: 22 }}>
+          <Text
+            maxFontSizeMultiplier={2}
+            style={{
+              fontFamily: fonts.serifSemibold,
+              fontSize: 15,
+              lineHeight: 20,
+              color: colors.ink,
+              marginTop: 12,
+            }}>
+            This week’s verse
+          </Text>
+          <Text
+            maxFontSizeMultiplier={2}
+            style={{
+              fontFamily: fonts.serifItalic,
+              fontSize: 16,
+              lineHeight: 16 * 1.45,
+              color: colors.ink,
+              marginTop: 6,
+            }}>
+            “{week.memoryVerse.textKJV}”
+          </Text>
+          <Text style={{ fontSize: 13, lineHeight: 19, color: colors.ink2, marginTop: 6 }}>
+            {week.memoryVerse.ref} · KJV
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 function FinishedPage({ colors, onOpenPlan }: { colors: Palette; onOpenPlan: () => void }) {
-  const large = useLargeText();
-  const numeral = large ? 112 : 128;
+  const numeral = numeralSize(useLargeText());
+  const lift = numeralLift(numeral);
   return (
-    <View>
+    <View style={{ paddingTop: 22 + lift }}>
       <Text
+        allowFontScaling={false}
         accessibilityLabel={`Day ${DAY_COUNT}`}
         style={{
           fontFamily: fonts.numeral,
           fontSize: numeral,
-          lineHeight: numeral * 0.84,
+          lineHeight: numeral,
+          marginTop: -lift,
+          marginBottom: -lift,
           letterSpacing: numeral * -0.02,
           color: colors.ink,
+          includeFontPadding: false,
         }}>
         {DAY_COUNT}
       </Text>
       <Text
+        maxFontSizeMultiplier={1.6}
         style={{
           fontFamily: fonts.serifSemibold,
-          fontSize: large ? 26 : 22,
-          lineHeight: large ? 32 : 28,
+          fontSize: 22,
+          lineHeight: 28,
           color: colors.ink,
           marginTop: 16,
         }}>
@@ -429,7 +460,7 @@ function FinishedPage({ colors, onOpenPlan }: { colors: Palette; onOpenPlan: () 
         style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start', marginTop: 8 }}>
         <Text
           style={{
-            fontSize: large ? 19 : 17,
+            fontSize: 17,
             color: colors.ink,
             textDecorationLine: 'underline',
             textDecorationColor: colors.ink3,

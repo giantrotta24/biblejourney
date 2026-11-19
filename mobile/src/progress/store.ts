@@ -3,12 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
 
 export const PROGRESS_KEY = 'biblejourney.progress.v1';
+export const UNREADABLE_KEY = 'biblejourney.progress.v1.unreadable';
 const PROGRESS_VERSION = 1;
 
 export type KeyValueStore = {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
 };
+
+export type LoadedProgress =
+  | { status: 'empty' }
+  | { status: 'ready'; days: Set<number> }
+  | { status: 'unreadable'; raw: string }
+  | { status: 'unavailable' };
 
 export function parseProgress(raw: string | null, dayCount = DAY_COUNT): Set<number> {
   if (raw == null) return new Set();
@@ -30,38 +37,44 @@ export function parseProgress(raw: string | null, dayCount = DAY_COUNT): Set<num
   return days;
 }
 
+function documentDays(raw: string): Set<number> | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+  const record = data as { version?: unknown; days?: unknown };
+  if (record.version !== PROGRESS_VERSION || !Array.isArray(record.days)) return null;
+  return parseProgress(raw);
+}
+
 function serialize(days: ReadonlySet<number>): string {
   return JSON.stringify({ version: PROGRESS_VERSION, days: [...days].sort((a, b) => a - b) });
 }
 
-export async function loadProgress(storage: KeyValueStore = AsyncStorage): Promise<Set<number>> {
+export async function loadProgress(storage: KeyValueStore = AsyncStorage): Promise<LoadedProgress> {
+  let raw: string | null;
   try {
-    return parseProgress(await storage.getItem(PROGRESS_KEY));
+    raw = await storage.getItem(PROGRESS_KEY);
   } catch {
-    return new Set();
+    return { status: 'unavailable' };
   }
+  if (raw == null) return { status: 'empty' };
+  const days = documentDays(raw);
+  if (days == null) return { status: 'unreadable', raw };
+  return { status: 'ready', days };
 }
 
-export async function saveProgress(days: ReadonlySet<number>, storage: KeyValueStore = AsyncStorage): Promise<void> {
+export async function saveProgress(
+  days: ReadonlySet<number>,
+  storage: KeyValueStore = AsyncStorage,
+  backupRaw?: string | null,
+): Promise<void> {
+  if (backupRaw != null) {
+    const existing = await storage.getItem(UNREADABLE_KEY);
+    if (existing == null) await storage.setItem(UNREADABLE_KEY, backupRaw);
+  }
   await storage.setItem(PROGRESS_KEY, serialize(days));
-}
-
-function change(days: ReadonlySet<number>, index: number, read: boolean): Set<number> {
-  const next = new Set(days);
-  if (!Number.isInteger(index) || index < 0 || index >= DAY_COUNT) return next;
-  if (read) next.add(index);
-  else next.delete(index);
-  return next;
-}
-
-export async function markDay(index: number, storage: KeyValueStore = AsyncStorage): Promise<Set<number>> {
-  const next = change(await loadProgress(storage), index, true);
-  await saveProgress(next, storage);
-  return next;
-}
-
-export async function unmarkDay(index: number, storage: KeyValueStore = AsyncStorage): Promise<Set<number>> {
-  const next = change(await loadProgress(storage), index, false);
-  await saveProgress(next, storage);
-  return next;
 }

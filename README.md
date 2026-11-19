@@ -33,7 +33,7 @@ Set `E2E_PORT` to run the end-to-end tests on another port, for example `E2E_POR
 
 The end-to-end tests include an accessibility scan (`e2e/a11y.spec.ts`). It runs axe on every route in the light and dark themes and fails on any serious or critical violation.
 
-CI (`.github/workflows/ci.yml`) runs all five on every pull request, with no environment variables.
+CI (`.github/workflows/ci.yml`) runs all five on every pull request, with no environment variables. The same workflow also checks the native app in `mobile/`: typecheck, lint, Jest, and an iOS and Android export. [`mobile/README.md`](mobile/README.md) covers how to run it.
 
 ## Environment variables
 

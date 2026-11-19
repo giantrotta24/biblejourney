@@ -31,7 +31,7 @@
     --ink: #20201d; --ink-2: #5a5a54; --ink-3: #8a8a83; --rule: #d6d6ce;
     --blue: #2747a5; --blue-ink: #2747a5; --on-blue: #ffffff;
     --bar: rgba(247, 247, 243, 0.88); --scrim: rgba(32, 32, 29, 0.32);
-    --field: #ebebE5;
+    --field: #ebebE5; --ruled: #b3b3aa;
     --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     width: 390px; height: 844px; border-radius: 54px;
     background: var(--under); color: var(--ink);
@@ -43,7 +43,7 @@
     --paper: #171715; --under: #0d0d0c; --bind: #2b2b27;
     --ink: #ecebe5; --ink-2: #b3b2ab; --ink-3: #85847e; --rule: #34342f;
     --blue: #3f60c8; --blue-ink: #9cb1f3; --on-blue: #ffffff;
-    --bar: rgba(23, 23, 21, 0.88); --scrim: rgba(0, 0, 0, 0.55); --field: #292926;
+    --bar: rgba(23, 23, 21, 0.88); --scrim: rgba(0, 0, 0, 0.55); --field: #292926; --ruled: #4a4a45;
   }
   .phone.android { --ui: "Roboto", system-ui, sans-serif; border-radius: 40px; }
   .phone.small { transform: scale(0.62); transform-origin: top left; }
@@ -302,13 +302,13 @@
   .tabbar { grid-template-columns: repeat(5, 1fr); }
   .jot { display: block; margin: 6px 0 2px; min-height: 44px; color: inherit; text-decoration: none; }
   .jot .jl { font-size: 14px; color: var(--ink-2); display: flex; justify-content: space-between; }
-  .jot .lines { font: 16px/30px "Source Serif 4", serif; height: 60px; overflow: hidden; background-image: linear-gradient(to bottom, transparent 29px, var(--rule) 29px, var(--rule) 30px); background-size: 100% 30px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .jot .lines.empty { color: var(--ink-3); font-style: italic; }
+  .jot .lines { font: 16px/30px "Source Serif 4", serif; height: 60px; overflow: hidden; background-image: linear-gradient(to bottom, transparent 29px, var(--ruled) 29px, var(--ruled) 30px); background-size: 100% 30px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .jot .lines.empty { color: var(--ink-2); font-style: italic; }
   .jot + .primary { margin-top: 10px; }
-  .phone.big .jot .lines { font-size: 21px; line-height: 36px; height: 72px; background-size: 100% 36px; background-image: linear-gradient(to bottom, transparent 35px, var(--rule) 35px, var(--rule) 36px); }
+  .phone.big .jot .lines { font-size: 21px; line-height: 36px; height: 72px; background-size: 100% 36px; background-image: linear-gradient(to bottom, transparent 35px, var(--ruled) 35px, var(--ruled) 36px); }
   .phone.big .jot .jl { font-size: 18px; }
   .jotsub { font-size: 14px; color: var(--ink-2); margin: -4px 0 8px; display: flex; justify-content: space-between; }
-  .jotpad { font: 18px/32px "Source Serif 4", serif; background-image: linear-gradient(to bottom, transparent 31px, var(--rule) 31px, var(--rule) 32px); background-size: 100% 32px; min-height: 256px; margin: 0; caret-color: var(--ink); }
+  .jotpad { font: 18px/32px "Source Serif 4", serif; background-image: linear-gradient(to bottom, transparent 31px, var(--ruled) 31px, var(--ruled) 32px); background-size: 100% 32px; min-height: 256px; margin: 0; caret-color: var(--ink); }
   .jotpad .caret { display: inline-block; width: 2px; height: 22px; background: var(--ink); vertical-align: -4px; margin-left: 1px; }
   .kbd.text { padding: 4px 3px 0; }
   .kbd.text .pred { height: 42px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; text-align: center; font: 400 16px var(--ui); color: #1c1c1e; }
@@ -336,9 +336,25 @@
   .empty-notes { padding: 26px 0 0; }
   .empty-notes h2 { font: 600 24px/1.2 "Source Serif 4", serif; margin: 0 0 8px; }
   .empty-notes p { font: 17px/1.5 "Source Serif 4", serif; margin: 0 0 14px; color: var(--ink); }
-  .empty-notes .ghost { margin-top: 10px; height: 90px; background-image: linear-gradient(to bottom, transparent 29px, var(--rule) 29px, var(--rule) 30px); background-size: 100% 30px; }
+  .empty-notes .ghost { margin-top: 10px; height: 90px; background-image: linear-gradient(to bottom, transparent 29px, var(--ruled) 29px, var(--ruled) 30px); background-size: 100% 30px; }
   .day .hn { font-size: 13px; color: var(--ink-2); justify-self: end; display: inline-flex; align-items: center; gap: 5px; }
   .day { grid-template-columns: 16px 42px 1fr auto; }
+
+  .jotdel { display: flex; align-items: center; min-height: 44px; margin-top: 10px; color: #c4342b; font-size: 17px; }
+  .phone.dark .jotdel { color: #ff6b5f; }
+  .jotdel[hidden] { display: none; }
+  .android .jotdel { min-height: 48px; }
+  .jotpad.long { min-height: 0; max-height: 448px; overflow: hidden; }
+  .nlist .ni.swiped { transform: translateX(-92px); }
+  .nlist .ni .del { display: none; }
+  .nlist .ni.swiped .del { display: flex; position: absolute; top: 0; bottom: 0; left: calc(100% + 20px); width: 92px; background: #d70015; color: #fff; align-items: center; justify-content: center; font: 600 15px var(--ui); }
+  .phone.dark .nlist .ni.swiped .del { background: #ff453a; }
+  .page .readline { display: flex; gap: 10px; align-items: baseline; font-size: 15px; color: var(--ink); margin: 14px 0 0; }
+  .page .readline i { flex: none; width: 2px; height: 14px; background: var(--ink); transform: translateY(2px); }
+  .page .readline { align-items: center; margin: 8px 0 0; }
+  .page .readline i { transform: none; }
+  .page .readline a { margin-left: auto; color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink-3); text-underline-offset: 4px; min-height: 44px; display: inline-flex; align-items: center; }
+  .android .page .readline a { min-height: 48px; }
 
   .notes { columns: 2 420px; column-gap: 48px; }
   .notes h2 { font: 600 17px/1.3 -apple-system, system-ui, sans-serif; margin: 0 0 8px; break-after: avoid; }
@@ -403,6 +419,24 @@
     <div class="links"><a href="#">Read on Bible Gateway</a><a href="#">Ask about this reading</a></div>
     <a class="jot" href="#"><span class="jl"><span>Your note</span></span><div class="lines empty">Write a note on today’s reading</div></a>
     <div class="primary">Mark day 70 read</div>
+    <section class="verse">
+      <h3>This week’s verse</h3>
+      <p>“Be strong and of a good courage, fear not, nor be afraid of them: for the LORD thy God, he it is that doth go with thee…”</p>
+      <small>Deuteronomy 31:6 · KJV</small>
+    </section>
+  </article>
+</template>
+
+<template id="t-page68">
+  <article class="page top">
+    <div class="perf"></div>
+    <div class="dateline"><span class="numeral">68</span><span class="dword">Day</span><span class="dmeta"><b>of 312</b>Tuesday, week 12</span></div>
+    <h2 class="reading serif">Deuteronomy 17–21</h2>
+    <p class="sub">Moses’ farewell · Egypt and the Exodus</p>
+    <p class="context serif">Moses sets up the offices for the land: judges, priests, a prophet like him, and a king who copies out the law.</p>
+    <div class="links"><a href="#">Read on Bible Gateway</a><a href="#">Ask about this reading</a></div>
+    <a class="jot" href="#"><span class="jl"><span>Your note</span></span><div class="lines">The king was to copy out the law by hand and read it every day (17:18–19). Writing out this week’s verse might help me keep it too.</div></a>
+    <p class="readline"><i></i><span>Read on Tuesday</span><a href="#">Back to today</a></p>
     <section class="verse">
       <h3>This week’s verse</h3>
       <p>“Be strong and of a good courage, fear not, nor be afraid of them: for the LORD thy God, he it is that doth go with thee…”</p>
@@ -536,9 +570,9 @@
     <p class="note">Subscribers can ask up to 30 questions a day, with no ads.</p>
     <p class="sec">Signing out</p>
     <div class="rows"><div class="r"><span>Sign out</span><span></span></div></div>
-    <p class="note">Signing out keeps your progress and notes on this device.</p>
+    <p class="note">Signing out keeps your progress and notes on this phone.</p>
     <div class="rows" style="margin-top:22px"><div class="r danger"><span>Delete account…</span><span></span></div></div>
-    <p class="note">Deletes your account, your progress and your notes, here and on this phone. You’ll be asked to confirm.</p>
+    <p class="note">Deletes your progress and notes from your account and from this phone. You’ll be asked to confirm.</p>
   </div>
 </template>
 
@@ -606,7 +640,7 @@
   <section class="sheet signin" aria-label="Sign in">
     <div class="grabber"></div><div class="perf"></div>
     <div class="sheet-head"><h2>Sign in</h2><a href="#" data-ios-cancel>Cancel</a></div>
-    <p class="lead">Keep your progress and notes in step on your phone and laptop. Anything already on this phone comes with you. New here? The same steps create your account.</p>
+    <p class="lead">Keep your progress and notes in step on your other devices. Anything already on this phone comes with you. New here? The same steps create your account.</p>
     <div class="sso apple" data-sso="apple"><svg width="16" height="19" viewBox="0 0 16 19" fill="currentColor" aria-hidden="true"><path d="M13.2 10.1c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.8C2.9 4.6 1.3 5.6.5 7.1c-1.7 2.9-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-3.9zM10.8 3c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg> Continue with Apple</div>
     <div class="sso google"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2L12 13.6c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V5H1a9 9 0 0 0 0 8.1z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3L15 2.4A9 9 0 0 0 1 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"/></svg> Continue with Google</div>
     <div class="or">or</div>
@@ -638,9 +672,10 @@
   <div class="scrim"></div>
   <section class="sheet" aria-label="Your note">
     <div class="grabber"></div><div class="perf"></div>
-    <div class="sheet-head"><h2>Deuteronomy 22–25</h2><a href="#">Done</a></div>
+    <div class="sheet-head"><h2>Deuteronomy 22–25</h2><a href="#" data-ios-cancel>Done</a></div>
     <p class="jotsub"><span>Day 69 · your note</span><span>Saved</span></p>
     <p class="jotpad">The gleaning law stopped me (24:19–21). Leave part of the harvest on purpose, for the widow and the stranger. What would leaving the edges look like for us<span class="caret"></span></p>
+    <div class="jotdel" data-jotdel hidden>Delete note…</div>
   </section>
 </template>
 
@@ -650,7 +685,7 @@
     <div class="search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>Search your notes</div>
     <div class="nlist">
       <div class="ni now"><div class="nh"><span class="nd">69</span><span class="nr">Deuteronomy 22–25</span><span class="nw">Today</span></div><p>The gleaning law stopped me (24:19–21). Leave part of the harvest on purpose, for the widow and the stranger. What would leaving the edges look like for us?</p></div>
-      <div class="ni"><div class="nh"><span class="nd">68</span><span class="nr">Deuteronomy 17–21</span><span class="nw">Tue, week 12</span></div><p>The king was to copy out the law by hand and read it every day (17:18–19). Writing out this week’s verse might help me keep it too.</p></div>
+      <div class="ni" data-swipe><span class="del">Delete</span><div class="nh"><span class="nd">68</span><span class="nr">Deuteronomy 17–21</span><span class="nw">Tue, week 12</span></div><p>The king was to copy out the law by hand and read it every day (17:18–19). Writing out this week’s verse might help me keep it too.</p></div>
       <div class="ni"><div class="nh"><span class="nd">66</span><span class="nr">Deuteronomy 10–12</span><span class="nw">Sat, week 11</span></div><p>“Circumcise therefore the foreskin of your heart” (10:16). Ask on Sunday what this meant to Israel before Paul picks it up in Romans.</p></div>
       <div class="ni"><div class="nh"><span class="nd">65</span><span class="nr">Deuteronomy 6–9</span><span class="nw">Fri, week 11</span></div><p>Last week’s verse is here in chapter 6. Talk of them when you sit in your house and when you walk by the way. Put it on a card by the sink.</p></div>
     </div>
@@ -691,6 +726,8 @@
 <div class="row" id="notes-dark"></div>
 <p class="row-title">Notes on Plan, the first-time Notes tab, and Notes on Android</p>
 <div class="row" id="notes-more"></div>
+<p class="row-title">A day already read, deleting a note, and writing on Android</p>
+<div class="row" id="notes-edge"></div>
 
 <section class="notes">
   <h2>How it behaves</h2>
@@ -708,8 +745,8 @@
 
   <h2>Notes</h2>
   <p>Each day’s page has room for one note, the way a desk calendar page has ruled lines for notes: “Your note” and two ruled lines between the links and Mark day read, so the reader can jot something after reading and before tearing the page off. Tapping the lines opens a sheet with the day’s reading at the top and ruled paper to write on. It saves as she types (“Saved”); there is no save button. Done closes it, and the page shows the note’s first two lines.</p>
-  <p>Notes is a fifth tab, between Verses and More: every note, newest first, each headed by its day number, reading and weekday, with the first three lines; today’s note carries the current day’s blue. Search looks through the text. Tapping a note opens the same sheet for that day. In Plan, a day with a note says “Note”, and tapping it opens the note. Clearing a note’s text deletes it; in the Notes tab, swipe left to delete. Plain text only; notes are free for everyone and never carry an ad.</p>
-  <p>Notes are kept on the phone and, once signed in, synced like progress, so the Account, sign-in and delete copy now say “progress and notes”. Delete account clears notes on this phone too. Proposed, to confirm: Reset progress keeps notes, because they are her writing, not her place in the plan.</p>
+  <p>Notes is a fifth tab, between Verses and More: every note, newest first, each headed by its day number, reading and weekday, with the first three lines; today’s note carries the current day’s blue. Search looks through the text. Tapping a note opens the same sheet for that day. In Plan, a day with a note says “Note”. Tapping any day in Plan turns the pad to that day’s page, note included; a day already read shows “Read on Tuesday” and a way back to today in place of the button, so blue stays with the current day. To delete a note: Delete note… at the foot of the writing sheet (when the keyboard is down), confirmed in a system alert, or swipe left on it in the Notes tab (iPhone; on Android, long-press for the same Delete). An emptied note is removed too. Plain text only; notes are free for everyone and never carry an ad. A search with no match says so in the list: No notes mention “manna”. The writing happens in a sheet rather than inline on the page so the keyboard never hides what she is writing and the page keeps its first-viewport shape.</p>
+  <p>Notes are kept on the phone and, once signed in, synced like progress, so the Account, sign-in and delete copy now say “progress and notes”. Delete account clears notes on this phone too. If the same day’s note is edited on two devices, the last edit wins, the same rule progress uses. The signed-in Notes tab has no sync line; Account already says everything is up to date, and the signed-out empty state is where the line earns its place. Proposed, to confirm: Reset progress keeps notes, because they are her writing, not her place in the plan.</p>
 </section>
 
 <script>
@@ -761,7 +798,7 @@
     return k;
   }
 
-  function phone({ theme = "light", screen, android = false, extra = "", pages = ["t-page69"], notabs = false, note = "", kbd = false, err = false, jot = "" }) {
+  function phone({ theme = "light", screen, android = false, extra = "", pages = ["t-page69"], notabs = false, note = "", kbd = false, err = false, jot = "", jotlong = false, alert = null, swipe = false }) {
     const el = document.createElement("div");
     el.className = ["phone", theme === "dark" && "dark", android && "android", extra].filter(Boolean).join(" ");
     if (screen === "today") el.appendChild(todayPad(pages));
@@ -776,6 +813,9 @@
     const tab = { plan: "plan", verses: "verses", notes: "notes", "notes-empty": "notes", more: "more", account: "more", "account-out": "more", settings: "more", delete: "more" }[screen] || "today";
     if (jot) el.querySelectorAll(".page.top [data-jot] .lines").forEach(n => { n.classList.remove("empty"); n.textContent = jot; });
     if (kbd === "text") { el.appendChild(textKeyboard()); }
+    if (jotlong) el.querySelectorAll(".jotpad").forEach(n => { n.classList.add("long"); n.innerHTML = JOT69 + "<br><br>Ruth gleans in Boaz’s field later (Ruth 2). Same law, a real person on the other side of it. Ask on Sunday whether anyone still does this, or what it looks like now." + '<span class="caret"></span>'; el.querySelectorAll("[data-jotdel]").forEach(d => d.hidden = false); });
+    if (alert) { const sc = document.createElement("div"); sc.className = "scrim"; sc.style.zIndex = 12; el.appendChild(sc); const a = document.createElement("div"); a.className = "alert"; a.setAttribute("role", "alertdialog"); a.innerHTML = "<h4>" + alert[0] + "</h4><p>" + alert[1] + '</p><div class="btns"><span>Cancel</span><span>Delete</span></div>'; el.appendChild(a); }
+    if (swipe) el.querySelectorAll("[data-swipe]").forEach(n => n.classList.add("swiped"));
     if (note) { const n = document.createElement("p"); n.className = "signed"; n.innerHTML = "<i></i><span>" + note + "</span>"; el.querySelector(".page.top .dateline").after(n); }
     if (kbd === true) { const k = document.createElement("div"); k.className = "kbd"; k.innerHTML = '<div class="sugg">482917 <small>From Mail</small></div><div class="keys">' + ["1","2","3","4","5","6","7","8","9","","0","⌫"].map(x => x === "" ? '<span class="blank"></span>' : '<span>' + x + '</span>').join("") + '</div>'; el.appendChild(k); }
     if (err) { el.querySelectorAll("[data-err]").forEach(n => n.hidden = false); el.querySelectorAll(".input.code").forEach(n => { n.classList.add("bad"); n.textContent = "48291"; }); }
@@ -828,10 +868,15 @@
     add("notes-" + theme, phone({ theme, screen: "today", jot: JOT69 }), "3. Back on the page, the note’s first lines");
     add("notes-" + theme, phone({ theme, screen: "notes" }), "4. The Notes tab: every note, newest first");
   }
-  add("notes-more", phone({ screen: "plan" }), "Plan: a day with a note says so; tapping it opens the note");
+  add("notes-more", phone({ screen: "plan" }), "Plan: a day with a note says so; tapping any day opens its page");
   add("notes-more", phone({ screen: "notes-empty" }), "Notes before the first one, signed out");
   add("notes-more", phone({ screen: "today", android: true, jot: JOT69 }), "Android: Today with a note");
   add("notes-more", phone({ screen: "notes", android: true }), "Android: the Notes tab");
+  add("notes-edge", phone({ screen: "today", pages: ["t-page68"] }), "A day already read, from Plan or by swiping back: its note, and the way back to today");
+  add("notes-edge", phone({ screen: "jot", jotlong: true }), "A longer note, keyboard down: it scrolls, and Delete note… sits at the foot");
+  add("notes-edge", phone({ screen: "jot", jotlong: true, alert: ["Delete this note?", "Your note on day 69 will be deleted from this phone and your account. It can’t be undone."] }), "Delete note… asks first");
+  add("notes-edge", phone({ screen: "notes", swipe: true }), "Or swipe left on a note in the Notes tab");
+  add("notes-edge", phone({ screen: "jot", android: true, kbd: "text" }), "Android: writing in a modal bottom sheet, closed with the close button");
 </script>
 </body>
 </html>

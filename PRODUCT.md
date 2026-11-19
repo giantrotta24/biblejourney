@@ -28,13 +28,14 @@ The plan is chronological and the current day is always the first unread day, ne
 
 ## Capabilities and Constraints
 
-- Screens: Today, Plan (all 52 weeks), Timeline (11 eras), Verses, Who's who (peoples and prophets), Account, Settings.
+- Screens: Today, Plan (all 52 weeks), Timeline (11 eras), Verses, Notes, Who's who (peoples and prophets), Account, Settings.
+- Notes (native app v1, decided 2026-11-19): one plain-text note per reading day, written on that day's page, with a Notes tab to look back through them. Kept on the phone and synced when signed in, like progress. Free for everyone. Reset progress keeps notes; Delete account removes them.
 - A full-year progress overview of 52 weeks in four phases.
 - Plan content is fixed and ships with the app (`content/bible-journey-seed.json`). Only KJV text from that file is shown; no text from copyrighted translations is embedded.
 - The app works with no account. Sync across devices, the study assistant and daily reminders are optional and switch on when configured.
 - Terms: reading day, week, phase, deep dive, memory verse, era.
 - Paid tier (native app): one subscription, monthly or yearly, unlocks the study assistant (up to 30 questions a day) and removes ads. Free readers get 3 assistant questions a week. The paywall says plainly that the subscription covers running costs. Prices are not set yet.
-- Ads for free readers: quiet banner or inline blocks only, never interstitials or pop-ups, and never on Today.
+- Ads for free readers: quiet banner or inline blocks only, never interstitials or pop-ups, and never on Today or Notes.
 
 ## Brand Commitments
 

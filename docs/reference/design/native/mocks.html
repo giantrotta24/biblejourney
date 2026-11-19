@@ -356,6 +356,13 @@
   .page .readline a { margin-left: auto; color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink-3); text-underline-offset: 4px; min-height: 44px; display: inline-flex; align-items: center; }
   .android .page .readline a { min-height: 48px; }
 
+  .year { position: relative; }
+  .plan-sum.scrub { color: var(--ink-2); }
+  .plan-sum.scrub b { font: 600 17px/1.2 "Source Serif 4", serif; color: var(--ink); margin-right: 6px; }
+  .touch { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: var(--ink); opacity: 0.14; pointer-events: none; }
+  .navbar.compact { top: 54px; grid-template-columns: 1fr auto 1fr; border-bottom: 0.5px solid var(--rule); }
+  .scroll.below-nav { top: 98px; }
+
   .notes { columns: 2 420px; column-gap: 48px; }
   .notes h2 { font: 600 17px/1.3 -apple-system, system-ui, sans-serif; margin: 0 0 8px; break-after: avoid; }
   .notes p { break-inside: avoid; margin: 0 0 14px; }
@@ -464,6 +471,27 @@
         <div class="sunday">Sunday: write the story from creation to Moses’ death in ten sentences.</div>
       </div>
       <div class="wk cut"><div><b>Week 13</b><span>Joshua and the conquest</span></div>{{chev}}</div>
+    </div>
+  </div>
+  <div class="ad"><div class="slot"><em>Ad</em>Banner ad, 320 × 50</div></div>
+</template>
+
+<template id="t-plan-jump">
+  <div class="navbar compact"><span></span><b>Plan</b><span></span></div>
+  <div class="scroll below-nav">
+    <div class="list" style="margin-top:0">
+      <div class="wk cut"><div><b>Week 23</b><span>David’s last days; Proverbs begins</span></div>{{chev}}</div>
+      <div class="cut">
+        <div class="wk"><div><b>Week 24</b><span>Solomon’s wisdom and Temple</span></div>{{down}}</div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Mon</span><span class="rd">1 Kings 2; Proverbs 4–5</span></div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Tue</span><span class="rd">1 Kings 3; Proverbs 6–7</span></div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Wed</span><span class="rd">1 Kings 4; Proverbs 8–9</span></div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Thu</span><span class="rd">1 Kings 5; Proverbs 10–12</span></div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Fri</span><span class="rd">1 Kings 6; Proverbs 13–14</span></div>
+        <div class="day"><span class="mk stub"></span><span class="wd">Sat</span><span class="rd">1 Kings 7; Proverbs 15–16</span></div>
+        <div class="sunday">Sunday: Look up a diagram of Solomon’s Temple and compare it with your Tabernacle sketch from Week 7.</div>
+      </div>
+      <div class="wk cut"><div><b>Week 25</b><span>Solomon’s peak and decline</span></div>{{chev}}</div>
     </div>
   </div>
   <div class="ad"><div class="slot"><em>Ad</em>Banner ad, 320 × 50</div></div>
@@ -728,6 +756,8 @@
 <div class="row" id="notes-more"></div>
 <p class="row-title">A day already read, deleting a note, and writing on Android</p>
 <div class="row" id="notes-edge"></div>
+<p class="row-title">Plan on a phone: the year grid is one control you scrub, not 312 tiny targets</p>
+<div class="row" id="plan-scrub"></div>
 
 <section class="notes">
   <h2>How it behaves</h2>
@@ -735,18 +765,21 @@
   <p>Printer’s blue belongs to the current day and the one primary action on each screen. Everything else is ink. Read and unread days differ by mark length, never by a second colour. No streaks, no scores; a gap is just the next page.</p>
   <p>At xxxLarge the day number shrinks a step and the page scrolls; the verse moves below the fold rather than squeezing the reading.</p>
   <h2>Native notes</h2>
-  <p>iPhone: tab bar for the four sections, the assistant and the paywall as sheets with swipe to dismiss, SF Pro for every control, SF Symbols for icons, Dynamic Type. Android: Material navigation bar, modal bottom sheets, system and predictive Back, Roboto for controls, Material Symbols, font scale, 48 dp targets. Both keep the same pages, numeral and serif.</p>
-  <p>Every control has at least a 44 pt (iOS) or 48 dp (Android) hit area, including the underlined text links. Ads appear only for free readers, as the one banner at the foot of Plan and other secondary screens, never on Today, the assistant or the paywall.</p>
+  <p>iPhone: tab bar for the five sections, the assistant and the paywall as sheets with swipe to dismiss, SF Pro for every control, SF Symbols for icons, Dynamic Type. Android: Material navigation bar, modal bottom sheets, system and predictive Back, Roboto for controls, Material Symbols, font scale, 48 dp targets. Both keep the same pages, numeral and serif.</p>
+  <p>Every control has at least a 44 pt (iOS) or 48 dp (Android) hit area, including the underlined text links. Ads appear only for free readers, as the one banner at the foot of Plan and other secondary screens, never on Today, Notes, the assistant or the paywall.</p>
   <p>Paywall copy follows decisions already made: the subscription covers running costs, up to 30 questions a day, monthly and yearly, a yearly price review that passes savings on. Prices are not set.</p>
 
   <h2>Verses, Account, Settings, sign in</h2>
   <p>Verses keeps the page language: this week’s verse is a page on the pad with a Full text or First letters menu, practice reveals one verse at a time, “I know it” marks a verse learned, and the list runs week 1 to 52, opening at this week. More holds Timeline, Who’s who, Account, Subscription and Settings. Free readers see the banner on Plan, Verses and More.</p>
   <p>Signing in and signing up are the same steps: Continue with Apple, Continue with Google, or an emailed code, no password. The app works without an account; signing in only keeps progress in step across devices and carries what is already marked. Apple requires Sign in with Apple next to Google on iPhone; Android shows Google (through the system account picker) and email only. Both stores require deleting an account inside the app. A reader who started without an account signs up later from More, Account. Deleting asks to confirm, clears this phone’s progress as well as the account’s (decided 2026-11-18), and says a subscription keeps billing until it is cancelled in the store.</p>
 
+  <h2>Plan on a phone</h2>
+  <p>The year grid is a picture of the year, and its marks are far too small to tap one by one, so the whole grid is a single control. Touch and slide along it, as with the A to Z index in Contacts: a thin line marks the week under the finger, the summary line above the grid names it (“Week 24 Solomon’s wisdom and Temple”), and each new week gives a light haptic tick. Letting go scrolls the list to that week and opens it. A plain tap does the same for the week under the finger. The week and day rows below stay the everyday targets at 52 and 44 pt. With VoiceOver or TalkBack the grid reads as a summary and a single adjustable control, swipe up or down to move a week.</p>
+
   <h2>Notes</h2>
   <p>Each day’s page has room for one note, the way a desk calendar page has ruled lines for notes: “Your note” and two ruled lines between the links and Mark day read, so the reader can jot something after reading and before tearing the page off. Tapping the lines opens a sheet with the day’s reading at the top and ruled paper to write on. It saves as she types (“Saved”); there is no save button. Done closes it, and the page shows the note’s first two lines.</p>
   <p>Notes is a fifth tab, between Verses and More: every note, newest first, each headed by its day number, reading and weekday, with the first three lines; today’s note carries the current day’s blue. Search looks through the text. Tapping a note opens the same sheet for that day. In Plan, a day with a note says “Note”. Tapping any day in Plan turns the pad to that day’s page, note included; a day already read shows “Read on Tuesday” and a way back to today in place of the button, so blue stays with the current day. To delete a note: Delete note… at the foot of the writing sheet (when the keyboard is down), confirmed in a system alert, or swipe left on it in the Notes tab (iPhone; on Android, long-press for the same Delete). An emptied note is removed too. Plain text only; notes are free for everyone and never carry an ad. A search with no match says so in the list: No notes mention “manna”. The writing happens in a sheet rather than inline on the page so the keyboard never hides what she is writing and the page keeps its first-viewport shape.</p>
-  <p>Notes are kept on the phone and, once signed in, synced like progress, so the Account, sign-in and delete copy now say “progress and notes”. Delete account clears notes on this phone too. If the same day’s note is edited on two devices, the last edit wins, the same rule progress uses. The signed-in Notes tab has no sync line; Account already says everything is up to date, and the signed-out empty state is where the line earns its place. Proposed, to confirm: Reset progress keeps notes, because they are her writing, not her place in the plan.</p>
+  <p>Notes are kept on the phone and, once signed in, synced like progress, so the Account, sign-in and delete copy now say “progress and notes”. Delete account clears notes on this phone too. If the same day’s note is edited on two devices, the last edit wins, the same rule progress uses. The signed-in Notes tab has no sync line; Account already says everything is up to date, and the signed-out empty state is where the line earns its place. Decided 2026-11-19: Reset progress keeps notes, because they are her writing, not her place in the plan.</p>
 </section>
 
 <script>
@@ -781,6 +814,7 @@
     return pad;
   }
 
+  const SCRUB_TITLES = { 24: "Solomon’s wisdom and Temple" };
   const JOT69 = "The gleaning law stopped me (24:19–21). Leave part of the harvest on purpose, for the widow and the stranger. What would leaving the edges look like for us?";
   const PREDICT = ["us", "us?", "our church"];
   const LETTERS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
@@ -798,7 +832,7 @@
     return k;
   }
 
-  function phone({ theme = "light", screen, android = false, extra = "", pages = ["t-page69"], notabs = false, note = "", kbd = false, err = false, jot = "", jotlong = false, alert = null, swipe = false }) {
+  function phone({ theme = "light", screen, android = false, extra = "", pages = ["t-page69"], notabs = false, note = "", kbd = false, err = false, jot = "", jotlong = false, alert = null, swipe = false, scrub = 0 }) {
     const el = document.createElement("div");
     el.className = ["phone", theme === "dark" && "dark", android && "android", extra].filter(Boolean).join(" ");
     if (screen === "today") el.appendChild(todayPad(pages));
@@ -810,7 +844,7 @@
     else if (under) { under.appendChild(todayPad(["t-page69"])); under.appendChild(tpl("t-tabs")); }
     else if (!notabs) el.appendChild(tpl("t-tabs"));
     el.appendChild(tpl("t-status"));
-    const tab = { plan: "plan", verses: "verses", notes: "notes", "notes-empty": "notes", more: "more", account: "more", "account-out": "more", settings: "more", delete: "more" }[screen] || "today";
+    const tab = { plan: "plan", "plan-jump": "plan", verses: "verses", notes: "notes", "notes-empty": "notes", more: "more", account: "more", "account-out": "more", settings: "more", delete: "more" }[screen] || "today";
     if (jot) el.querySelectorAll(".page.top [data-jot] .lines").forEach(n => { n.classList.remove("empty"); n.textContent = jot; });
     if (kbd === "text") { el.appendChild(textKeyboard()); }
     if (jotlong) el.querySelectorAll(".jotpad").forEach(n => { n.classList.add("long"); n.innerHTML = JOT69 + "<br><br>Ruth gleans in Boaz’s field later (Ruth 2). Same law, a real person on the other side of it. Ask on Sunday whether anyone still does this, or what it looks like now." + '<span class="caret"></span>'; el.querySelectorAll("[data-jotdel]").forEach(d => d.hidden = false); });
@@ -821,6 +855,18 @@
     if (err) { el.querySelectorAll("[data-err]").forEach(n => n.hidden = false); el.querySelectorAll(".input.code").forEach(n => { n.classList.add("bad"); n.textContent = "48291"; }); }
     el.querySelectorAll(`.tab[data-tab="${tab}"]`).forEach(t => t.classList.add("on"));
     el.querySelectorAll(".yeargrid").forEach(yearGrid);
+    if (scrub) {
+      const W = 350, gap = 6, colW = (W - 3 * gap) / 52;
+      const x = (scrub - 1) * colW + [12, 26, 39].filter(g => g < scrub).length * gap + colW / 2;
+      const svg = el.querySelector(".yeargrid");
+      svg.insertAdjacentHTML("afterbegin", `<rect x="${x - 0.5}" y="0" width="1" height="74" fill="var(--ink)"/>`);
+      const sum = el.querySelector(".plan-sum");
+      sum.classList.add("scrub");
+      sum.innerHTML = "<b>Week " + scrub + "</b>" + SCRUB_TITLES[scrub];
+      const t = document.createElement("span"); t.className = "touch";
+      t.style.left = (x / W * 100) + "%"; t.style.top = "46px";
+      el.querySelector(".year").appendChild(t);
+    }
     if (android) el.querySelectorAll("[data-cancel]").forEach(n => n.textContent = "Cancel anytime in Google Play");
     if (android) el.querySelectorAll("[data-sso=apple]").forEach(n => n.remove());
     if (android) el.querySelectorAll("[data-ios-cancel]").forEach(n => { n.outerHTML = `<span class="close" aria-label="Close"><span><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg></span></span>`; });
@@ -877,6 +923,9 @@
   add("notes-edge", phone({ screen: "jot", jotlong: true, alert: ["Delete this note?", "Your note on day 69 will be deleted from this phone and your account. It can’t be undone."] }), "Delete note… asks first");
   add("notes-edge", phone({ screen: "notes", swipe: true }), "Or swipe left on a note in the Notes tab");
   add("notes-edge", phone({ screen: "jot", android: true, kbd: "text" }), "Android: writing in a modal bottom sheet, closed with the close button");
+  add("plan-scrub", phone({ screen: "plan" }), "1. The grid is a picture of the year; the week rows below are what you tap");
+  add("plan-scrub", phone({ screen: "plan", scrub: 24 }), "2. Touch and slide along the grid: the line under it names the week, with a light tick at each one");
+  add("plan-scrub", phone({ screen: "plan-jump" }), "3. Let go: the list jumps to that week, open, and the title tucks into the bar");
 </script>
 </body>
 </html>

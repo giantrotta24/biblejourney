@@ -9,6 +9,7 @@ colors:
   ink-2: "#5a5a54"
   ink-3: "#8a8a83"
   rule: "#d6d6ce"
+  ruled: "#b3b3aa"
   field: "#ebebe5"
   printers-blue: "#2747a5"
   on-blue: "#ffffff"
@@ -20,6 +21,7 @@ colors:
   ink-2-dark: "#b3b2ab"
   ink-3-dark: "#85847e"
   rule-dark: "#34342f"
+  ruled-dark: "#4a4a45"
   field-dark: "#292926"
   printers-blue-dark: "#3f60c8"
   printers-blue-ink-dark: "#9cb1f3"
@@ -37,6 +39,13 @@ typography:
     fontSize: "30px"
     fontWeight: 800
     lineHeight: 1
+    fontVariation: "'wdth' 62"
+  numeral-list:
+    fontFamily: "Archivo, sans-serif"
+    fontSize: "26px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.01em"
     fontVariation: "'wdth' 62"
   headline:
     fontFamily: "Source Serif 4, Georgia, serif"
@@ -65,6 +74,16 @@ typography:
     fontSize: "17px"
     fontWeight: 400
     lineHeight: 1.5
+  note-writing:
+    fontFamily: "Source Serif 4, Georgia, serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: "32px"
+  note-page:
+    fontFamily: "Source Serif 4, Georgia, serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: "30px"
   verse:
     fontFamily: "Source Serif 4, Georgia, serif"
     fontSize: "16px"
@@ -107,6 +126,7 @@ rounded:
   control: "10px"
   sheet: "12px"
   sheet-android: "28px"
+  search-android: "24px"
 spacing:
   pad-inset: "12px"
   page: "22px"
@@ -151,6 +171,19 @@ components:
     rounded: "{rounded.field-android}"
     padding: "0 16px"
     height: "56px"
+  search-field:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink-2}"
+    typography: "{typography.ui-body}"
+    rounded: "{rounded.control}"
+    padding: "0 10px"
+    height: "36px"
+  search-field-android:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink-2}"
+    rounded: "{rounded.search-android}"
+    padding: "0 16px"
+    height: "48px"
   list-row:
     textColor: "{colors.ink}"
     typography: "{typography.ui-body}"
@@ -186,7 +219,7 @@ components:
 
 # Design System: One-Year Bible Journey
 
-Recorded from the approved native mocks (`docs/reference/design/native/mocks.html`, rounds 1 and 2, owner-approved 2026-11-17). The web app in `src/` has not been moved to this world yet; its sage and Literata styling is evidence, not this system.
+Recorded from the approved native mocks (`docs/reference/design/native/mocks.html`, rounds 1 and 2 owner-approved 2026-11-17, round 3 (notes) owner-approved 2026-11-19). The web app in `src/` has not been moved to this world yet; its sage and Literata styling is evidence, not this system.
 
 ## Overview
 
@@ -221,13 +254,16 @@ Paper, ink in three strengths, and a single printer's blue; dark mode is the sam
 - **Second Ink** (`ink-2`): secondary text, metadata, notes, inactive tabs.
 - **Faded Ink** (`ink-3`): unread-day stubs, perforation dots, chevrons, radio rings, link underlines, later items.
 - **Hairline** (`rule`): 0.5px row dividers, the page's bottom edge line, the tab bar's top edge.
+- **Ruled Line** (`ruled`, `ruled-dark`): the 1px writing lines of a note (on the page, in the writing sheet, under the empty Notes state), darker than the hairline so the lines read at about 2:1 on paper. Writing lines only; hairlines stay `rule`.
 - **Field** (`field`): filled text fields, the composer, the close-button disc, the ad slot.
-- **Correction Red** (`danger`, `danger-dark`): destructive list rows (Delete account, Reset progress), the wrong-code message and its field outline. Never a fill.
+- **Correction Red** (`danger`, `danger-dark`): destructive list rows (Delete account, Reset progress), Delete note… at the foot of the writing sheet, the wrong-code message and its field outline. Never a fill. The swipe-to-delete action in the Notes tab and the alert's Delete button use the system red, as platform parts.
 
 ### Named Rules
 **The One Blue Rule.** Printer's blue marks the current day and the one primary action on a screen, nothing else. A second filled control on the same screen is an ink-outlined button.
 
 **The Mark, Not Colour, Rule.** Read and unread days differ by mark length (a full ink mark against a short faded stub), never by a second hue.
+
+**The Ruled-For-Writing Rule.** Ruled lines (`ruled`) appear only where the reader writes or has written; every other divider is a hairline or a dotted cut.
 
 ## Typography
 
@@ -239,15 +275,17 @@ Paper, ink in three strengths, and a single printer's blue; dark mode is the sam
 
 ### Hierarchy
 - **Numeral** (800, 128px, 0.84, -0.02em, Archivo 62% width): the day number on the page, with "Day" beside it in the same face at 30px. At xxxLarge text it steps down to 112px so the reading keeps its room.
+- **List numeral** (Archivo 800, 26px, 1, -0.01em, 62% width): the day number heading each note in the Notes tab.
 - **Headline** (Source Serif 4 600, 31px, 1.12): the day's reading ("Deuteronomy 22–25").
 - **Display serif** (Source Serif 4 600, 30px, 1.15): the paywall headline and the first-run lede; 26–28px for the verse reference and "Check your email".
-- **Title** (Source Serif 4 600, 22–24px, 1.2): sheet titles, the practice verse reference, the account email.
+- **Title** (Source Serif 4 600, 22–24px, 1.2): sheet titles (the writing sheet's title is the day's reading), the practice verse reference, the account email, "No notes yet".
 - **Section** (Source Serif 4 600, 15px, 1.3): section headings in sentence case ("This week's verse", "Subscription", "Daily reminder"); week names in Plan run larger at 18px.
-- **Body serif** (Source Serif 4 400, 17px, 1.5): the day's context and assistant answers (1.55); first-run body at 18px.
+- **Body serif** (Source Serif 4 400, 17px, 1.5): the day's context and assistant answers (1.55); first-run body at 18px. Note excerpts in the Notes tab at 16px/1.45, three lines; the reading beside the list numeral at 600 17px.
+- **Note writing** (Source Serif 4 400, 18px on 32px ruled lines): the writing sheet. On the page the note sits at 16px on 30px lines (21px on 36px at xxxLarge), two lines; the empty placeholder is italic in second ink.
 - **Verse** (Source Serif 4 italic 16px, 1.45): the week's verse on Today and the Sunday deep-dive line; upright 17px on the Verses page.
 - **Large title** (system 700, 34px): Plan, Verses and More screen titles, iOS large-title style.
 - **UI body** (system 400, 17px, 1.4): rows, questions, buttons (600), field text.
-- **Label** (system 400, 14–15px): metadata, notes under rows, the day's era line, field labels.
+- **Label** (system 400, 13–15px): metadata, notes under rows, the day's era line, field labels, "Your note", "Day 69 · your note" and "Saved", the weekday in the Notes list, the 13px "Note" label on a Plan day.
 - **Fine** (system 400, 13px, 1.45): quota, paywall fine print, verse citation, small print.
 
 ### Named Rules
@@ -261,7 +299,9 @@ Phone portrait, drawn at 390 × 844 pt. On Today the pad fills the space between
 
 Rhythm is set by touch targets: list rows are 48px, plan day rows 44px, week rows 52px, links and text buttons at least 44pt (48dp on Android), including underlined text links. Sections are separated by 24px above a serif section heading, with a 14px note under a row group where one is needed.
 
-A free reader's banner (320 × 50) sits in a 66px strip above the tab bar on Plan, Verses and More only. Never on Today, the assistant or the paywall.
+A free reader's banner (320 × 50) sits in a 66px strip above the tab bar on Plan, Verses and More only. Never on Today, the assistant, the paywall or Notes; notes are free for everyone and never carry an ad.
+
+On the day page the note area ("Your note" and two ruled lines, at least 44pt tall) sits between the two links and Mark day read; at default size the page still fits the first viewport with it.
 
 At larger Dynamic Type sizes the page scrolls rather than squeezing: the numeral steps down, body grows (context 23px at xxxLarge), the links wrap, and the week's verse moves below the fold.
 
@@ -282,9 +322,9 @@ Sheets sit over a scrim (`rgba(32,32,29,0.32)` light, `rgba(0,0,0,0.55)` dark). 
 
 ## Shapes
 
-Pages are square-cornered sheets: the page, the verse page, the page edges and the binding's foot have no radius (the binding's top corners take 3px). Edges carry the world's marks: a perforated top edge of punched dots across every page and sheet, and dotted cut lines (3px tall, ink-3 dots every 7px) between sections, weeks and the "or" divider. Torn stubs under the binding have ragged clip-path edges.
+Pages are square-cornered sheets: the page, the verse page, the page edges and the binding's foot have no radius (the binding's top corners take 3px). Edges carry the world's marks: a perforated top edge of punched dots across every page and sheet, and dotted cut lines (3px tall, ink-3 dots every 7px) between sections, weeks and the "or" divider. Torn stubs under the binding have ragged clip-path edges. Ruled writing lines (1px `ruled`) are the paper's third mark, used only for notes; notes in the Notes tab are separated by the same dotted cut lines.
 
-Controls are gently rounded rectangles at 10px: buttons, filled fields, the code field. Sheets round their top corners (12px iOS, 28px Android, per platform). Circles are reserved for radios, the "I know it" check, the send button and the close disc. Marks are thin vertical strokes (2px ink bars) used as list bullets, day marks and the synced line, never dots or icons.
+Controls are gently rounded rectangles at 10px: buttons, filled fields, the code field, the iPhone search field (the Android search bar is fully rounded at 24px, per Material). Sheets round their top corners (12px iOS, 28px Android, per platform). Circles are reserved for radios, the "I know it" check, the send button and the close disc. Marks are thin vertical strokes (2px ink bars) used as list bullets, day marks and the synced line, never dots or icons.
 
 ## Components
 
@@ -304,24 +344,34 @@ Plain, full-width, confident; one blue per screen.
 
 ### Lists and rows
 - **Settings rows:** 48px, ink label left, second-ink value or chevron right, 0.5px hairline between rows, a serif section heading above and a second-ink note below.
-- **Destructive rows:** correction-red text with a trailing ellipsis (Delete account…, Reset progress…), confirmed in a system alert.
+- **Destructive rows:** correction-red text with a trailing ellipsis (Delete account…, Reset progress…, Delete note…), confirmed in a system alert. Reset progress keeps notes.
 - **More hub rows:** label plus a second-ink description line.
 - **Selection:** a trailing ink tick; toggles use the platform switch with ink as the on colour.
 
 ### Navigation
-- **iPhone:** four-tab bar (Today, Plan, Verses, More), translucent paper, 26px line icons, 10px labels; active tab in ink at 700 with a heavier stroke, inactive in second ink.
-- **Android:** Material navigation bar on solid paper, 24dp icons, 12px Roboto labels, active indicator 56 × 32 in binding grey with an 8px radius.
+- **iPhone:** five-tab bar (Today, Plan, Verses, Notes, More), translucent paper, 26px line icons, 10px labels; active tab in ink at 700 with a heavier stroke, inactive in second ink.
+- **Android:** Material navigation bar on solid paper with the same five destinations, 24dp icons, 12px Roboto labels, active indicator 56 × 32 in binding grey with an 8px radius.
 - **Pushed screens:** a paper navigation bar with chevron and "More" back label, centred title.
 
 ### Sheets
 - **Style:** a torn page laid over a scrim: paper, rounded top corners, grabber, a perforated line across the top, serif title with a Done or Cancel text action (a round close disc on the paywall and on Android).
-- **Used for:** the study assistant, the paywall, sign in and the code step.
+- **Used for:** the study assistant, the paywall, sign in and the code step, and writing a note.
 
 ### The Page (signature)
 The day's page on the pad: perforated top edge, dateline lockup (numeral, "Day", "of 312" in ink over the weekday and week in second ink), serif reading, era line, serif context, two underlined links, the primary Mark day read, then a dotted cut and the week's verse in italic serif with its KJV citation. Status lines that belong to the day (Signed in. Your progress came with you.) sit on the page as a line with an ink bar, not as a toast.
 
+Between the links and Mark day read sits the note area: "Your note" in second ink and two ruled lines, with the placeholder "Write a note on today's reading" in second-ink italic serif; once written, the lines show the note's first two lines. A day already read (opened from Plan or by swiping back) shows its note and, in place of the blue button, an ink-bar line "Read on Tuesday" with an underlined "Back to today" link, so blue stays with the current day.
+
+### Writing sheet
+A sheet over Today: the day's reading as the serif title with Done (a close disc on Android), then "Day 69 · your note" left and "Saved" right in second ink, then ruled paper at 18/32 serif. It saves as she types; there is no save button, and an emptied note is removed. With the keyboard down, a long note scrolls and Delete note… in correction red sits at the foot, confirmed by a system alert. Plain text only.
+
+### Notes tab
+A large title "Notes", a search field ("Search your notes"; no match says so in the list), then every note newest first, separated by dotted cut lines: list numeral, serif reading, weekday in second ink right, three-line serif excerpt. Today's note takes the current day's blue on its numeral and weekday. Tapping a note opens the writing sheet for that day. Swipe left deletes on iPhone (a system-red Delete action); long-press on Android. Before the first note: "No notes yet", a serif line saying notes gather here, the signed-out sync line with an ink bar ("Notes are kept on this phone. Sign in to keep them on your other devices too."), and a few ghost ruled lines. Signed in, the tab has no sync line.
+
 ### Plan index
-A 52-week year grid of thin marks (full ink for read days, a blue taller mark for today, faded stubs for unread), with four phase gaps; below it weeks as cut-separated rows that open to their six days, each marked by a stroke and the weekday, and the Sunday deep dive in italic serif.
+A 52-week year grid of thin marks (full ink for read days, a blue taller mark for today, faded stubs for unread), with four phase gaps; below it weeks as cut-separated rows that open to their six days, each marked by a stroke and the weekday, and the Sunday deep dive in italic serif. A day with a note carries a 13px second-ink "Note" label at the right. Tapping any day turns the pad to that day's page.
+
+The year grid is one control, never 312 targets: its marks are about 1.5pt wide. Touch and slide along it (like the A to Z index in Contacts) and a 1px ink line marks the week under the finger while the summary line above the grid becomes the readout ("Week 24" in 17px serif 600, then the week's title in second ink), with a light haptic tick at each week. Letting go, or a plain tap, scrolls the list to that week and opens it; the large title tucks into a compact "Plan" bar. The week (52pt) and day (44pt) rows stay the everyday targets. VoiceOver and TalkBack read the grid as a summary and one adjustable control (swipe up or down to move a week).
 
 ### Paywall choice
 Radio rows between hairlines: a 22px ring in faded ink, filled by a 7px ink border when chosen; plan name and second-ink detail, price in tabular numerals right.
@@ -334,7 +384,8 @@ Radio rows between hairlines: a 22px ring in faded ink, filled by a 7px ink bord
 - **Do** set content in Source Serif 4 and controls in the platform face (SF Pro on iPhone, Roboto on Android).
 - **Do** show read and unread by mark length: full ink mark versus faded stub.
 - **Do** keep every control at least 44pt on iPhone and 48dp on Android, underlined text links included.
-- **Do** follow the platform for system parts: switches, alerts, keyboards, Material text fields and navigation.
+- **Do** follow the platform for system parts: switches, alerts, keyboards, swipe actions, Material text fields and navigation.
+- **Do** say "progress and notes" wherever sync, sign in, sign out or deletion is described.
 - **Do** let the page scroll at large text sizes and step the numeral down rather than shrinking the reading.
 - **Do** replace the tear-off with a crossfade when Reduce Motion is on.
 
@@ -343,10 +394,11 @@ Radio rows between hairlines: a 22px ring in faded ink, filled by a 7px ink bord
 - **Don't** use blue for anything that is not the current day or the one primary action, and don't add a second accent colour.
 - **Don't** put uppercase tracked kickers or eyebrows above headings.
 - **Don't** show streaks, rings, badges, scores or anything that grades the reader.
-- **Don't** place a banner ad on Today, the study assistant or the paywall.
+- **Don't** place a banner ad on Today, the study assistant, the paywall or Notes.
 - **Don't** raise anything above the page except a page being torn; no floating toasts or stacked shadows.
+- **Don't** use ruled lines as dividers, or hairlines as writing lines.
 
 ## Open items
 
-- **Unresolved:** prices (shown as $X.XX), the store app name, and the icon. Decided 2026-11-18: Delete account also clears the reading progress on this phone.
-- **Not drawn:** accessibility text sizes AX1 to AX5, the "new code sent" state after Send a new code, and the reminder state when notifications are off.
+- **Unresolved:** prices (shown as $X.XX), the store app name, and the icon. Decided 2026-11-18: Delete account also clears the reading progress on this phone. Decided 2026-11-19: Delete account clears notes on this phone too; Reset progress keeps notes; the same day's note edited on two devices follows last edit wins, like progress.
+- **Not drawn:** accessibility text sizes AX1 to AX5, the "new code sent" state after Send a new code, and the reminder state when notifications are off. Not drawn: notes at accessibility sizes AX1 to AX5, an Android dark notes frame.

@@ -11,7 +11,7 @@ import { whenSettingsReady } from '@/settings/client';
 import { useColors } from '@/theme/colors';
 import { useResolvedScheme } from '@/theme/scheme';
 
-import { ReadingProviders } from './providers';
+import { ReadingProviders } from '@/providers';
 
 SplashScreen.preventAutoHideAsync();
 

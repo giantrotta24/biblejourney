@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppState, Pressable, Text } from 'react-native';
 
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import TodayScreen from '@/app/(tabs)/index';
 import { useProgress } from '@/progress/context';
 import { SIGNED_IN_NOTE } from '@/sync/copy';

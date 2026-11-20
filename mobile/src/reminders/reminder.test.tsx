@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Alert, AppState, Linking, Platform, Pressable, Text } from 'react-native';
 
 import { fakeAuth, fakeProfiles, resetFakeAuth } from '@/account/fake-supabase';
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import AccountRoute from '@/app/(tabs)/more/account';
 import MoreScreen from '@/app/(tabs)/more/index';
 import SettingsRoute from '@/app/(tabs)/more/settings';

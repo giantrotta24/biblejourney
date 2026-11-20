@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import type { KeyValueStore } from '@/persist/document';
 
 describe('ReadingProviders', () => {

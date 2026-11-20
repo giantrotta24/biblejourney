@@ -6,7 +6,7 @@ import { Alert, Appearance, StyleSheet, Text } from 'react-native';
 
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { WelcomeGate, WELCOMED_KEY } from '@/account/welcome';
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import AccountRoute from '@/app/(tabs)/more/account';
 import MoreScreen from '@/app/(tabs)/more/index';
 import SettingsRoute from '@/app/(tabs)/more/settings';

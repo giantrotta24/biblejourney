@@ -23,7 +23,7 @@ function dayParam(value: string | string[] | undefined): number | null {
 export default function TodayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { days, mark } = useProgress();
+  const { days, mark, unmark } = useProgress();
   const { rows, status: notesStatus } = useNotes();
   const signedIn = useSignedInNote();
   const { day } = useLocalSearchParams<{ day?: string }>();
@@ -43,6 +43,7 @@ export default function TodayScreen() {
           mark(index);
           if (tearing) router.setParams({ day: '' });
         }}
+        onUnmark={unmark}
         onBackToToday={() => router.setParams({ day: '' })}
         onOpenPlan={() => router.navigate('/plan')}
         onOpenNote={(index) => router.push({ pathname: '/note/[day]', params: { day: String(index) } })}

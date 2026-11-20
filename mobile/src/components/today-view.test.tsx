@@ -45,17 +45,35 @@ describe('Today', () => {
     expect(open).toHaveBeenCalledWith('https://www.biblegateway.com/passage/?search=Genesis+1-4&version=ESV');
   });
 
-  it('offers Ask about this reading beside Bible Gateway when asking is available', async () => {
+  it('offers Ask about this reading under Bible Gateway as full-width rows when asking is available', async () => {
     const onOpenAsk = jest.fn();
     await renderToday({ done: new Set(), onOpenAsk });
-    expect(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('link', { name: 'Ask about this reading' }));
+    const gateway = screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' });
+    const ask = screen.getByRole('button', { name: 'Ask about this reading' });
+    for (const row of [gateway, ask]) {
+      const style = StyleSheet.flatten(row.props.style);
+      expect(style.minHeight).toBe(48);
+      expect(style.flexDirection).toBe('row');
+      expect(style.paddingVertical).toBe(8);
+    }
+    for (const label of ['Read on Bible Gateway', 'Ask about this reading']) {
+      const text = StyleSheet.flatten(screen.getByText(label).props.style);
+      expect(text.fontSize).toBe(17);
+      expect(text.fontWeight).toBe('600');
+      expect(text.textDecorationLine).toBeUndefined();
+    }
+    expect(textOrder(screen.root).indexOf('Read on Bible Gateway')).toBeLessThan(
+      textOrder(screen.root).indexOf('Ask about this reading'),
+    );
+    await fireEvent.press(ask);
     expect(onOpenAsk).toHaveBeenCalledWith(0);
   });
 
   it('hides Ask about this reading when asking is not offered', async () => {
     await renderToday({ done: new Set() });
-    expect(screen.queryByRole('link', { name: 'Ask about this reading' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ask about this reading' })).toBeNull();
+    expect(screen.queryByText('Ask about this reading')).toBeNull();
   });
 
   it('shows day N+1 after N days are read', async () => {
@@ -74,6 +92,57 @@ describe('Today', () => {
     expect(screen.getByText('Back to today')).toBeOnTheScreen();
     expect(screen.queryByText('Mark day 1 read')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Mark day 1 read' })).toBeNull();
+  });
+
+  it('offers Mark as unread on a day already read', async () => {
+    const onUnmark = jest.fn();
+    await renderToday({ done: new Set([0, 1]), dayIndex: 0, onUnmark });
+
+    const button = screen.getByRole('button', { name: 'Mark as unread' });
+    expect(StyleSheet.flatten(button.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    await fireEvent.press(button);
+    expect(onUnmark).toHaveBeenCalledWith(0);
+  });
+
+  it('unmarks a read day and shows the day unread again', async () => {
+    function Loop() {
+      const { days, mark, unmark } = useProgress();
+      return (
+        <TodayView
+          done={days}
+          dayIndex={0}
+          onMark={mark}
+          onUnmark={unmark}
+          onBackToToday={() => {}}
+          onOpenPlan={() => {}}
+          onShowDay={() => {}}
+        />
+      );
+    }
+
+    const saved = new Map<string, string>();
+    const storage = {
+      async getItem(key: string) {
+        return saved.get(key) ?? null;
+      },
+      async setItem(key: string, value: string) {
+        saved.set(key, value);
+      },
+    };
+    await render(
+      <GestureHandlerRootView>
+        <ProgressProvider storage={storage}>
+          <Loop />
+        </ProgressProvider>
+      </GestureHandlerRootView>,
+    );
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark day 1 read' }));
+    expect(await screen.findByText('Read on Monday')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark as unread' }));
+    expect(await screen.findByRole('button', { name: 'Mark day 1 read' })).toBeOnTheScreen();
+    expect(screen.queryByText('Read on Monday')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark as unread' })).toBeNull();
   });
 
   it('shows the whole verse', async () => {

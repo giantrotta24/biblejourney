@@ -36,7 +36,7 @@ function MarkOnce() {
 }
 
 function Marker() {
-  const { days, mark } = useProgress();
+  const { days, mark, unmark } = useProgress();
   const listed = [...days].sort((a, b) => a - b).join(',');
   return (
     <View>
@@ -52,6 +52,9 @@ function Marker() {
       </Pressable>
       <Pressable onPress={() => mark(312)}>
         <Text>Mark 312</Text>
+      </Pressable>
+      <Pressable onPress={() => unmark(0)}>
+        <Text>Unmark 0</Text>
       </Pressable>
     </View>
   );
@@ -256,5 +259,30 @@ describe('ProgressProvider', () => {
       </ProgressProvider>,
     );
     expect(await screen.findByText('Days: 0')).toBeOnTheScreen();
+  });
+
+  it('unmarks a read day and keeps it unmarked after a reload', async () => {
+    const storage = memory();
+    const view = await render(
+      <ProgressProvider storage={storage}>
+        <Marker />
+      </ProgressProvider>,
+    );
+
+    await fireEvent.press(await screen.findByText('Mark 0'));
+    await fireEvent.press(screen.getByText('Mark 1'));
+    await fireEvent.press(screen.getByText('Unmark 0'));
+    expect(await screen.findByText('Days: 1')).toBeOnTheScreen();
+    await waitFor(() => {
+      expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([1]);
+    });
+
+    await view.unmount();
+    await render(
+      <ProgressProvider storage={storage}>
+        <Marker />
+      </ProgressProvider>,
+    );
+    expect(await screen.findByText('Days: 1')).toBeOnTheScreen();
   });
 });

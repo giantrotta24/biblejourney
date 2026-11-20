@@ -174,6 +174,7 @@ export function AskSheet({
   const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
   const { lift, keyboardUp } = useComposerLift();
+  const [composerHeight, setComposerHeight] = useState(0);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -411,7 +412,10 @@ export function AskSheet({
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 16 }}>
+        contentContainerStyle={{
+          paddingHorizontal: 22,
+          paddingBottom: (ready ? composerHeight : 0) + 16,
+        }}>
         {gate === 'sign-in' ? (
           <Pressable
             accessibilityRole="link"
@@ -554,6 +558,7 @@ export function AskSheet({
       {ready ? (
         <Animated.View style={{ paddingBottom: lift }}>
           <View
+            onLayout={(event) => setComposerHeight(event.nativeEvent.layout.height)}
             style={{
               borderTopWidth: StyleSheet.hairlineWidth,
               borderTopColor: colors.rule,

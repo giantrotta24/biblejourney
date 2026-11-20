@@ -1,8 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
+import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { useColors } from '@/theme/colors';
-import { fonts } from '@/theme/fonts';
+import { fonts, hitSize } from '@/theme/fonts';
 import {
   DAY_COUNT,
   WEEK_COUNT,
@@ -12,7 +12,7 @@ import {
   weeks,
 } from '../../../supabase/functions/_shared/content/plan';
 
-import { Chevron } from './icons';
+import { Chevron, DayCheck } from './icons';
 import { DottedCut } from './marks';
 import { YearGrid } from './year-grid';
 
@@ -22,11 +22,12 @@ type PlanViewProps = {
   done: ReadonlySet<number>;
   noted: ReadonlySet<number>;
   onOpenDay: (index: number) => void;
+  onToggleDay: (index: number, read: boolean) => void;
   focusWeek?: number | null;
   onFocusApplied?: () => void;
 };
 
-export function PlanView({ done, noted, onOpenDay, focusWeek = null, onFocusApplied }: PlanViewProps) {
+export function PlanView({ done, noted, onOpenDay, onToggleDay, focusWeek = null, onFocusApplied }: PlanViewProps) {
   const colors = useColors();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
@@ -90,6 +91,11 @@ export function PlanView({ done, noted, onOpenDay, focusWeek = null, onFocusAppl
     openDayRef.current = onOpenDay;
   }, [onOpenDay]);
   const openDay = useCallback((index: number) => openDayRef.current(index), []);
+  const toggleDayRef = useRef(onToggleDay);
+  useEffect(() => {
+    toggleDayRef.current = onToggleDay;
+  }, [onToggleDay]);
+  const toggleDay = useCallback((index: number, read: boolean) => toggleDayRef.current(index, read), []);
   const toggleWeek = useCallback((week: number) => {
     setOpen((prev) => {
       const next = new Set(prev);
@@ -205,6 +211,7 @@ export function PlanView({ done, noted, onOpenDay, focusWeek = null, onFocusAppl
           ink3={colors.ink3}
           blueInk={colors.blueInk}
           onOpenDay={openDay}
+          onToggleDay={toggleDay}
           onToggle={toggleWeek}
           onListTop={placeList}
           onWeekTop={placeWeek}
@@ -224,6 +231,7 @@ const PlanWeeks = memo(function PlanWeeks({
   ink3,
   blueInk,
   onOpenDay,
+  onToggleDay,
   onToggle,
   onListTop,
   onWeekTop,
@@ -237,10 +245,12 @@ const PlanWeeks = memo(function PlanWeeks({
   ink3: string;
   blueInk: string;
   onOpenDay: (index: number) => void;
+  onToggleDay: (index: number, read: boolean) => void;
   onToggle: (week: number) => void;
   onListTop: (y: number) => void;
   onWeekTop: (week: number, y: number) => void;
 }) {
+  const target = hitSize();
   return (
     <View
       style={{ marginTop: 16 }}
@@ -275,38 +285,50 @@ const PlanWeeks = memo(function PlanWeeks({
                   const read = done.has(day.index);
                   const hasNote = noted.has(day.index);
                   const isToday = todayIndex === day.index;
-                  const markColor = isToday ? blueInk : read ? ink : ink3;
+                  const checkColor = read ? ink : isToday ? blueInk : ink3;
                   return (
-                    <Pressable
+                    <View
                       key={day.index}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}${hasNote ? ', note' : ''}`}
-                      onPress={() => onOpenDay(day.index)}
-                      style={{
-                        minHeight: Platform.OS === 'android' ? 48 : 44,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 10,
-                      }}>
-                      <View
+                      style={{ minHeight: target, flexDirection: 'row', alignItems: 'center' }}>
+                      <Pressable
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: read }}
+                        accessibilityLabel={`Day ${day.index + 1}, ${day.reading}${isToday ? ', today' : ''}`}
+                        onPress={() => onToggleDay(day.index, !read)}
                         style={{
-                          width: isToday ? 3 : 2,
-                          height: isToday ? 18 : read ? 16 : 6,
-                          backgroundColor: markColor,
-                        }}
-                      />
-                      <Text style={{ width: 42, fontSize: 14, color: isToday ? blueInk : ink2 }}>{day.weekday}</Text>
-                      <Text
+                          width: target,
+                          minHeight: target,
+                          marginLeft: -(target - 18) / 2,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                        <DayCheck checked={read} color={checkColor} />
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : ''}${hasNote ? ', note' : ''}`}
+                        accessibilityHint="Opens this day"
+                        onPress={() => onOpenDay(day.index)}
                         style={{
                           flex: 1,
-                          fontSize: 16,
-                          color: isToday ? blueInk : read ? ink2 : ink,
-                          fontWeight: isToday ? '600' : '400',
+                          alignSelf: 'stretch',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 10,
                         }}>
-                        {day.reading}
-                      </Text>
-                      {hasNote ? <Text style={{ fontSize: 13, lineHeight: 18, color: ink2 }}>Note</Text> : null}
-                    </Pressable>
+                        <Text style={{ width: 42, fontSize: 14, color: isToday ? blueInk : ink2 }}>{day.weekday}</Text>
+                        <Text
+                          style={{
+                            flex: 1,
+                            fontSize: 16,
+                            color: isToday ? blueInk : read ? ink2 : ink,
+                            fontWeight: isToday ? '600' : '400',
+                          }}>
+                          {day.reading}
+                        </Text>
+                        {hasNote ? <Text style={{ fontSize: 13, lineHeight: 18, color: ink2 }}>Note</Text> : null}
+                      </Pressable>
+                    </View>
                   );
                 })
               : null}

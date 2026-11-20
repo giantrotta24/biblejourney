@@ -60,13 +60,13 @@ describe('Today note route', () => {
     delete process.env.EXPO_PUBLIC_ASSISTANT_URL;
     await renderToday();
     expect(await screen.findByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
-    expect(screen.queryByRole('link', { name: 'Ask about this reading' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ask about this reading' })).toBeNull();
   });
 
   it('opens the assistant for the day on the page', async () => {
     process.env.EXPO_PUBLIC_ASSISTANT_URL = 'https://project.supabase.co/functions/v1/ask';
     await renderToday();
-    await fireEvent.press(await screen.findByRole('link', { name: 'Ask about this reading' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ask about this reading' }));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/ask/[day]', params: { day: '0' } });
   });
 

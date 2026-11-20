@@ -16,6 +16,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { useNotes } from '@/notes/context';
+import { NOTE_MAX_LENGTH } from '@/notes/store';
 import { StorageBlank, StorageRetry } from '@/persist/retry';
 import { useColors } from '@/theme/colors';
 import { fonts, hitSize, useFontScale } from '@/theme/fonts';
@@ -216,6 +217,7 @@ export function NoteSheet({ dayIndex, onClose }: { dayIndex: number; onClose: ()
             accessibilityLabel="Note"
             autoFocus
             multiline
+            maxLength={NOTE_MAX_LENGTH}
             allowFontScaling={false}
             value={text}
             onChangeText={onChange}

@@ -6,6 +6,6 @@ export default defineConfig({
     alias: { "@server": fileURLToPath(new URL("./supabase/functions/_shared", import.meta.url)), "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    exclude: [...configDefaults.exclude, "e2e/**", "supabase/functions/tests/**"],
+    exclude: [...configDefaults.exclude, "e2e/**", "supabase/functions/tests/**", "mobile/**"],
   },
 });

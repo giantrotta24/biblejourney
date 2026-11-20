@@ -46,6 +46,7 @@
   ],
   "exclude": [
     "node_modules",
+    "mobile",
     "supabase/functions/ask/**",
     "supabase/functions/reminders-send/**",
     "supabase/functions/tests/**"

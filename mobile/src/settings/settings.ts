@@ -36,6 +36,10 @@ export type SettingsStore = {
   subscribe(listener: () => void): () => void;
   update(patch: Partial<Settings>): boolean;
   replace(next: Settings): void;
+  /** True when settings were already stored at load, or the reader has changed them since. */
+  localTouched(): boolean;
+  noteStored(existed: boolean): void;
+  resetTouch(): void;
 };
 
 const CODES: readonly string[] = TRANSLATIONS.map((item) => item.code);
@@ -68,10 +72,14 @@ function same(a: Settings, b: Settings) {
 export function createSettingsStore(storage: KeyValueStorage | null): SettingsStore {
   const listeners = new Set<() => void>();
   let current = DEFAULT_SETTINGS;
+  let touched = false;
   try {
-    current = parseSettings(storage?.getItem(SETTINGS_KEY) ?? null);
+    const raw = storage?.getItem(SETTINGS_KEY) ?? null;
+    touched = raw != null;
+    current = parseSettings(raw);
   } catch {
     current = DEFAULT_SETTINGS;
+    touched = false;
   }
 
   function replace(next: Settings) {
@@ -97,9 +105,21 @@ export function createSettingsStore(storage: KeyValueStorage | null): SettingsSt
       if (patch.linkTranslation !== undefined && !isTranslation(patch.linkTranslation)) return false;
       const next = { ...current, ...patch };
       if (same(current, next)) return false;
+      touched = true;
       replace(next);
       return true;
     },
     replace,
+    localTouched: () => touched,
+    noteStored(existed) {
+      if (existed) touched = true;
+    },
+    resetTouch() {
+      try {
+        touched = (storage?.getItem(SETTINGS_KEY) ?? null) != null;
+      } catch {
+        touched = false;
+      }
+    },
   };
 }

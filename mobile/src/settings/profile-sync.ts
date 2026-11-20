@@ -36,28 +36,32 @@ export async function reconcileProfile({
   link,
   userId,
   remote,
+  localTouched,
 }: {
   local: Settings;
   link: SettingsLink;
   userId: string;
   remote: ProfileRemote;
+  localTouched: boolean;
 }): Promise<{ settings: Settings; link: SettingsLink }> {
-  if (link.user !== userId || link.dirty) {
+  const anotherUser = link.user !== userId;
+  if (link.dirty || (anotherUser && localTouched)) {
     await remote.save(fieldsOf(local));
     return { settings: local, link: { user: userId, dirty: false } };
   }
 
   const row = await remote.load();
+  const linked = { user: userId, dirty: false };
   if (!row) {
     await remote.save(fieldsOf(local));
-    return { settings: local, link };
+    return { settings: local, link: linked };
   }
   return {
     settings: {
       theme: isTheme(row.theme) ? row.theme : DEFAULT_SETTINGS.theme,
       linkTranslation: isTranslation(row.link_translation) ? row.link_translation : local.linkTranslation,
     },
-    link,
+    link: linked,
   };
 }
 
@@ -82,25 +86,36 @@ export function createProfileSync({ store, storage, applyTheme }: Deps): Profile
     }
   }
 
-  async function reconcile(session: Session) {
+  async function reconcile(session: Session): Promise<boolean> {
+    const snapshot = store.getSnapshot();
     const result = await reconcileProfile({
-      local: store.getSnapshot(),
+      local: snapshot,
       link: readLink(),
       userId: session.userId,
       remote: session.remote,
+      localTouched: store.localTouched(),
     });
-    if (active !== session) return;
+    if (active !== session) return false;
+    if (store.getSnapshot() !== snapshot) {
+      writeLink({ user: session.userId, dirty: true });
+      return true;
+    }
     store.replace(result.settings);
     applyTheme(result.settings.theme);
     writeLink(result.link);
     session.reconciled = true;
+    return false;
   }
 
-  async function upload(session: Session) {
+  async function upload(session: Session): Promise<boolean> {
     const link = readLink();
-    if (link.user !== session.userId || !link.dirty) return;
-    await session.remote.save(fieldsOf(store.getSnapshot()));
-    if (active === session) writeLink({ user: session.userId, dirty: false });
+    if (link.user !== session.userId || !link.dirty) return false;
+    const snapshot = store.getSnapshot();
+    await session.remote.save(fieldsOf(snapshot));
+    if (active !== session) return false;
+    if (store.getSnapshot() !== snapshot) return true;
+    writeLink({ user: session.userId, dirty: false });
+    return false;
   }
 
   function retry(): Promise<void> {
@@ -108,8 +123,12 @@ export function createProfileSync({ store, storage, applyTheme }: Deps): Profile
     if (!session) return Promise.resolve();
     running ??= (async () => {
       try {
-        if (!session.reconciled) await reconcile(session);
-        else await upload(session);
+        let again = true;
+        while (again && active === session) {
+          again = false;
+          if (!session.reconciled) again = await reconcile(session);
+          else again = await upload(session);
+        }
       } catch {
         // The next retry, or the next sign-in, tries again.
       } finally {

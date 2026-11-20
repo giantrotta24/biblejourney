@@ -53,6 +53,7 @@ export async function loadSettings(): Promise<void> {
   else memory.delete(SETTINGS_LINK_KEY);
   if (raw) memory.set(SETTINGS_KEY, raw);
   else memory.delete(SETTINGS_KEY);
+  store.noteStored(raw != null);
   store.replace(parseSettings(raw));
   applyColorScheme(store.getSnapshot().theme);
 }
@@ -68,6 +69,9 @@ export function whenSettingsReady(): Promise<void> {
 export function resetSettingsForTests() {
   memory.clear();
   store.replace(DEFAULT_SETTINGS);
+  memory.delete(SETTINGS_KEY);
+  memory.delete(SETTINGS_LINK_KEY);
+  store.resetTouch();
   profile.signedOut();
   applyColorScheme('system');
   boot = null;
@@ -89,8 +93,7 @@ export function useSettings(): Settings {
   );
 }
 
-function profileRemote(client: SupabaseClient, userId: string): ProfileRemote | null {
-  if (typeof (client as { from?: unknown }).from !== 'function') return null;
+function profileRemote(client: SupabaseClient, userId: string): ProfileRemote {
   return {
     async load() {
       const { data, error } = await client
@@ -119,8 +122,7 @@ export function SettingsSync() {
     void whenSettingsReady().then(() => {
       if (!live || !supabase) return;
       if (session.status === 'signed-in' && session.user) {
-        const remote = profileRemote(supabase, session.user.id);
-        if (remote) void profile.signedIn(session.user.id, remote);
+        void profile.signedIn(session.user.id, profileRemote(supabase, session.user.id));
         return;
       }
       if (was === 'signed-in') profile.signedOut();

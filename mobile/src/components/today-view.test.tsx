@@ -45,17 +45,34 @@ describe('Today', () => {
     expect(open).toHaveBeenCalledWith('https://www.biblegateway.com/passage/?search=Genesis+1-4&version=ESV');
   });
 
-  it('offers Ask about this reading beside Bible Gateway when asking is available', async () => {
+  it('offers Ask about this reading under Bible Gateway as full-width rows when asking is available', async () => {
     const onOpenAsk = jest.fn();
     await renderToday({ done: new Set(), onOpenAsk });
-    expect(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('link', { name: 'Ask about this reading' }));
+    const gateway = screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' });
+    const ask = screen.getByRole('button', { name: 'Ask about this reading' });
+    for (const row of [gateway, ask]) {
+      const style = StyleSheet.flatten(row.props.style);
+      expect(style.minHeight).toBe(48);
+      expect(style.flexDirection).toBe('row');
+    }
+    for (const label of ['Read on Bible Gateway', 'Ask about this reading']) {
+      const text = StyleSheet.flatten(screen.getByText(label).props.style);
+      expect(text.fontSize).toBe(17);
+      expect(text.fontWeight).toBe('600');
+      expect(text.textDecorationLine).toBeUndefined();
+    }
+    expect(textOrder(screen.root).indexOf('Read on Bible Gateway')).toBeLessThan(
+      textOrder(screen.root).indexOf('Ask about this reading'),
+    );
+    await fireEvent.press(ask);
     expect(onOpenAsk).toHaveBeenCalledWith(0);
   });
 
   it('hides Ask about this reading when asking is not offered', async () => {
     await renderToday({ done: new Set() });
-    expect(screen.queryByRole('link', { name: 'Ask about this reading' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ask about this reading' })).toBeNull();
+    expect(screen.queryByText('Ask about this reading')).toBeNull();
   });
 
   it('shows day N+1 after N days are read', async () => {

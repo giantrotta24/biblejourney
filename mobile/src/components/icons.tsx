@@ -81,3 +81,28 @@ export function DayCheck({ checked, color }: { checked: boolean; color: string }
     </Svg>
   );
 }
+
+export function BookIcon({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round">
+      <Path d="M10 5.5C8.3 4.3 6 3.8 2.5 4v11c3.5-.2 5.8.3 7.5 1.5c1.7-1.2 4-1.7 7.5-1.5V4c-3.5-.2-5.8.3-7.5 1.5z" />
+      <Path d="M10 5.5v11" />
+    </Svg>
+  );
+}
+
+export function BubbleIcon({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round">
+      <Path d="M4 3.5h12a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9.5L5.5 17.5v-3H4A1.5 1.5 0 0 1 2.5 13V5A1.5 1.5 0 0 1 4 3.5z" />
+    </Svg>
+  );
+}
+
+export function OutsideArrow({ color }: { color: string }) {
+  return (
+    <Svg width={13} height={13} viewBox="0 0 13 13" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M3 10l7-7M4.5 3H10v5.5" />
+    </Svg>
+  );
+}

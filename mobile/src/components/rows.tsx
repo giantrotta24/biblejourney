@@ -41,6 +41,7 @@ export function Row({
   children,
   onPress,
   accessibilityLabel,
+  accessibilityRole = 'button',
   accessibilityState,
   disabled = false,
   ruled = false,
@@ -49,6 +50,7 @@ export function Row({
   children: ReactNode;
   onPress: () => void;
   accessibilityLabel: string;
+  accessibilityRole?: 'button' | 'link';
   accessibilityState?: AccessibilityState;
   disabled?: boolean;
   ruled?: boolean;
@@ -57,7 +59,7 @@ export function Row({
   const colors = useColors();
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
       disabled={disabled}

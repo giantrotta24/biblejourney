@@ -28,7 +28,9 @@ import {
   type PlanDay,
 } from '../../../supabase/functions/_shared/content/plan';
 
+import { BookIcon, BubbleIcon, OutsideArrow } from './icons';
 import { DottedCut, PageEdges, Perforation, TornStubs } from './marks';
+import { Row, RowChevron } from './rows';
 
 /** Tear-lift shadow extends past the page: offset 18 plus radius 16. */
 const TEAR_SHADOW = 18 + 16;
@@ -247,7 +249,7 @@ function NoteArea({
       accessibilityLabel={written ? `Your note. ${note}` : 'Your note. Write a note on today’s reading'}
       disabled={disabled}
       onPress={onPress}
-      style={{ minHeight: hitSize(), marginTop: 2 }}>
+      style={{ minHeight: hitSize(), marginTop: 8 }}>
       <Text style={{ fontSize: large ? 18 : 14, lineHeight: (large ? 18 : 14) * 1.35, color: colors.ink2 }}>Your note</Text>
       <View style={{ height: line * 2, overflow: 'hidden' }}>
         <View pointerEvents="none" style={StyleSheet.absoluteFill} accessibilityElementsHidden>
@@ -279,6 +281,10 @@ function NoteArea({
       </View>
     </Pressable>
   );
+}
+
+function pageRowText(colors: Palette) {
+  return { flex: 1, fontSize: 17, lineHeight: 17 * 1.3, fontWeight: '600' as const, color: colors.ink };
 }
 
 function unread(done: ReadonlySet<number>, index: number): Set<number> {
@@ -416,7 +422,7 @@ function DayPage({
           lineHeight: 31 * 1.12,
           letterSpacing: 31 * -0.005,
           color: colors.ink,
-          marginTop: 16,
+          marginTop: 12,
         }}>
         {day.reading}
       </Text>
@@ -430,35 +436,35 @@ function DayPage({
           fontSize: 17,
           lineHeight: 17 * 1.5,
           color: colors.ink,
-          marginTop: 14,
+          marginTop: 10,
         }}>
         {era.summary}
       </Text>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-        <Pressable
+      <View
+        style={{
+          marginTop: 12,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.rule,
+        }}>
+        <Row
           accessibilityRole="link"
           accessibilityLabel={`Read ${day.reading} on Bible Gateway`}
           disabled={frozen}
           onPress={() => {
             void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading, translation));
-          }}
-          style={{ minHeight: hitSize(), justifyContent: 'center' }}>
-          <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
-            Read on Bible Gateway
-          </Text>
-        </Pressable>
+          }}>
+          <BookIcon color={colors.ink} />
+          <Text style={pageRowText(colors)}>Read on Bible Gateway</Text>
+          <OutsideArrow color={colors.ink3} />
+        </Row>
         {onOpenAsk ? (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Ask about this reading"
-            disabled={frozen}
-            onPress={() => onOpenAsk(day.index)}
-            style={{ minHeight: hitSize(), justifyContent: 'center' }}>
-            <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
-              Ask about this reading
-            </Text>
-          </Pressable>
+          <Row ruled accessibilityLabel="Ask about this reading" disabled={frozen} onPress={() => onOpenAsk(day.index)}>
+            <BubbleIcon color={colors.ink} />
+            <Text style={pageRowText(colors)}>Ask about this reading</Text>
+            <RowChevron />
+          </Row>
         ) : null}
       </View>
 

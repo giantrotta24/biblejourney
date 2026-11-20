@@ -10,7 +10,7 @@ From this directory:
 npx expo start
 ```
 
-Press `i` for the iOS Simulator, or open the project in Expo Go on a phone.
+Press `i` for the iOS Simulator, or open the project in Expo Go on a phone. Press `s` to switch to a development build. Apple sign-in and real notifications need that build.
 
 ## Checks
 
@@ -18,6 +18,7 @@ Press `i` for the iOS Simulator, or open the project in Expo Go on a phone.
 npm run typecheck
 npm run lint
 npm test
+npm run config
 ```
 
 ## Sign in
@@ -36,6 +37,20 @@ In the Supabase Auth settings, allow these redirect URLs:
 - `exp://<host>:<port>/--/auth-callback` for Expo Go
 
 Turn on the Apple and Google providers. Apple uses the iOS bundle id (`dev.giantrotta.biblejourney`) as a client id. Google uses the OAuth client.
+
+## Ship a test build
+
+From this directory. These are the steps that need your accounts.
+
+Deploy the notes migration before a build that syncs, and `account-delete` before a build that shows Delete account. The Sign in section above says what each one does.
+
+1. Join the Apple Developer Program.
+2. `npm i -g eas-cli`, then `eas login`.
+3. `eas init`. That writes the Expo owner and project id into `app.json`.
+4. Create `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and `EXPO_PUBLIC_ASSISTANT_URL` on the `preview` and `production` environments with `eas env:set`. The assistant URL is the hosted ask function, `https://<project>.supabase.co/functions/v1/ask`.
+5. In Supabase Auth, add the redirect URL `biblejourney://auth-callback`. Turn on Apple, with the bundle id `dev.giantrotta.biblejourney` as the client id, and turn on Google.
+6. Replace the account placeholders in `eas.json`: `appleId`, `ascAppId`, `appleTeamId`, and `serviceAccountKeyPath`. Then `eas build -p ios --profile production` and `eas submit -p ios`. Add testers in App Store Connect.
+7. For Android, open a Google Play developer account. `eas build -p android --profile production` builds the app bundle, and the production submit profile sends it to the internal testing track.
 
 ## Design
 

@@ -1,5 +1,16 @@
 import { useEffect, type ReactNode } from 'react';
-import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useColors } from '@/theme/colors';
@@ -122,6 +133,18 @@ export function ErrorLine({ children, quiet = false }: { children: string; quiet
         lineHeight: quiet ? 21 : 20,
         marginBottom: 10,
       }}>
+      {children}
+    </Text>
+  );
+}
+
+export function AnnouncedLine({ children, style }: { children: string; style?: StyleProp<TextStyle> }) {
+  const colors = useColors();
+  useEffect(() => {
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(children);
+  }, [children]);
+  return (
+    <Text accessibilityLiveRegion="polite" style={[{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }, style]}>
       {children}
     </Text>
   );

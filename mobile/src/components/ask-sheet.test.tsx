@@ -228,6 +228,18 @@ describe('AskSheet', () => {
     expect(screen.queryByRole('button', { name: 'Report this answer' }) === null).toBe(!report);
   });
 
+  it('announces a refused answer on iOS', async () => {
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return bytes([`Half an answer.${'\u001E'}refused`]);
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    const line = await screen.findByText(REFUSED);
+    expect(line.props.accessibilityLiveRegion).toBe('polite');
+    await waitFor(() => expect(announce).toHaveBeenCalledWith(REFUSED));
+    expect(announce).not.toHaveBeenCalledWith('Half an answer.');
+  });
+
   it('links a typed care reply to call and text 988', async () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     try {

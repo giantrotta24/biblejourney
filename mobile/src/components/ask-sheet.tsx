@@ -48,6 +48,7 @@ import {
 } from '../assistant/copy';
 import { askUrl, reportUrl } from '../assistant/url';
 
+import { AnnouncedLine } from './auth-chrome';
 import { Perforation } from './marks';
 import { Row, RowChevron } from './rows';
 
@@ -356,11 +357,7 @@ export function AskSheet({
             </Text>
           </Pressable>
         ) : null}
-        {statusLine ? (
-          <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>
-            {statusLine}
-          </Text>
-        ) : null}
+        {statusLine ? <AnnouncedLine>{statusLine}</AnnouncedLine> : null}
         {gate === 'unavailable' ? (
           <Pressable
             accessibilityRole="button"
@@ -414,16 +411,10 @@ export function AskSheet({
             {answer}
           </Text>
         ) : null}
-        {notice ? (
-          <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>
-            {notice}
-          </Text>
-        ) : null}
+        {notice ? <AnnouncedLine>{notice}</AnnouncedLine> : null}
         {report && !streaming ? (
           reportThanks ? (
-            <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>
-              {REPORT_THANKS}
-            </Text>
+            <AnnouncedLine>{REPORT_THANKS}</AnnouncedLine>
           ) : reportOpen ? (
             <View style={{ marginTop: 8 }}>
               <Text style={{ fontSize: 14, color: colors.ink2, marginBottom: 6 }}>Add a note, if you want</Text>
@@ -469,11 +460,7 @@ export function AskSheet({
                   <Text style={{ fontSize: 17, color: colors.ink2 }}>Cancel</Text>
                 </Pressable>
               </View>
-              {reportError ? (
-                <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 22, color: colors.ink2 }}>
-                  {reportError}
-                </Text>
-              ) : null}
+              {reportError ? <AnnouncedLine style={{ marginTop: 0 }}>{reportError}</AnnouncedLine> : null}
             </View>
           ) : (
             <Pressable

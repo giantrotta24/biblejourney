@@ -324,7 +324,7 @@ Sheets sit over a scrim (`rgba(32,32,29,0.32)` light, `rgba(0,0,0,0.55)` dark). 
 
 Pages are square-cornered sheets: the page, the verse page, the page edges and the binding's foot have no radius (the binding's top corners take 3px). Edges carry the world's marks: a perforated top edge of punched dots across every page and sheet, and dotted cut lines (3px tall, ink-3 dots every 7px) between sections, weeks and the "or" divider. Torn stubs under the binding have ragged clip-path edges. Ruled writing lines (1px `ruled`) are the paper's third mark, used only for notes; notes in the Notes tab are separated by the same dotted cut lines.
 
-Controls are gently rounded rectangles at 10px: buttons, filled fields, the code field, the iPhone search field (the Android search bar is fully rounded at 24px, per Material). Sheets round their top corners (12px iOS, 28px Android, per platform). Circles are reserved for radios, the "I know it" check, the unread ring on a Plan day, the send button and the close disc. Marks are thin vertical strokes (2px ink bars) used as list bullets, the year grid's day marks and the synced line, never dots or icons.
+Controls are gently rounded rectangles at 10px: buttons, filled fields, the code field, the iPhone search field (the Android search bar is fully rounded at 24px, per Material). Sheets round their top corners (12px iOS, 28px Android, per platform). Circles are reserved for radios, the "I know it" check, the unread ring on a Plan day, the send button and the close disc. Marks are thin vertical strokes (2px ink bars) used as list bullets, the year grid's day marks and the synced line, never dots; the one icon mark is the ink check on a read Plan day.
 
 ## Components
 
@@ -334,7 +334,7 @@ Plain, full-width, confident; one blue per screen.
 - **Primary:** printer's blue fill, white text, system face 600 17px (Roboto 500 15px on Android).
 - **Ink outline:** paper with a 1.5px ink border and ink text, for the second action beside or instead of a primary (Next verse, Email me a code).
 - **Sign in with Apple:** black fill and white text (inverted in dark); **Google:** 1.5px faded-ink outline with Google's coloured mark. Android shows Google and email only.
-- **Text button and link:** ink text, underlined in faded ink with a 3–4px offset, 44pt minimum hit area.
+- **Text button and link:** ink text, underlined in faded ink with a 3–4px offset, 44pt minimum hit area. Secondary text buttons such as Mark as unread are second ink.
 
 ### Inputs / Fields
 - **Style (iPhone):** filled field-grey, 10px radius, 48pt tall, 14px padding, a 14px label above. The composer field is 44pt with a round ink send button.
@@ -370,7 +370,7 @@ A sheet over Today: the day's reading as the serif title with Done (a close disc
 A large title "Notes", a search field ("Search your notes"; no match says so in the list), then every note newest first, separated by dotted cut lines: list numeral, serif reading, weekday in second ink right, three-line serif excerpt. Today's note takes the current day's blue on its numeral and weekday. Tapping a note opens the writing sheet for that day. Swipe left deletes on iPhone (a system-red Delete action); long-press on Android. Before the first note: "No notes yet", a serif line saying notes gather here, the signed-out sync line with an ink bar ("Notes are kept on this phone. Sign in to keep them on your other devices too."), and a few ghost ruled lines. Signed in, the tab has no sync line.
 
 ### Plan index
-A 52-week year grid of thin marks (full ink for read days, a blue taller mark for today, faded stubs for unread), with four phase gaps; below it weeks as cut-separated rows that open to their six days, each led by its check and the weekday, and the Sunday deep dive in italic serif. The check is its own 44pt control (48dp on Android) that marks the day read or unread: a 2px ink check for a read day, an empty ring in faded ink for an unread one, the ring in printer's blue for today. The rest of the row opens the day. A day with a note carries a 13px second-ink "Note" label at the right. Tapping any day turns the pad to that day's page.
+A 52-week year grid of thin marks (full ink for read days, a blue taller mark for today, faded stubs for unread), with four phase gaps; below it weeks as cut-separated rows that open to their six days, each led by its check and the weekday, and the Sunday deep dive in italic serif. The check is its own 44pt control (48dp on Android) that marks the day read or unread: a 2px ink check for a read day, an empty ring in faded ink for an unread one, the ring in printer's blue for today. The rest of the row opens the day. A day with a note carries a 13px second-ink "Note" label at the right. Tapping the rest of a day's row turns the pad to that day's page.
 
 The year grid is one control, never 312 targets: its marks are about 1.5pt wide. Touch and slide along it (like the A to Z index in Contacts) and a 1px ink line marks the week under the finger while the summary line above the grid becomes the readout ("Week 24" in 17px serif 600, then the week's title in second ink), with a light haptic tick at each week. Letting go, or a plain tap, scrolls the list to that week and opens it; the large title tucks into a compact "Plan" bar. The week (52pt) and day (44pt) rows stay the everyday targets. VoiceOver and TalkBack read the grid as a summary and one adjustable control (swipe up or down to move a week).
 
@@ -394,7 +394,7 @@ Radio rows between hairlines: a 22px ring in faded ink, filled by a 7px ink bord
 - **Don't** wrap content in cards, pills, or rounded outlined boxes; the page is the only container.
 - **Don't** use blue for anything that is not the current day or the one primary action, and don't add a second accent colour.
 - **Don't** put uppercase tracked kickers or eyebrows above headings.
-- **Don't** show streaks, rings, badges, scores or anything that grades the reader.
+- **Don't** show streaks, progress rings, badges, scores or anything that grades the reader.
 - **Don't** place a banner ad on Today, the study assistant, the paywall or Notes.
 - **Don't** raise anything above the page except a page being torn; no floating toasts or stacked shadows.
 - **Don't** use ruled lines as dividers, or hairlines as writing lines.

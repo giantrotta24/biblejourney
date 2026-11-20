@@ -60,7 +60,7 @@ jobs:
       - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
         with:
           deno-version: v2.9.7
-      - run: deno check --config supabase/functions/deno.json supabase/functions/ask/index.ts supabase/functions/reminders-send/index.ts
+      - run: deno check --config supabase/functions/deno.json supabase/functions/ask/index.ts supabase/functions/reminders-send/index.ts supabase/functions/account-delete/index.ts
       - run: deno test --config supabase/functions/deno.json --allow-env --allow-net=127.0.0.1 supabase/functions/tests/
 
   mobile:

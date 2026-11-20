@@ -10,10 +10,25 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "dev.giantrotta.biblejourney",
-      "usesAppleSignIn": true
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "dev.giantrotta.biblejourney",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#f7f7f3",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -28,6 +43,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
       "expo-apple-authentication",
       [
         "expo-splash-screen",
@@ -44,6 +60,7 @@
       [
         "expo-notifications",
         {
+          "color": "#2747a5",
           "enableRemoteNotifications": false
         }
       ]

@@ -233,7 +233,7 @@ describe('AskSheet', () => {
   });
 
   it.each([
-    [401, { code: 'unauthorized', error: 'Please sign in.' }, /Sign in to ask the study assistant/],
+    [401, { code: 'unauthorized', error: 'Please sign in.' }, 'Please sign in.'],
     [403, { code: 'not_enabled', error: INVITATION }, INVITATION],
     [429, { code: 'rate_limited', error: RATE }, RATE],
     [400, { code: 'invalid', error: 'That question couldn\u2019t be read. Questions can be up to 500 characters.' }, /couldn\u2019t be read/],
@@ -246,6 +246,42 @@ describe('AskSheet', () => {
     });
     await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
     expect(await screen.findByText(line)).toBeOnTheScreen();
+  });
+
+  it('keeps the prompts when a 503 is an upstream failure', async () => {
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return json(503, { code: 'upstream', error: UPSTREAM });
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    expect(await screen.findByText(UPSTREAM)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Historical setting' })).toBeOnTheScreen();
+    expect(screen.queryByText(/isn\u2019t set up/)).toBeNull();
+  });
+
+  it('asks a signed-out reader to sign in when the ask is unauthorized', async () => {
+    fakeAuth.session = null;
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: false, enabled: true });
+      return json(401, { code: 'unauthorized', error: 'Please sign in.' });
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    expect(await screen.findByRole('link', { name: /Sign in to ask/ })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Historical setting' })).toBeNull();
+  });
+
+  it('tries the status check again after it fails', async () => {
+    let down = true;
+    await renderSheet(async () => {
+      if (down) throw new Error('offline');
+      return json(200, { configured: true, signInRequired: true, enabled: true });
+    });
+    expect(await screen.findByText(UPSTREAM)).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Historical setting' })).toBeNull();
+    down = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('button', { name: 'Historical setting' })).toBeOnTheScreen();
+    expect(screen.queryByText(UPSTREAM)).toBeNull();
   });
 
   it('says the assistant could not answer when the network fails', async () => {

@@ -83,6 +83,7 @@ export function AskSheet({
   const signedIn = session.status === 'signed-in';
   const address = askUrl();
   const [remoteGate, setRemoteGate] = useState<Gate>('checking');
+  const [statusAttempt, setStatusAttempt] = useState(0);
   const [question, setQuestion] = useState('');
   const [asked, setAsked] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
@@ -134,7 +135,7 @@ export function AskSheet({
       current = false;
       controller.abort();
     };
-  }, [session.status, session.user?.id, signedIn, transport]);
+  }, [session.status, session.user?.id, signedIn, transport, statusAttempt]);
 
   if (!day) return null;
 
@@ -171,7 +172,7 @@ export function AskSheet({
       });
       if (!live.current || controller.signal.aborted || outcome.kind === 'aborted') return;
       if (outcome.kind === 'failure') {
-        const line = failureLine(outcome);
+        const line = failureLine(outcome, signedIn);
         setAnswer('');
         setReport(null);
         if (line.kind === 'sign-in') setRemoteGate('sign-in');
@@ -324,6 +325,22 @@ export function AskSheet({
           <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>
             {statusLine}
           </Text>
+        ) : null}
+        {gate === 'unavailable' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setStatusAttempt((attempt) => attempt + 1)}
+            style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
+            <Text
+              style={{
+                fontSize: 17,
+                color: colors.ink,
+                textDecorationLine: 'underline',
+                textDecorationColor: colors.ink3,
+              }}>
+              Try again
+            </Text>
+          </Pressable>
         ) : null}
         {ready ? (
           <View style={{ marginTop: 6 }}>

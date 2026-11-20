@@ -20,10 +20,13 @@ export const QUICK_PROMPTS: { type: QuickPromptType; label: string }[] = [
 
 export type SheetLine = { kind: 'sign-in' } | { kind: 'invitation' } | { kind: 'not-configured' } | { kind: 'message'; text: string };
 
-export function failureLine(failure: { status: number; code: string | null; message: string | null }): SheetLine {
-  if (failure.status === 401 || failure.code === 'unauthorized') return { kind: 'sign-in' };
-  if (failure.status === 403 || failure.code === 'not_enabled') return { kind: 'invitation' };
-  if (failure.status === 503 || failure.code === 'not_configured') return { kind: 'not-configured' };
+export function failureLine(
+  failure: { status: number; code: string | null; message: string | null },
+  signedIn: boolean,
+): SheetLine {
+  if (failure.status === 503 && failure.code === 'not_configured') return { kind: 'not-configured' };
+  if (failure.status === 403 && failure.code === 'not_enabled') return { kind: 'invitation' };
+  if ((failure.status === 401 || failure.code === 'unauthorized') && !signedIn) return { kind: 'sign-in' };
   if (failure.message) return { kind: 'message', text: failure.message };
   return { kind: 'message', text: UPSTREAM_LINE };
 }

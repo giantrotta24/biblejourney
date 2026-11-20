@@ -1,6 +1,8 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { useRuntime } from '@/sync/react';
+
 import { listenForAuthRefresh } from './refresh';
 import { accountsConfigured, supabase } from './supabase';
 
@@ -26,33 +28,52 @@ function initialState(): SessionSnapshot {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionSnapshot>(initialState);
+  const runtime = useRuntime();
 
   useEffect(() => {
     if (!accountsConfigured() || !supabase) return;
     let active = true;
     let seen = false;
     const stopRefresh = listenForAuthRefresh(supabase);
+    const follow = (event: string, session: Session | null) => {
+      runtime?.arrival.onAuth(event);
+      const userId = session?.user.id ?? null;
+      if (!runtime) return;
+      if (!userId) {
+        void runtime.sync.stop();
+        return;
+      }
+      const remote = runtime.resolveRemote(userId);
+      if (remote) void runtime.sync.start(userId, remote);
+    };
     void supabase.auth.getSession().then(
       ({ data, error }) => {
         if (!active || seen) return;
-        setState(error ? SIGNED_OUT : toState(data.session));
+        const session = error ? null : data.session;
+        setState(session ? toState(session) : SIGNED_OUT);
+        const userId = session?.user.id ?? null;
+        if (!userId || !runtime) return;
+        const remote = runtime.resolveRemote(userId);
+        if (remote) void runtime.sync.start(userId, remote);
       },
       () => {
         if (!active || seen) return;
         setState(SIGNED_OUT);
       },
     );
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
       seen = true;
       setState(toState(session));
+      follow(event, session);
     });
     return () => {
       active = false;
       data.subscription.unsubscribe();
       stopRefresh();
+      void runtime?.sync.stop();
     };
-  }, []);
+  }, [runtime]);
 
   return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>;
 }

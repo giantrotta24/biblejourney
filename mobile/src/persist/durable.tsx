@@ -12,6 +12,9 @@ export type DurableValue<T> = {
   failed: boolean;
   read: () => T;
   isReady: () => boolean;
+  isUnavailable: () => boolean;
+  /** True after a payload that could not be parsed, until a later save replaces it. */
+  isUnreadable: () => boolean;
   commit: (next: T) => void;
   beginRetry: () => void;
 };
@@ -39,6 +42,8 @@ export function useDurableValue<T>({
   const pendingRef = useRef<T | null>(null);
   const writingRef = useRef(false);
   const readyRef = useRef(false);
+  const unavailableRef = useRef(false);
+  const unreadableRef = useRef(false);
   const storageRef = useRef(storage);
   const saveRef = useRef(save);
   const emptyRef = useRef(empty);
@@ -61,6 +66,7 @@ export function useDurableValue<T>({
         try {
           await saveRef.current(snapshot, storageRef.current, backup);
           if (backupRef.current === backup) backupRef.current = null;
+          unreadableRef.current = false;
           failedRef.current = false;
           setFailed(false);
         } catch {
@@ -78,6 +84,8 @@ export function useDurableValue<T>({
 
   const beginRetry = useCallback(() => {
     readyRef.current = false;
+    unavailableRef.current = false;
+    unreadableRef.current = false;
     valueRef.current = emptyRef.current();
     pendingRef.current = null;
     failedRef.current = false;
@@ -96,13 +104,17 @@ export function useDurableValue<T>({
         backupRef.current = null;
         pendingRef.current = null;
         valueRef.current = emptyRef.current();
+        unreadableRef.current = false;
         readyRef.current = false;
+        unavailableRef.current = true;
         setValue(null);
         setUnavailable(true);
         return;
       }
       const loaded = result.status === 'ready' ? result.value : emptyRef.current();
       backupRef.current = result.status === 'unreadable' ? result.raw : null;
+      unreadableRef.current = result.status === 'unreadable';
+      unavailableRef.current = false;
       valueRef.current = loaded;
       readyRef.current = true;
       setUnavailable(false);
@@ -122,6 +134,8 @@ export function useDurableValue<T>({
 
   const read = useCallback(() => valueRef.current, []);
   const isReady = useCallback(() => readyRef.current, []);
+  const isUnavailable = useCallback(() => unavailableRef.current, []);
+  const isUnreadable = useCallback(() => unreadableRef.current, []);
   const commit = useCallback(
     (next: T) => {
       if (!readyRef.current) return;
@@ -134,5 +148,16 @@ export function useDurableValue<T>({
     [flush],
   );
 
-  return { value, unavailable, saving, failed, read, isReady, commit, beginRetry };
+  return {
+    value,
+    unavailable,
+    saving,
+    failed,
+    read,
+    isReady,
+    isUnavailable,
+    isUnreadable,
+    commit,
+    beginRetry,
+  };
 }

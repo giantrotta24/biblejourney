@@ -3,21 +3,32 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SIGN_IN_UNAVAILABLE } from '@/account/errors';
 import { signOut, useSession } from '@/account/session';
+import { accountLine } from '@/sync/copy';
+import { useSyncStatus } from '@/sync/react';
+import type { SyncStatus } from '@/sync/engine';
 import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 
 import { BackButton, PrimaryButton } from './auth-chrome';
 import { InkBar } from './ink-bar';
 
-const KEPT = 'Your progress and notes are kept on this phone.';
-const NEXT_UPDATE = 'Your progress and notes are kept on this phone. Syncing with your account arrives in the next update.';
 const NEW_HERE = 'Sign in to keep it in step on your other devices. New here? The same steps create your account.';
 const SIGN_OUT_NOTE = 'Signing out keeps your progress and notes on this phone.';
 
-export function AccountBody({ onBack, onSignIn }: { onBack: () => void; onSignIn: () => void }) {
+export function AccountBody({
+  onBack,
+  onSignIn,
+  syncStatus,
+}: {
+  onBack: () => void;
+  onSignIn: () => void;
+  syncStatus?: SyncStatus;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const session = useSession();
+  const liveStatus = useSyncStatus();
+  const status = syncStatus ?? liveStatus;
   const signedIn = session.status === 'signed-in';
   const title = signedIn ? (session.email ?? 'Signed in') : 'Not signed in';
 
@@ -45,7 +56,7 @@ export function AccountBody({ onBack, onSignIn }: { onBack: () => void; onSignIn
             }}>
             {title}
           </Text>
-          <InkBar marginTop={8}>{signedIn ? NEXT_UPDATE : KEPT}</InkBar>
+          <InkBar marginTop={8}>{accountLine(signedIn, status)}</InkBar>
           {signedIn ? (
             <>
               <Text

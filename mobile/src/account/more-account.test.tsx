@@ -3,7 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
+import { SessionProvider } from '@/account/session';
 import { ReadingProviders } from '@/app/providers';
+import { AccountBody } from '@/components/account-body';
+import { OFFLINE_LINE, SYNCED_LINE, SYNCING_LINE } from '@/sync/copy';
 import AccountRoute from '@/app/(tabs)/more/account';
 import MoreScreen from '@/app/(tabs)/more/index';
 import { NOTES_KEY } from '@/notes/store';
@@ -111,9 +114,7 @@ describe('More and Account', () => {
       </ReadingProviders>,
     );
     expect(await screen.findByText('reader@example.com')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Your progress and notes are kept on this phone. Syncing with your account arrives in the next update.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText(OFFLINE_LINE)).toBeOnTheScreen();
     expect(screen.getByText('Signing out keeps your progress and notes on this phone.')).toBeOnTheScreen();
     const progress = await AsyncStorage.getItem(PROGRESS_KEY);
     const notes = await AsyncStorage.getItem(NOTES_KEY);
@@ -123,5 +124,23 @@ describe('More and Account', () => {
     expect(await AsyncStorage.getItem(NOTES_KEY)).toBe(notes);
     expect(notes).toContain('Kept');
     expect(await screen.findByText('Not signed in')).toBeOnTheScreen();
+  });
+
+  it('shows syncing, synced, and offline while signed in', async () => {
+    fakeAuth.session = { access_token: 'token', user: { id: 'user-1', email: 'reader@example.com' } };
+    const lines = [
+      ['syncing', SYNCING_LINE],
+      ['synced', SYNCED_LINE],
+      ['offline', OFFLINE_LINE],
+    ] as const;
+    for (const [status, line] of lines) {
+      const view = await render(
+        <SessionProvider>
+          <AccountBody onBack={() => {}} onSignIn={() => {}} syncStatus={status} />
+        </SessionProvider>,
+      );
+      expect(await screen.findByText(line)).toBeOnTheScreen();
+      await view.unmount();
+    }
   });
 });

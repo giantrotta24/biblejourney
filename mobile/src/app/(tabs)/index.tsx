@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TodayView } from '@/components/today-view';
 import { useNotes } from '@/notes/context';
 import { useProgress } from '@/progress/context';
+import { SIGNED_IN_NOTE } from '@/sync/copy';
+import { useSignedInNote } from '@/sync/react';
 import { useColors } from '@/theme/colors';
 import { currentDay, DAY_COUNT } from '../../../../supabase/functions/_shared/content/plan';
 
@@ -21,6 +23,7 @@ export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const { days, mark } = useProgress();
   const { rows, status: notesStatus } = useNotes();
+  const signedIn = useSignedInNote();
   const { day } = useLocalSearchParams<{ day?: string }>();
   const dayIndex = dayParam(day);
 
@@ -40,6 +43,8 @@ export default function TodayScreen() {
         onBackToToday={() => router.setParams({ day: '' })}
         onOpenPlan={() => router.navigate('/plan')}
         onOpenNote={(index) => router.push({ pathname: '/note/[day]', params: { day: String(index) } })}
+        signedInNote={signedIn.visible ? SIGNED_IN_NOTE : null}
+        onPageTurn={signedIn.dismiss}
         onShowDay={(index) => {
           const today = currentDay(days)?.index ?? null;
           if (index == null || index === today) router.setParams({ day: '' });

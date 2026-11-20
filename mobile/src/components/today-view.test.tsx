@@ -208,6 +208,20 @@ describe('Today', () => {
     swipe(80);
     expect(onShowDay).toHaveBeenCalledWith(DAY_COUNT - 1);
   });
+
+  it('shows the signed-in line until the page turns', async () => {
+    const onPageTurn = jest.fn();
+    await renderToday({
+      done: new Set(),
+      signedInNote: 'Signed in. Your progress came with you.',
+      onPageTurn,
+    });
+    expect(screen.getByText('Signed in. Your progress came with you.')).toBeOnTheScreen();
+    swipe(20);
+    expect(onPageTurn).not.toHaveBeenCalled();
+    swipe(-80);
+    expect(onPageTurn).toHaveBeenCalledTimes(1);
+  });
 });
 
 function textOrder(node: ReturnType<typeof screen.getByText> | null): string[] {

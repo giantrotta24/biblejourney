@@ -42,6 +42,8 @@ export type TodayViewProps = {
   onOpenPlan: () => void;
   onOpenNote?: (index: number) => void;
   onShowDay: (index: number | null) => void;
+  signedInNote?: string | null;
+  onPageTurn?: () => void;
 };
 
 export function TodayView({
@@ -53,6 +55,8 @@ export function TodayView({
   onOpenPlan,
   onOpenNote,
   onShowDay,
+  signedInNote = null,
+  onPageTurn,
 }: TodayViewProps) {
   const colors = useColors();
   const reducedMotion = useReduceMotion();
@@ -90,19 +94,26 @@ export function TodayView({
     (delta: 1 | -1) => {
       if (leavingIndex != null) return;
       if (finished) {
-        if (delta < 0) onShowDay(DAY_COUNT - 1);
+        if (delta < 0) {
+          onShowDay(DAY_COUNT - 1);
+          onPageTurn?.();
+        }
         return;
       }
       if (!selected) return;
       const next = selected.index + delta;
       if (next < 0) return;
       if (next >= DAY_COUNT) {
-        if (current == null) onShowDay(null);
+        if (current == null) {
+          onShowDay(null);
+          onPageTurn?.();
+        }
         return;
       }
       onShowDay(next);
+      onPageTurn?.();
     },
-    [current, finished, leavingIndex, onShowDay, selected],
+    [current, finished, leavingIndex, onPageTurn, onShowDay, selected],
   );
 
   const turnRef = useRef(turn);
@@ -127,6 +138,7 @@ export function TodayView({
       if (leavingIndex != null) return;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setLeavingIndex(day.index);
+      onPageTurn?.();
     }
     onMark(day.index);
   }
@@ -166,6 +178,7 @@ export function TodayView({
                   day={selected}
                   done={done}
                   note={noteFor(selected.index)}
+                  signedInNote={signedInNote}
                   colors={colors}
                   onMark={() => pressMark(selected)}
                   onBackToToday={onBackToToday}
@@ -300,6 +313,7 @@ function DayPage({
   day,
   done,
   note,
+  signedInNote = null,
   colors,
   onMark,
   onBackToToday,
@@ -309,6 +323,7 @@ function DayPage({
   day: PlanDay;
   done: ReadonlySet<number>;
   note: string | null;
+  signedInNote?: string | null;
   colors: Palette;
   onMark: () => void;
   onBackToToday: () => void;
@@ -367,6 +382,15 @@ function DayPage({
           </View>
         </View>
       </View>
+      {signedInNote && !frozen ? (
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'baseline', marginTop: 10, marginBottom: -6 }}>
+          <View
+            style={{ width: 2, height: 13, backgroundColor: colors.ink, transform: [{ translateY: 2 }] }}
+            accessibilityElementsHidden
+          />
+          <Text style={{ flex: 1, fontSize: 14, lineHeight: 14 * 1.4, color: colors.ink }}>{signedInNote}</Text>
+        </View>
+      ) : null}
 
       <Text
         maxFontSizeMultiplier={1.6}

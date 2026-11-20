@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Alert, StyleSheet } from 'react-native';
 
 import { SessionProvider } from '@/account/session';
 import SignInRoute from '@/app/sign-in/index';
@@ -47,10 +47,11 @@ describe('email sign in', () => {
     const error = screen.getByText('Enter a valid email address.');
     const field = screen.getByLabelText('Email address');
     const fieldBox = field.parent;
+    if (!fieldBox?.parent || !error.parent) throw new Error('email error is not under the field');
     expect(error).toBeOnTheScreen();
     expect(StyleSheet.flatten(field.props.style).borderColor).toBe(light.danger);
-    expect(fieldBox?.parent).toBe(error.parent);
-    expect(error.parent?.children.indexOf(error)).toBeGreaterThan(error.parent?.children.indexOf(fieldBox) ?? -1);
+    expect(error.parent).toBe(fieldBox.parent);
+    expect(error.parent.children.indexOf(error)).toBeGreaterThan(error.parent.children.indexOf(fieldBox));
     expect(fakeAuth.calls.filter((call) => call.method === 'signInWithOtp')).toEqual([]);
 
     await fireEvent.changeText(field, 'r');
@@ -80,6 +81,17 @@ describe('email sign in', () => {
       options: { shouldCreateUser: true },
     });
     expect(screen.queryByText('Enter a valid email address.')).toBeNull();
+  });
+
+  it('announces an email error to VoiceOver', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    try {
+      await renderSignIn();
+      await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
+      expect(announce).toHaveBeenCalledWith('Enter a valid email address.');
+    } finally {
+      announce.mockRestore();
+    }
   });
 
   it('shows a plain rate-limit line and not the server message', async () => {
@@ -141,6 +153,7 @@ describe('email sign in', () => {
 
   it('waits 30 seconds before another code can be sent', async () => {
     jest.useFakeTimers();
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     try {
       await render(
         <CodeStep email="reader@example.com" onCancel={() => {}} onBack={() => {}} onSignedIn={() => {}} />,
@@ -156,6 +169,7 @@ describe('email sign in', () => {
       expect(screen.getByRole('button', { name: 'Send a new code' })).not.toBeDisabled();
       await fireEvent.press(screen.getByRole('button', { name: 'Send a new code' }));
       expect(screen.getByText('Sent')).toBeOnTheScreen();
+      expect(announce).toHaveBeenCalledWith('Sent');
       expect(screen.getByRole('button', { name: 'Send a new code' })).toBeDisabled();
       expect(fakeAuth.calls.filter((call) => call.method === 'signInWithOtp')).toHaveLength(1);
 
@@ -164,6 +178,7 @@ describe('email sign in', () => {
       });
       expect(screen.getByRole('button', { name: 'Send a new code' })).not.toBeDisabled();
     } finally {
+      announce.mockRestore();
       jest.useRealTimers();
     }
   });

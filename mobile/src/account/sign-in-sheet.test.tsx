@@ -3,7 +3,8 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 
-import { fakeAuth, resetFakeAuth } from './fake-supabase';
+import './expect-matchers';
+import { resetFakeAuth } from './fake-supabase';
 
 /* eslint-disable @typescript-eslint/no-require-imports -- the mock factory cannot close over an import */
 jest.mock('@/account/supabase', () => require('@/account/fake-supabase'));

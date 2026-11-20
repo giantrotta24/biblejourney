@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useColors } from '@/theme/colors';
@@ -110,6 +110,9 @@ export function Lead({ children }: { children: string }) {
 
 export function ErrorLine({ children, quiet = false }: { children: string; quiet?: boolean }) {
   const colors = useColors();
+  useEffect(() => {
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(children);
+  }, [children]);
   return (
     <Text
       accessibilityLiveRegion="polite"

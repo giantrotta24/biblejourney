@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { AccessibilityInfo, Platform, Text, View } from 'react-native';
 
 import { authErrorLine, isWrongCode, WRONG_CODE } from '@/account/errors';
 import { supabase } from '@/account/supabase';
@@ -23,12 +23,12 @@ export function CodeStep({
 }) {
   const colors = useColors();
   const [code, setCode] = useState('');
+  const [wrong, setWrong] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(true);
   const [sentAck, setSentAck] = useState(false);
   const [lock, setLock] = useState(0);
-  const wrong = problem === 'wrong';
 
   useEffect(() => {
     const id = setTimeout(() => setWaiting(false), RESEND_WAIT_MS);
@@ -36,21 +36,25 @@ export function CodeStep({
   }, [lock]);
 
   async function submit() {
+    setProblem(null);
     if (!/^\d{6,10}$/.test(code)) {
-      setProblem('wrong');
+      setWrong(true);
       return;
     }
     if (!supabase || busy) return;
     setBusy(true);
+    setWrong(false);
     try {
       const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
       if (error) {
-        setProblem(isWrongCode(error) ? 'wrong' : authErrorLine(error));
+        if (isWrongCode(error)) setWrong(true);
+        else setProblem(authErrorLine(error));
         return;
       }
       onSignedIn();
     } catch (error) {
-      setProblem(isWrongCode(error) ? 'wrong' : authErrorLine(error));
+      if (isWrongCode(error)) setWrong(true);
+      else setProblem(authErrorLine(error));
     } finally {
       setBusy(false);
     }
@@ -60,6 +64,7 @@ export function CodeStep({
     if (waiting || busy || !supabase) return;
     setBusy(true);
     setProblem(null);
+    setWrong(false);
     try {
       const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) {
@@ -67,6 +72,7 @@ export function CodeStep({
         return;
       }
       setSentAck(true);
+      if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility('Sent');
       setWaiting(true);
       setLock((value) => value + 1);
     } catch (error) {
@@ -104,6 +110,7 @@ export function CodeStep({
         onChangeText={(next) => {
           setCode(next.replace(/\D/g, '').slice(0, 10));
           setProblem(null);
+          setWrong(false);
         }}
         keyboardType="number-pad"
         autoComplete="one-time-code"
@@ -115,7 +122,7 @@ export function CodeStep({
         returnKeyType="go"
         onSubmitEditing={() => void submit()}
       />
-      {problem ? <ErrorLine>{wrong ? WRONG_CODE : problem}</ErrorLine> : null}
+      {wrong ? <ErrorLine>{WRONG_CODE}</ErrorLine> : problem ? <ErrorLine>{problem}</ErrorLine> : null}
       <PrimaryButton label="Sign in" disabled={busy} onPress={() => void submit()} />
       {sentAck ? (
         <Text accessibilityLiveRegion="polite" style={{ textAlign: 'center', color: colors.ink2, fontSize: 14, marginTop: 8 }}>

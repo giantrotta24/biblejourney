@@ -1,10 +1,10 @@
 import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
 import { useRef, useState } from 'react';
-import { Dimensions, Platform, Pressable, Text, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, Text, useColorScheme, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { signInWithApple } from '@/account/apple';
-import { authErrorLine, SIGN_IN_UNAVAILABLE } from '@/account/errors';
+import { authErrorLine, SIGN_IN_UNAVAILABLE, type AuthResult } from '@/account/errors';
 import { signInWithGoogle } from '@/account/google';
 import { useSession } from '@/account/session';
 import { supabase } from '@/account/supabase';
@@ -56,25 +56,12 @@ export function SignInForm({
   const [busy, setBusy] = useState(false);
   const height = android ? 48 : 50;
 
-  async function apple() {
+  async function run(fn: () => Promise<AuthResult>) {
     if (busy) return;
     setBusy(true);
     setSsoLine(null);
     try {
-      const result = await signInWithApple();
-      if (result.ok) onSignedIn();
-      else if (result.line) setSsoLine(result.line);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function google() {
-    if (busy) return;
-    setBusy(true);
-    setSsoLine(null);
-    try {
-      const result = await signInWithGoogle();
+      const result = await fn();
       if (result.ok) onSignedIn();
       else if (result.line) setSsoLine(result.line);
     } finally {
@@ -122,15 +109,15 @@ export function SignInForm({
               buttonType={AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={scheme === 'dark' ? AppleAuthenticationButtonStyle.WHITE : AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={10}
-              onPress={() => void apple()}
-              style={{ width: Dimensions.get('window').width - 44, height: 50, marginBottom: 10 }}
+              onPress={() => void run(signInWithApple)}
+              style={{ alignSelf: 'stretch', height: 50, marginBottom: 10 }}
             />
           ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Continue with Google"
             disabled={busy}
-            onPress={() => void google()}
+            onPress={() => void run(signInWithGoogle)}
             style={({ pressed }) => ({
               minHeight: height,
               borderRadius: 10,

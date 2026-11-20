@@ -130,7 +130,8 @@ export function AskSheet({
   const [reportError, setReportError] = useState<string | null>(null);
   const askAbort = useRef<AbortController | null>(null);
   const reportAbort = useRef<AbortController | null>(null);
-  const sending = useRef(false);
+  const reportBusyRef = useRef(false);
+  const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
 
   useEffect(() => {
@@ -175,8 +176,11 @@ export function AskSheet({
 
   async function ask(payload: AskPayload) {
     const url = askUrl();
-    if (!url || streaming || sending.current) return;
+    if (!url || streaming) return;
     askAbort.current?.abort();
+    reportAbort.current?.abort();
+    reportBusyRef.current = false;
+    setReportBusy(false);
     const controller = new AbortController();
     askAbort.current = controller;
     setStreaming(true);
@@ -192,7 +196,15 @@ export function AskSheet({
     setReportThanks(false);
     setReportError(null);
     try {
-      const token = await accessToken();
+      let token: string | null;
+      try {
+        token = await accessToken();
+      } catch {
+        if (!live.current || controller.signal.aborted) return;
+        setAnswer('');
+        setNotice(UPSTREAM_LINE);
+        return;
+      }
       if (!live.current || controller.signal.aborted) return;
       const outcome = await requestAnswer({
         transport,
@@ -238,8 +250,9 @@ export function AskSheet({
 
   async function sendReport() {
     const url = reportUrl();
-    if (!report || !url || reportThanks || sending.current) return;
-    sending.current = true;
+    if (!report || !url || reportThanks || reportBusyRef.current) return;
+    reportBusyRef.current = true;
+    setReportBusy(true);
     setReportError(null);
     const controller = new AbortController();
     reportAbort.current = controller;
@@ -255,8 +268,15 @@ export function AskSheet({
           }
         : { dayIndex, kind: report.kind, answer: report.answer, ...(note ? { note } : {}) };
     try {
-      const token = await accessToken();
-      if (!live.current) return;
+      let token: string | null;
+      try {
+        token = await accessToken();
+      } catch {
+        if (!live.current || controller.signal.aborted) return;
+        setReportError(UPSTREAM_LINE);
+        return;
+      }
+      if (!live.current || controller.signal.aborted) return;
       const outcome = await submitReport({
         transport,
         url,
@@ -265,7 +285,7 @@ export function AskSheet({
         payload,
         signal: controller.signal,
       });
-      if (!live.current || outcome.kind === 'aborted') return;
+      if (!live.current || controller.signal.aborted || outcome.kind === 'aborted') return;
       if (outcome.kind === 'ok') {
         setReportThanks(true);
         setReportOpen(false);
@@ -274,8 +294,18 @@ export function AskSheet({
       setReportError(reportLine(outcome));
     } finally {
       if (reportAbort.current === controller) reportAbort.current = null;
-      sending.current = false;
+      reportBusyRef.current = false;
+      if (live.current) setReportBusy(false);
     }
+  }
+
+  function cancelReport() {
+    reportAbort.current?.abort();
+    reportBusyRef.current = false;
+    setReportBusy(false);
+    setReportOpen(false);
+    setReportNote('');
+    setReportError(null);
   }
 
   const android = Platform.OS === 'android';
@@ -442,20 +472,18 @@ export function AskSheet({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Send the report"
+                  accessibilityState={{ disabled: reportBusy }}
+                  disabled={reportBusy}
                   onPress={() => {
                     void sendReport();
                   }}
                   style={{ minHeight: hitSize(), justifyContent: 'center', paddingRight: 12 }}>
-                  <Text style={{ fontSize: 17, color: colors.ink }}>Send</Text>
+                  <Text style={{ fontSize: 17, color: reportBusy ? colors.ink3 : colors.ink }}>Send</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
-                  onPress={() => {
-                    setReportOpen(false);
-                    setReportNote('');
-                    setReportError(null);
-                  }}
+                  onPress={cancelReport}
                   style={{ minHeight: hitSize(), justifyContent: 'center' }}>
                   <Text style={{ fontSize: 17, color: colors.ink2 }}>Cancel</Text>
                 </Pressable>

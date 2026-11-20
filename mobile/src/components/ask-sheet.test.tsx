@@ -1,7 +1,8 @@
 import { beforeEach, afterEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo, Linking, Platform, StyleSheet } from 'react-native';
 
+import * as accountDelete from '@/account/delete';
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { SessionProvider } from '@/account/session';
 import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
@@ -443,6 +444,66 @@ describe('AskSheet', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
     await screen.findByText('Because she asked.');
     expect(screen.getByLabelText('Ask about this reading').props.value).toBe('');
+  });
+
+  it('shows the upstream line when the token lookup fails', async () => {
+    const token = jest.spyOn(accountDelete, 'accessToken');
+    try {
+      await renderSheet(async (_url, init) => {
+        if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+        return bytes([`Noted.${'\u001E'}complete`]);
+      });
+      await screen.findByRole('button', { name: 'Historical setting' });
+      token.mockRejectedValueOnce(new Error('token'));
+      await fireEvent.press(screen.getByRole('button', { name: 'Historical setting' }));
+      expect(await screen.findByText(UPSTREAM)).toBeOnTheScreen();
+    } finally {
+      token.mockRestore();
+    }
+  });
+
+  it('shows the upstream line when a report’s token lookup fails', async () => {
+    const token = jest.spyOn(accountDelete, 'accessToken');
+    try {
+      await renderSheet(async (url, init) => {
+        if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+        if (url.endsWith('/report')) return json(200, { ok: true });
+        return bytes([`Noted.${'\u001E'}complete`]);
+      });
+      await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+      await fireEvent.press(await screen.findByRole('button', { name: 'Report this answer' }));
+      token.mockRejectedValueOnce(new Error('token'));
+      await fireEvent.press(screen.getByText('Send'));
+      expect(await screen.findByText(UPSTREAM)).toBeOnTheScreen();
+      expect(screen.queryByText('Thanks. The answer was reported.')).toBeNull();
+    } finally {
+      token.mockRestore();
+    }
+  });
+
+  it('cancels a report in flight without thanking her', async () => {
+    let release: (reply: Reply) => void = () => {};
+    await renderSheet(async (url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      if (url.endsWith('/report')) {
+        return new Promise<Reply>((resolve) => {
+          release = resolve;
+        });
+      }
+      return bytes([`Moses speaks.${'\u001E'}complete`]);
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report this answer' }));
+    await fireEvent.press(screen.getByText('Send'));
+    const send = screen.getByRole('button', { name: 'Send the report' });
+    expect(send.props.accessibilityState).toEqual({ disabled: true });
+    expect(StyleSheet.flatten(screen.getByText('Send').props.style).color).toBe('#8a8a83');
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByLabelText('Add a note, if you want')).toBeNull();
+    await act(async () => {
+      release(json(200, { ok: true }));
+    });
+    expect(screen.queryByText('Thanks. The answer was reported.')).toBeNull();
   });
 
   it('uses Done on iOS and a close control on Android', async () => {

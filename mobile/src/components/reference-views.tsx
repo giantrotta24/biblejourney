@@ -7,6 +7,7 @@ import { fonts } from '@/theme/fonts';
 import { currentDay, eras, peoples, prophets } from '../../../supabase/functions/_shared/content/plan';
 
 import { DottedCut } from './marks';
+import { RowChevron } from './rows';
 import { StackPage } from './stack-page';
 
 function PageTitle({ children }: { children: string }) {
@@ -70,18 +71,22 @@ export function TimelineView({ done }: { done: ReadonlySet<number> }) {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: here }}
-              accessibilityLabel={`${era.title}, ${weekRangeLabel(era.weeks)}`}
+              accessibilityHint={`Opens week ${era.weeks[0]} in Plan`}
               onPress={() => router.navigate({ pathname: '/plan', params: { week: String(era.weeks[0]) } })}
               style={{ paddingVertical: 8 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.serifSemibold,
-                  fontSize: 20,
-                  lineHeight: 20 * 1.2,
-                  color: here ? colors.blueInk : colors.ink,
-                }}>
-                {era.title}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontFamily: fonts.serifSemibold,
+                    fontSize: 20,
+                    lineHeight: 20 * 1.2,
+                    color: here ? colors.blueInk : colors.ink,
+                  }}>
+                  {era.title}
+                </Text>
+                <RowChevron />
+              </View>
               <Text style={{ fontSize: 14, lineHeight: 18, color: colors.ink2, marginTop: 4 }}>{era.when}</Text>
               <Text style={{ fontSize: 14, lineHeight: 18, color: colors.ink2, marginTop: 2 }}>
                 {era.empire} · {weekRangeLabel(era.weeks)}

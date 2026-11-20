@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AppState, Alert, Keyboard } from 'react-native';
+import { AppState, Alert, Keyboard, PixelRatio, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { NotesProvider } from '@/notes/context';
 import { NOTES_KEY, type KeyValueStore } from '@/notes/store';
@@ -21,6 +21,19 @@ function memory(rows: { day_index: number; body: string; updated_at: string }[] 
       raw.set(key, value);
     },
   };
+}
+
+type Instance = ReturnType<typeof screen.getByText>;
+
+function findNode(node: Instance | null, match: (node: Instance) => boolean): Instance | null {
+  if (!node) return null;
+  if (match(node)) return node;
+  for (const child of node.children) {
+    if (typeof child === 'string') continue;
+    const found = findNode(child, match);
+    if (found) return found;
+  }
+  return null;
 }
 
 function storedBody(storage: { raw: Map<string, string> }): string | null {
@@ -122,6 +135,99 @@ describe('NoteSheet', () => {
       for (const listener of keys.get('keyboardDidHide') ?? []) listener();
     });
     expect(screen.getByText('Delete note…')).toBeOnTheScreen();
+  });
+
+  it('says Saving… until the note is stored, and Not saved when the write fails', async () => {
+    const storage = memory();
+    await renderSheet(storage);
+    const input = await screen.findByLabelText('Note');
+    expect(screen.getByText('Saved').props.accessibilityLiveRegion).toBe('polite');
+
+    await fireEvent.changeText(input, 'Leave the edges');
+    expect(screen.getByText('Saving…')).toBeOnTheScreen();
+
+    await act(async () => {
+      jest.advanceTimersByTime(NOTE_SAVE_DELAY_MS);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Saved')).toBeOnTheScreen();
+    });
+
+    storage.setItem = async () => {
+      throw new Error('disk');
+    };
+    await fireEvent.changeText(screen.getByLabelText('Note'), 'Leave the edges out');
+    await act(async () => {
+      jest.advanceTimersByTime(NOTE_SAVE_DELAY_MS);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Not saved')).toBeOnTheScreen();
+    });
+  });
+
+  it('draws rules at the text size for scale 1 and 2', async () => {
+    const scale = jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1);
+    try {
+      const first = await renderSheet(memory());
+      const small = await screen.findByLabelText('Note');
+      expect(small.props.allowFontScaling).toBe(false);
+      expect(StyleSheet.flatten(small.props.style).fontSize).toBe(18);
+      expect(StyleSheet.flatten(small.props.style).lineHeight).toBe(32);
+      await first.unmount();
+
+      scale.mockReturnValue(2);
+      await renderSheet(memory());
+      const large = await screen.findByLabelText('Note');
+      expect(StyleSheet.flatten(large.props.style).fontSize).toBe(36);
+      expect(StyleSheet.flatten(large.props.style).lineHeight).toBe(64);
+      expect(StyleSheet.flatten(large.props.style).minHeight).toBe(64 * 8);
+    } finally {
+      scale.mockRestore();
+    }
+  });
+
+  it('keeps the header clear of the note and scrolls the caret line into view', async () => {
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo').mockImplementation(() => {});
+    try {
+      const storage = memory([{ day_index: 0, body: 'Keep this', updated_at: '2026-11-20T11:00:00.000Z' }]);
+      await renderSheet(storage);
+      expect(await screen.findByText('Delete note…')).toBeOnTheScreen();
+      const header = findNode(screen.root, (node) => node.props.collapsable === false);
+      expect(header).toBeTruthy();
+      expect(findNode(header ?? screen.root, (node) => StyleSheet.flatten(node.props.style)?.height === 8)).toBeTruthy();
+      const scroll = findNode(screen.root, (node) => node.props.automaticallyAdjustKeyboardInsets === true);
+      expect(scroll?.props.keyboardDismissMode).toBe('interactive');
+      let parent = screen.getByText('Delete note…').parent;
+      let insideScroll = false;
+      while (parent) {
+        if (parent.props.automaticallyAdjustKeyboardInsets) insideScroll = true;
+        parent = parent.parent;
+      }
+      expect(insideScroll).toBe(true);
+
+      const text = 'one\ntwo\nthree';
+      const input = screen.getByLabelText('Note');
+      await fireEvent.changeText(input, text);
+      await fireEvent(input, 'selectionChange', {
+        nativeEvent: { selection: { start: text.length, end: text.length } },
+      });
+      const lineHeight = StyleSheet.flatten(input.props.style).lineHeight as number;
+      expect(scrollTo).toHaveBeenCalledWith({ y: 2 * lineHeight, animated: false });
+    } finally {
+      scrollTo.mockRestore();
+    }
+  });
+
+  it('lifts the sheet with the keyboard on Android', async () => {
+    const original = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { get: () => 'android' });
+    try {
+      await renderSheet(memory());
+      expect(await screen.findByLabelText('Close')).toBeOnTheScreen();
+      expect(screen.getByTestId('note-keyboard')).toBeOnTheScreen();
+    } finally {
+      Object.defineProperty(Platform, 'OS', { get: () => original });
+    }
   });
 
   it('flushes a pending note when the app leaves the foreground', async () => {

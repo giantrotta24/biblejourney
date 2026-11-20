@@ -133,8 +133,8 @@ export function NoteSheet({ dayIndex, onClose }: { dayIndex: number; onClose: ()
   const saveLabel = text !== baseline || saving ? 'Saving…' : failed ? 'Not saved' : 'Saved';
 
   const sheet = (
-    <View style={{ flex: 1, backgroundColor: colors.paper }}>
-      <View collapsable={false}>
+    <>
+      <View collapsable={false} style={{ backgroundColor: colors.paper }}>
         <Perforation color={colors.under} />
         <View style={{ paddingHorizontal: 22 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
@@ -246,7 +246,7 @@ export function NoteSheet({ dayIndex, onClose }: { dayIndex: number; onClose: ()
           </Pressable>
         ) : null}
       </ScrollView>
-    </View>
+    </>
   );
 
   if (android) {

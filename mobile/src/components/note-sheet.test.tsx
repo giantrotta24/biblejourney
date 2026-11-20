@@ -195,7 +195,7 @@ describe('NoteSheet', () => {
       const header = findNode(screen.root, (node) => node.props.collapsable === false);
       expect(header).toBeTruthy();
       expect(findNode(header ?? screen.root, (node) => StyleSheet.flatten(node.props.style)?.height === 8)).toBeTruthy();
-      const scroll = findNode(screen.root, (node) => node.props.automaticallyAdjustKeyboardInsets === true);
+      const scroll = findNode(screen.container, (node) => node.props.automaticallyAdjustKeyboardInsets === true);
       expect(scroll?.props.keyboardDismissMode).toBe('interactive');
       let parent = screen.getByText('Delete note…').parent;
       let insideScroll = false;

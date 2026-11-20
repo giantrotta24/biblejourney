@@ -33,6 +33,7 @@ import {
 } from '../assistant/client';
 import {
   INVITATION_LINE,
+  LOADING_LINE,
   NOT_CONFIGURED_LINE,
   QUICK_PROMPTS,
   REPORT_THANKS,
@@ -145,7 +146,9 @@ export function AskSheet({
     askAbort.current = controller;
     setStreaming(true);
     setAnswer('');
-    setAsked('question' in payload ? payload.question : null);
+    setQuestion('');
+    const label = 'question' in payload ? payload.question : QUICK_PROMPTS.find((prompt) => prompt.type === payload.type)?.label;
+    setAsked(label ?? null);
     setNotice(null);
     setReport(null);
     setReportOpen(false);
@@ -170,7 +173,6 @@ export function AskSheet({
       if (outcome.kind === 'failure') {
         const line = failureLine(outcome);
         setAnswer('');
-        setAsked(null);
         setReport(null);
         if (line.kind === 'sign-in') setRemoteGate('sign-in');
         else if (line.kind === 'invitation') setRemoteGate('invitation');
@@ -180,7 +182,6 @@ export function AskSheet({
       }
       const next = answerNotice(outcome);
       setAnswer(next.keep ? outcome.text : '');
-      if (!next.keep) setAsked(null);
       setNotice(next.text || null);
       setReport(next.report ? reportTarget(payload, outcome.text) : null);
       if (next.announce) AccessibilityInfo.announceForAccessibility(outcome.text);
@@ -305,7 +306,6 @@ export function AskSheet({
         {gate === 'sign-in' ? (
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="Sign in"
             onPress={onSignIn}
             style={{ minHeight: hitSize(), justifyContent: 'center' }}>
             <Text
@@ -344,6 +344,9 @@ export function AskSheet({
         ) : null}
         {asked ? (
           <Text style={{ fontSize: 17, lineHeight: 17 * 1.35, fontWeight: '600', color: colors.ink, marginTop: 18 }}>{asked}</Text>
+        ) : null}
+        {streaming && !answer ? (
+          <Text style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>{LOADING_LINE}</Text>
         ) : null}
         {answer ? (
           <Text

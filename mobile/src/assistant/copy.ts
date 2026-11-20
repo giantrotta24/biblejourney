@@ -10,6 +10,7 @@ export const REFUSED_LINE = `The study assistant can${mark}t help with that one.
 export const TRUNCATED_LINE = 'This answer reached its length limit, so it ends part way.';
 export const CUT_OFF_LINE = 'The answer was cut off part way. Please try again.';
 export const REPORT_THANKS = 'Thanks. The answer was reported.';
+export const LOADING_LINE = 'Looking into today\u2019s reading\u2026';
 
 export const QUICK_PROMPTS: { type: QuickPromptType; label: string }[] = [
   { type: 'history', label: 'Historical setting' },

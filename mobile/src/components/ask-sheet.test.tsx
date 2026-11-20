@@ -23,6 +23,21 @@ const TRUNCATED = 'This answer reached its length limit, so it ends part way.';
 const CUT_OFF = 'The answer was cut off part way. Please try again.';
 const RATE = 'You\u2019ve asked 30 questions today. The assistant will be ready again tomorrow.';
 const REPORT_LIMIT = 'You\u2019ve sent 10 reports today. You can send more tomorrow.';
+const LOADING = 'Looking into today\u2019s reading\u2026';
+
+function questionLine(label: string) {
+  const line = screen.getAllByText(label).find((node) => StyleSheet.flatten(node.props.style).fontWeight === '600');
+  if (!line) throw new Error(`no question line for ${label}`);
+  return line;
+}
+
+function isBefore(earlier: ReturnType<typeof screen.getByText>, later: ReturnType<typeof screen.getByText>) {
+  const parent = earlier.parent;
+  expect(parent).toBe(later.parent);
+  const children = parent?.children ?? [];
+  expect(children.indexOf(earlier)).toBeGreaterThanOrEqual(0);
+  expect(children.indexOf(earlier)).toBeLessThan(children.indexOf(later));
+}
 
 type Init = { method: string; headers: Record<string, string>; body?: string; signal?: AbortSignal };
 type Reply = {
@@ -114,7 +129,7 @@ describe('AskSheet', () => {
 
     expect(await screen.findByText(/to ask the study assistant/)).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Historical setting' })).toBeNull();
-    await fireEvent.press(screen.getByRole('link', { name: 'Sign in' }));
+    await fireEvent.press(screen.getByRole('link', { name: /Sign in to ask/ }));
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
@@ -310,6 +325,56 @@ describe('AskSheet', () => {
       question: 'Why these rules?',
       answer: 'Because she asked.',
     });
+  });
+
+  it('shows a quick prompt’s label as the question line before the answer', async () => {
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return bytes([`Noted.${'\u001E'}complete`]);
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    const answer = await screen.findByText('Noted.');
+    isBefore(questionLine('Historical setting'), answer);
+  });
+
+  it('keeps a typed question above the upstream line after a 502', async () => {
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return json(502, { code: 'upstream', error: UPSTREAM });
+    });
+    await screen.findByLabelText('Ask about this reading');
+    await fireEvent.changeText(screen.getByLabelText('Ask about this reading'), 'Who wrote this?');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    const question = await screen.findByText('Who wrote this?');
+    isBefore(question, screen.getByText(UPSTREAM));
+  });
+
+  it('shows a loading line while the answer has not arrived', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return bytes([`Noted.${'\u001E'}complete`], { index: 0, gate });
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Historical setting' }));
+    expect(await screen.findByText(LOADING)).toBeOnTheScreen();
+    release();
+    await screen.findByText('Noted.');
+    expect(screen.queryByText(LOADING)).toBeNull();
+  });
+
+  it('clears the question field once the ask starts', async () => {
+    await renderSheet(async (_url, init) => {
+      if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+      return bytes([`Because she asked.${'\u001E'}complete`]);
+    });
+    const field = await screen.findByLabelText('Ask about this reading');
+    await fireEvent.changeText(field, 'Why these rules?');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByText('Because she asked.');
+    expect(screen.getByLabelText('Ask about this reading').props.value).toBe('');
   });
 
   it('uses Done on iOS and a close control on Android', async () => {

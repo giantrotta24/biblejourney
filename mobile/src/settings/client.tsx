@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 
 import { useSession } from '@/account/session';
 import { supabase } from '@/account/supabase';
+import { createPhoneStorage } from '@/persist/phone-storage';
 import { applyColorScheme } from '@/theme/scheme';
 
 import { createProfileSync, type ProfileSync } from './profile-sync';
@@ -14,26 +15,13 @@ import {
   parseSettings,
   SETTINGS_KEY,
   SETTINGS_LINK_KEY,
-  type KeyValueStorage,
   type ProfileFields,
   type ProfileRemote,
   type Settings,
   type SettingsStore,
 } from './settings';
 
-const memory = new Map<string, string>();
-
-const storage: KeyValueStorage = {
-  getItem: (key) => memory.get(key) ?? null,
-  setItem: (key, value) => {
-    memory.set(key, value);
-    void AsyncStorage.setItem(key, value);
-  },
-  removeItem: (key) => {
-    memory.delete(key);
-    void AsyncStorage.removeItem(key);
-  },
-};
+const storage = createPhoneStorage();
 
 const store: SettingsStore = createSettingsStore(storage);
 const profile: ProfileSync = createProfileSync({ store, storage, applyTheme: applyColorScheme });
@@ -49,10 +37,8 @@ export async function loadSettings(): Promise<void> {
     raw = null;
     link = null;
   }
-  if (link) memory.set(SETTINGS_LINK_KEY, link);
-  else memory.delete(SETTINGS_LINK_KEY);
-  if (raw) memory.set(SETTINGS_KEY, raw);
-  else memory.delete(SETTINGS_KEY);
+  storage.remember(SETTINGS_LINK_KEY, link);
+  storage.remember(SETTINGS_KEY, raw);
   store.noteStored(raw != null);
   store.replace(parseSettings(raw));
   applyColorScheme(store.getSnapshot().theme);
@@ -67,10 +53,10 @@ export function whenSettingsReady(): Promise<void> {
 }
 
 export function resetSettingsForTests() {
-  memory.clear();
+  storage.clear();
   store.replace(DEFAULT_SETTINGS);
-  memory.delete(SETTINGS_KEY);
-  memory.delete(SETTINGS_LINK_KEY);
+  storage.remember(SETTINGS_KEY, null);
+  storage.remember(SETTINGS_LINK_KEY, null);
   store.resetTouch();
   profile.signedOut();
   applyColorScheme('system');

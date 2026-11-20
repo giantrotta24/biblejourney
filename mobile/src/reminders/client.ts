@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { createPhoneStorage } from '@/persist/phone-storage';
+
 import { syncReminderSchedule } from './schedule';
 import {
   createReminderStore,
@@ -11,34 +13,24 @@ import {
 } from './store';
 
 // Phone-only. profiles.reminder_time is the web push schedule, and writing it would start those sends.
-const memory = new Map<string, string>();
-
-const storage = {
-  getItem: (key: string) => memory.get(key) ?? null,
-  setItem: (key: string, value: string) => {
-    memory.set(key, value);
-    void AsyncStorage.setItem(key, value);
-  },
-  removeItem: (key: string) => {
-    memory.delete(key);
-    void AsyncStorage.removeItem(key);
-  },
-};
-
+const storage = createPhoneStorage();
 const store = createReminderStore(storage);
 let boot: Promise<void> | null = null;
 let generation = 0;
+let loadFailed = false;
 
 async function loadReminder(ticket: number) {
-  let raw: string | null = null;
+  let raw: string | null;
   try {
     raw = await AsyncStorage.getItem(REMINDER_KEY);
   } catch {
-    raw = null;
+    if (ticket === generation) loadFailed = true;
+    return;
   }
-  if (ticket !== generation || store.touched()) return;
-  if (raw) memory.set(REMINDER_KEY, raw);
-  else memory.delete(REMINDER_KEY);
+  if (ticket !== generation) return;
+  loadFailed = false;
+  if (store.touched()) return;
+  storage.remember(REMINDER_KEY, raw);
   store.replace(parseReminder(raw));
 }
 
@@ -51,11 +43,22 @@ export function whenReminderReady(): Promise<void> {
   return boot;
 }
 
+export function reminderLoadFailed(): boolean {
+  return loadFailed;
+}
+
+export function retryReminderLoad(): Promise<void> {
+  if (!loadFailed) return Promise.resolve();
+  boot = null;
+  return whenReminderReady();
+}
+
 export function resetReminderForTests() {
   generation += 1;
-  memory.clear();
+  storage.clear();
   store.resetQuiet();
   boot = null;
+  loadFailed = false;
 }
 
 export function changeReminder(patch: Partial<ReminderPreference>): boolean {
@@ -69,6 +72,12 @@ export function reminderSnapshot(): ReminderPreference {
 export async function turnReminderOff(): Promise<void> {
   const current = store.getSnapshot();
   store.update({ enabled: false, awaitingPermission: false });
+  storage.remember(REMINDER_KEY, JSON.stringify(store.getSnapshot()));
+  try {
+    await storage.flush(REMINDER_KEY);
+  } catch {
+    // The off choice stays in memory for this session.
+  }
   await syncReminderSchedule({ enabled: false, hour: current.hour, minute: current.minute, rows: [] });
 }
 

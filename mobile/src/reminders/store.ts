@@ -1,3 +1,5 @@
+import type { KeyValueStorage } from '@/settings/settings';
+
 export const REMINDER_KEY = 'biblejourney.reminder.v1';
 
 export type ReminderPreference = {
@@ -12,12 +14,6 @@ export const DEFAULT_REMINDER: ReminderPreference = {
   hour: 7,
   minute: 0,
   awaitingPermission: false,
-};
-
-type KeyValueStorage = {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
 };
 
 function hourOf(value: unknown, fallback: number): number {

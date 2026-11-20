@@ -32,26 +32,29 @@ export function ReminderSection() {
   const reminder = useReminder();
   const [open, setOpen] = useState(false);
   const asking = useRef(false);
+  const wantsOn = useRef(false);
   const label = formatReminderTime(reminder.hour, reminder.minute);
   const value = new Date();
   value.setHours(reminder.hour, reminder.minute, 0, 0);
 
   async function onToggle(next: boolean) {
-    if (asking.current) return;
+    wantsOn.current = next;
     if (!next) {
       changeReminder({ enabled: false, awaitingPermission: false });
       return;
     }
+    if (asking.current) return;
     asking.current = true;
     try {
       const current = await getPermissionsAsync();
       let allowed = current.granted;
-      if (!allowed && current.canAskAgain !== false) {
+      if (wantsOn.current && !allowed && current.canAskAgain !== false) {
         const asked = await requestPermissionsAsync({
           ios: { allowAlert: true, allowSound: true, allowBadge: false },
         });
         allowed = asked.granted;
       }
+      if (!wantsOn.current) return;
       if (!allowed) {
         changeReminder({ enabled: false, awaitingPermission: true });
         return;

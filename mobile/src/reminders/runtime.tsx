@@ -5,26 +5,35 @@ import { AppState } from 'react-native';
 
 import { useProgress } from '@/progress/context';
 
-import { changeReminder, reminderSnapshot, useReminder, whenReminderReady } from './client';
+import {
+  changeReminder,
+  reminderLoadFailed,
+  reminderSnapshot,
+  retryReminderLoad,
+  useReminder,
+  whenReminderReady,
+} from './client';
 import { listenForNotificationOpen, syncReminderSchedule, watchTimeZone } from './schedule';
-import type { ReminderPreference } from './store';
 
 type DayRow = { day_index: number; completed_at: string };
 
-async function reconcile(reminder: ReminderPreference, rows: readonly DayRow[]) {
+async function reconcile(rows: readonly DayRow[]) {
+  if (reminderLoadFailed()) return;
   const permission = await getPermissionsAsync();
+  if (reminderLoadFailed()) return;
+  const reminder = reminderSnapshot();
   if (reminder.enabled && !permission.granted) {
     changeReminder({ enabled: false, awaitingPermission: true });
     return;
   }
   if (reminder.awaitingPermission && permission.granted) {
-    changeReminder({ enabled: true, awaitingPermission: false });
-    return;
+    changeReminder({ awaitingPermission: false });
   }
+  const current = reminderSnapshot();
   await syncReminderSchedule({
-    enabled: reminder.enabled,
-    hour: reminder.hour,
-    minute: reminder.minute,
+    enabled: current.enabled,
+    hour: current.hour,
+    minute: current.minute,
     rows,
   });
 }
@@ -48,6 +57,7 @@ function ReminderSync() {
   const reminder = useReminder();
   const { rows } = useProgress();
   const rowsRef = useRef(rows);
+  const sawQuiet = useRef(false);
 
   useEffect(() => {
     rowsRef.current = rows;
@@ -56,9 +66,26 @@ function ReminderSync() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
-      void onActive(rowsRef.current).catch(() => undefined);
+      void (async () => {
+        if (reminderLoadFailed()) {
+          await retryReminderLoad();
+          if (reminderLoadFailed()) return;
+        }
+        await reconcile(rowsRef.current);
+      })().catch(() => undefined);
     });
-    const stopWatch = watchTimeZone(() => {
+    const stopOpen = listenForNotificationOpen(() => {
+      router.navigate('/');
+    });
+    return () => {
+      subscription.remove();
+      stopOpen();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!reminder.enabled) return;
+    return watchTimeZone(() => {
       const current = reminderSnapshot();
       if (!current.enabled) return;
       void syncReminderSchedule({
@@ -68,39 +95,19 @@ function ReminderSync() {
         rows: rowsRef.current,
       }).catch(() => undefined);
     });
-    const stopOpen = listenForNotificationOpen(() => {
-      router.navigate('/');
-    });
-    return () => {
-      subscription.remove();
-      stopWatch();
-      stopOpen();
-    };
-  }, []);
+  }, [reminder.enabled]);
 
   useEffect(() => {
-    void reconcile(reminder, rows).catch(() => undefined);
+    if (reminderLoadFailed()) {
+      sawQuiet.current = false;
+      return;
+    }
+    const quiet = !reminder.enabled && !reminder.awaitingPermission;
+    const skip = quiet && sawQuiet.current;
+    sawQuiet.current = quiet;
+    if (skip) return;
+    void reconcile(rows).catch(() => undefined);
   }, [reminder, rows]);
 
   return null;
-}
-
-async function onActive(rows: readonly DayRow[]) {
-  const permission = await getPermissionsAsync();
-  const current = reminderSnapshot();
-  if (current.enabled && !permission.granted) {
-    changeReminder({ enabled: false, awaitingPermission: true });
-    return;
-  }
-  if (current.awaitingPermission && permission.granted) {
-    changeReminder({ enabled: true, awaitingPermission: false });
-    return;
-  }
-  if (!current.enabled) return;
-  await syncReminderSchedule({
-    enabled: true,
-    hour: current.hour,
-    minute: current.minute,
-    rows,
-  });
 }

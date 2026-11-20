@@ -11,4 +11,4 @@ const anon: UserVerifier | null = url && anonKey ? createClient(url, anonKey, op
 const admin: UserAdmin | null = url && serviceKey ? createClient(url, serviceKey, options) : null;
 const deps = accountDeleteDeps(anon, admin);
 
-Deno.serve((request) => accountDeleteResponse(request, deps, env.ASSISTANT_ALLOWED_ORIGINS ?? ""));
+Deno.serve((request) => accountDeleteResponse(request, deps, ""));

@@ -9,6 +9,8 @@ import {
   scheduleNotificationAsync,
   setNotificationChannelAsync,
   setNotificationHandler,
+  type CalendarTriggerInput,
+  type DateTriggerInput,
   type NotificationResponse,
 } from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -58,16 +60,17 @@ setNotificationHandler({
   }),
 });
 
-function triggerFor(date: Date, timeZone: string) {
+function triggerFor(date: Date, timeZone: string): CalendarTriggerInput | DateTriggerInput {
   if (Platform.OS === 'android') {
-    return {
+    const trigger: DateTriggerInput = {
       type: SchedulableTriggerInputTypes.DATE,
       date,
       channelId: DAILY_CHANNEL_ID,
     };
+    return trigger;
   }
   const parts = civilTime(date, timeZone);
-  return {
+  const trigger: CalendarTriggerInput = {
     type: SchedulableTriggerInputTypes.CALENDAR,
     year: parts.year,
     month: parts.month,
@@ -76,6 +79,7 @@ function triggerFor(date: Date, timeZone: string) {
     minute: parts.minute,
     repeats: false,
   };
+  return trigger;
 }
 
 async function apply(input: ReminderScheduleInput) {

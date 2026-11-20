@@ -44,7 +44,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const realGetItem = (AsyncStorage.getItem as unknown as { getMockImplementation(): (key: string) => Promise<string | null> }).getMockImplementation();
 const realSetItem = (
-  AsyncStorage.setItem as unknown as { getMockImplementation(): (key: string, value: string) => Promise<unknown> }
+  AsyncStorage.setItem as unknown as { getMockImplementation(): (key: string, value: string) => Promise<void> }
 ).getMockImplementation();
 
 const ZONE = 'America/New_York';

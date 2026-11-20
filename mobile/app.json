@@ -8,9 +8,12 @@
     "scheme": "biblejourney",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "dev.giantrotta.biblejourney",
+      "usesAppleSignIn": true
     },
     "android": {
+      "package": "dev.giantrotta.biblejourney",
       "adaptiveIcon": {
         "backgroundColor": "#f7f7f3",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,6 +28,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

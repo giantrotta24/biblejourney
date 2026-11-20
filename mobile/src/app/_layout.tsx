@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColors } from '@/theme/colors';
@@ -47,6 +47,16 @@ function RootStack() {
           presentation: 'formSheet',
           headerShown: false,
           sheetGrabberVisible: true,
+        }}
+      />
+      <Stack.Screen
+        name="sign-in"
+        options={{
+          presentation: 'formSheet',
+          headerShown: false,
+          sheetGrabberVisible: true,
+          sheetCornerRadius: Platform.OS === 'android' ? 28 : 12,
+          contentStyle: { backgroundColor: colors.paper },
         }}
       />
     </Stack>

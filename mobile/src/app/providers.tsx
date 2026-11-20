@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { SessionProvider } from '@/account/session';
 import { NotesProvider } from '@/notes/context';
 import type { KeyValueStore } from '@/persist/document';
 import { ProgressProvider } from '@/progress/context';
@@ -17,10 +18,12 @@ export function ReadingProviders({
   progressStorage?: KeyValueStore;
 }) {
   return (
-    <NotesProvider storage={notesStorage}>
-      <VersesProvider storage={versesStorage}>
-        <ProgressProvider storage={progressStorage}>{children}</ProgressProvider>
-      </VersesProvider>
-    </NotesProvider>
+    <SessionProvider>
+      <NotesProvider storage={notesStorage}>
+        <VersesProvider storage={versesStorage}>
+          <ProgressProvider storage={progressStorage}>{children}</ProgressProvider>
+        </VersesProvider>
+      </NotesProvider>
+    </SessionProvider>
   );
 }

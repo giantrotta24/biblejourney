@@ -38,3 +38,29 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 require('react-native-gesture-handler/jestSetup');
+jest.mock('expo-apple-authentication', () => {
+  const React = require('react');
+  const { Pressable, Text } = require('react-native');
+  function AppleAuthenticationButton({ onPress }) {
+    return React.createElement(
+      Pressable,
+      { accessibilityRole: 'button', accessibilityLabel: 'Continue with Apple', onPress },
+      React.createElement(Text, null, 'Continue with Apple'),
+    );
+  }
+  return {
+    __esModule: true,
+    signInAsync: jest.fn(),
+    AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+    AppleAuthenticationButtonType: { CONTINUE: 1, SIGN_IN: 0, SIGN_UP: 2 },
+    AppleAuthenticationButtonStyle: { BLACK: 2, WHITE: 0, WHITE_OUTLINE: 1 },
+    AppleAuthenticationButton,
+  };
+});
+jest.mock('expo-crypto', () => ({
+  __esModule: true,
+  getRandomBytesAsync: jest.fn(async () => Uint8Array.of(1, 2, 255)),
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+  CryptoEncoding: { HEX: 'hex' },
+  digestStringAsync: jest.fn(async () => 'hashed-nonce'),
+}));

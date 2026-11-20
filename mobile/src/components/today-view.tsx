@@ -13,6 +13,7 @@ import Animated, {
 
 import { eraForWeek } from '@/lib/era';
 import { bibleGatewayUrl } from '@/lib/reading';
+import { numeralLift, numeralSize, numeralTopInset } from '@/theme/dateline';
 import { fonts, hitSize, useFontScale, useLargeText } from '@/theme/fonts';
 import { ruledLine, writingScale } from '@/theme/ruled';
 import { useReduceMotion } from '@/theme/motion';
@@ -31,19 +32,6 @@ import { DottedCut, PageEdges, Perforation, TornStubs } from './marks';
 
 /** Tear-lift shadow extends past the page: offset 18 plus radius 16. */
 const TEAR_SHADOW = 18 + 16;
-
-function numeralSize(large: boolean): number {
-  return large ? 112 : 128;
-}
-
-function numeralLift(size: number): number {
-  return Math.round(size * 0.08);
-}
-
-/** Space the numeral font reserves above its digits at lineHeight = fontSize (measured on device at 128pt). */
-function numeralTopInset(size: number): number {
-  return Math.round(size * 0.17);
-}
 
 export type TodayViewProps = {
   done: ReadonlySet<number>;

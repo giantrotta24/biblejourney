@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { WelcomeView } from '@/components/welcome-view';
 import { useNotes } from '@/notes/context';
@@ -11,10 +11,29 @@ export const WELCOMED_KEY = 'biblejourney.welcomed';
 
 type Decision = 'loading' | 'show' | 'hide';
 
+let welcomeEpoch = 0;
+const welcomeListeners = new Set<() => void>();
+
+function subscribeWelcome(listener: () => void) {
+  welcomeListeners.add(listener);
+  return () => welcomeListeners.delete(listener);
+}
+
+function currentWelcomeEpoch() {
+  return welcomeEpoch;
+}
+
+export async function clearWelcomed(): Promise<void> {
+  await AsyncStorage.removeItem(WELCOMED_KEY);
+  welcomeEpoch += 1;
+  for (const listener of welcomeListeners) listener();
+}
+
 function useFirstRun(): Decision {
   const progress = useProgress();
   const notes = useNotes();
   const verses = useVerses();
+  const epoch = useSyncExternalStore(subscribeWelcome, currentWelcomeEpoch, currentWelcomeEpoch);
   const [welcomed, setWelcomed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -30,7 +49,7 @@ function useFirstRun(): Decision {
     return () => {
       active = false;
     };
-  }, []);
+  }, [epoch]);
 
   if (welcomed == null || notes.status === 'loading' || verses.status === 'loading') return 'loading';
   if (welcomed) return 'hide';

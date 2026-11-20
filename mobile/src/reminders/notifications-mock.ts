@@ -1,5 +1,16 @@
 type NotificationContent = { title?: string | null; body?: string | null; data?: Record<string, unknown> };
-type NotificationTrigger = { type?: string; date?: Date | number; channelId?: string };
+type NotificationTrigger = {
+  type?: string;
+  date?: Date | number;
+  channelId?: string;
+  year?: number;
+  month?: number;
+  day?: number;
+  hour?: number;
+  minute?: number;
+  repeats?: boolean;
+  timezone?: string;
+};
 type ScheduledNotification = { identifier: string; content: NotificationContent; trigger: NotificationTrigger };
 type NotificationResponse = { actionIdentifier: string; notification?: unknown };
 type Permission = { granted: boolean; canAskAgain: boolean; status: string; expires: 'never' };
@@ -12,6 +23,13 @@ let permission: Permission = { granted: true, canAskAgain: true, status: 'grante
 let requests = 0;
 let cancels = 0;
 let last: NotificationResponse | null = null;
+let grantOnRequest = false;
+let scheduleCalls = 0;
+let permissionReads = 0;
+let scheduleGate: Promise<void> | null = null;
+let failIdentifier: string | null = null;
+let permissionDelayMs = 0;
+let permissionDelaysLeft = 0;
 
 export function resetNotificationsMock() {
   scheduled.clear();
@@ -21,6 +39,13 @@ export function resetNotificationsMock() {
   requests = 0;
   cancels = 0;
   last = null;
+  grantOnRequest = false;
+  scheduleCalls = 0;
+  permissionReads = 0;
+  scheduleGate = null;
+  failIdentifier = null;
+  permissionDelayMs = 0;
+  permissionDelaysLeft = 0;
 }
 
 export function scheduledNotifications(): ScheduledNotification[] {
@@ -39,6 +64,46 @@ export function permissionRequestCount(): number {
   return requests;
 }
 
+export function permissionReadCount(): number {
+  return permissionReads;
+}
+
+export function scheduleCallCount(): number {
+  return scheduleCalls;
+}
+
+export function grantPermissionOnRequest() {
+  grantOnRequest = true;
+}
+
+export function pauseSchedules(): { release: () => void } {
+  let release: () => void = () => {};
+  scheduleGate = new Promise((resolve) => {
+    release = () => {
+      scheduleGate = null;
+      resolve();
+    };
+  });
+  return { release };
+}
+
+export function failSchedule(identifier: string) {
+  failIdentifier = identifier;
+}
+
+export function delayNextPermissionRead(ms = 40) {
+  permissionDelayMs = ms;
+  permissionDelaysLeft = 1;
+}
+
+export function seedScheduledNotification(identifier: string) {
+  scheduled.set(identifier, {
+    identifier,
+    content: { title: 'seed', body: 'seed' },
+    trigger: { type: 'date', date: new Date('2026-11-21T12:00:00.000Z') },
+  });
+}
+
 export function cancelCount(): number {
   return cancels;
 }
@@ -55,11 +120,19 @@ export function emitNotificationResponse(response: NotificationResponse) {
 export function setNotificationHandler(_handler: unknown) {}
 
 export async function getPermissionsAsync(): Promise<Permission> {
+  permissionReads += 1;
+  if (permissionDelaysLeft > 0) {
+    permissionDelaysLeft -= 1;
+    await new Promise((resolve) => setTimeout(resolve, permissionDelayMs));
+  }
   return permission;
 }
 
 export async function requestPermissionsAsync(_request?: unknown): Promise<Permission> {
   requests += 1;
+  if (grantOnRequest) {
+    permission = { granted: true, canAskAgain: false, status: 'granted', expires: 'never' };
+  }
   return permission;
 }
 
@@ -91,6 +164,13 @@ export async function scheduleNotificationAsync(request: {
   content: NotificationContent;
   trigger: NotificationTrigger | null;
 }): Promise<string> {
+  scheduleCalls += 1;
+  const gate = scheduleGate;
+  if (gate) await gate;
+  if (failIdentifier && request.identifier === failIdentifier) {
+    failIdentifier = null;
+    throw new Error('schedule failed');
+  }
   const identifier = request.identifier ?? `generated-${scheduled.size}`;
   scheduled.set(identifier, {
     identifier,

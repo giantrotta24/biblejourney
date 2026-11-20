@@ -11,10 +11,11 @@ import {
   setNotificationHandler,
   type NotificationResponse,
 } from 'expo-notifications';
+import { Platform } from 'react-native';
 
 import { currentDay } from '../../../supabase/functions/_shared/content/plan';
 
-import { readOnLocalDate, reminderMoments } from './time';
+import { civilTime, readOnLocalDate, reminderMoments } from './time';
 
 export const REMINDER_TITLE = 'Today\u2019s reading is ready';
 export const DAILY_CHANNEL_ID = 'daily-reading';
@@ -30,7 +31,11 @@ type ReminderScheduleInput = {
 let clock: () => Date = () => new Date();
 let zoneReader: () => string = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 let pollMs = 30_000;
-let tail: Promise<void> = Promise.resolve();
+let busy = false;
+let nextInput: ReminderScheduleInput | null = null;
+let nextWait: Promise<void> | null = null;
+let resolveNext: (() => void) | null = null;
+let rejectNext: ((error: unknown) => void) | null = null;
 
 export function setReminderClockForTests(next: () => Date) {
   clock = next;
@@ -53,7 +58,29 @@ setNotificationHandler({
   }),
 });
 
-async function apply(input: ReminderScheduleInput, now: Date, timeZone: string) {
+function triggerFor(date: Date, timeZone: string) {
+  if (Platform.OS === 'android') {
+    return {
+      type: SchedulableTriggerInputTypes.DATE,
+      date,
+      channelId: DAILY_CHANNEL_ID,
+    };
+  }
+  const parts = civilTime(date, timeZone);
+  return {
+    type: SchedulableTriggerInputTypes.CALENDAR,
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    repeats: false,
+  };
+}
+
+async function apply(input: ReminderScheduleInput) {
+  const now = clock();
+  const timeZone = zoneReader();
   if (!input.enabled) {
     await cancelAllScheduledNotificationsAsync();
     return;
@@ -77,35 +104,51 @@ async function apply(input: ReminderScheduleInput, now: Date, timeZone: string) 
       timeZone,
     ),
   });
+  let failure: unknown = null;
   for (let index = 0; index < moments.length; index += 1) {
     const date = moments[index];
     if (!date) continue;
-    await scheduleNotificationAsync({
-      identifier: `biblejourney.daily.${index}`,
-      content: {
-        title: REMINDER_TITLE,
-        body,
-        data: { url: '/' },
-        sound: true,
-      },
-      trigger: {
-        type: SchedulableTriggerInputTypes.DATE,
-        date,
-        channelId: DAILY_CHANNEL_ID,
-      },
-    });
+    try {
+      await scheduleNotificationAsync({
+        identifier: `biblejourney.daily.${index}`,
+        content: {
+          title: REMINDER_TITLE,
+          body,
+          sound: true,
+        },
+        trigger: triggerFor(date, timeZone),
+      });
+    } catch (error) {
+      failure ??= error;
+    }
   }
+  if (failure) throw failure;
 }
 
 export function syncReminderSchedule(input: ReminderScheduleInput): Promise<void> {
-  const now = clock();
-  const timeZone = zoneReader();
-  const job = tail.then(() => apply(input, now, timeZone));
-  tail = job.then(
-    () => undefined,
-    () => undefined,
-  );
-  return job;
+  if (busy) {
+    nextInput = input;
+    if (!nextWait) {
+      nextWait = new Promise((resolve, reject) => {
+        resolveNext = resolve;
+        rejectNext = reject;
+      });
+    }
+    return nextWait;
+  }
+  busy = true;
+  return apply(input).finally(() => {
+    busy = false;
+    const follow = nextInput;
+    const resolve = resolveNext;
+    const reject = rejectNext;
+    nextInput = null;
+    nextWait = null;
+    resolveNext = null;
+    rejectNext = null;
+    if (!follow || !resolve || !reject) return undefined;
+    return syncReminderSchedule(follow).then(resolve, reject);
+  });
 }
 
 export function watchTimeZone(onChange: () => void): () => void {

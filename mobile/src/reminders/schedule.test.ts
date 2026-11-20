@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
+import { waitFor } from '@testing-library/react-native';
+import { AndroidImportance } from 'expo-notifications';
+import { Platform } from 'react-native';
 
 import { currentDay, DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
-import { AndroidImportance } from 'expo-notifications';
 
-import { notificationChannels, resetNotificationsMock, scheduledNotifications } from './notifications-mock';
+import {
+  failSchedule,
+  notificationChannels,
+  pauseSchedules,
+  resetNotificationsMock,
+  scheduleCallCount,
+  scheduledNotifications,
+} from './notifications-mock';
 import { setReminderClockForTests, setReminderTimeZoneForTests, syncReminderSchedule } from './schedule';
+import { zonedInstant } from './time';
 
 const ZONE = 'America/New_York';
 const MORNING = new Date('2026-11-20T11:00:00.000Z');
@@ -39,6 +49,16 @@ function localParts(instant: Date, timeZone = ZONE) {
 function moments() {
   return scheduledNotifications()
     .map((item) => {
+      if (item.trigger.type === 'calendar') {
+        return zonedInstant(
+          item.trigger.year ?? 0,
+          item.trigger.month ?? 0,
+          item.trigger.day ?? 0,
+          item.trigger.hour ?? 0,
+          item.trigger.minute ?? 0,
+          ZONE,
+        );
+      }
       const raw = item.trigger.date;
       if (raw == null) throw new Error('a scheduled reminder has no date');
       return raw instanceof Date ? raw : new Date(raw);
@@ -47,13 +67,32 @@ function moments() {
 }
 
 function expectReminders(dates: string[], hour: number, minute: number, body: string) {
-  expect(moments().map((moment) => localParts(moment))).toEqual(dates.map((date) => ({ date, hour, minute })));
-  for (const item of scheduledNotifications()) {
+  const scheduled = scheduledNotifications();
+  expect(scheduled).toHaveLength(dates.length);
+  scheduled.forEach((item, index) => {
+    const date = dates[index] ?? '';
     expect(item.content.title).toBe(TITLE);
     expect(item.content.body).toBe(body);
-    expect(item.trigger.type).toBe('date');
-    expect(item.trigger.channelId).toBe('daily-reading');
-  }
+    expect(item.content.data).toBeUndefined();
+    if (Platform.OS === 'android') {
+      expect(item.trigger.type).toBe('date');
+      expect(item.trigger.channelId).toBe('daily-reading');
+      const raw = item.trigger.date;
+      if (raw == null) throw new Error('a scheduled reminder has no date');
+      const moment = raw instanceof Date ? raw : new Date(raw);
+      expect(localParts(moment)).toEqual({ date, hour, minute });
+      return;
+    }
+    expect(item.trigger).toEqual({
+      type: 'calendar',
+      year: Number(date.slice(0, 4)),
+      month: Number(date.slice(5, 7)),
+      day: Number(date.slice(8, 10)),
+      hour,
+      minute,
+      repeats: false,
+    });
+  });
 }
 
 async function schedule(overrides: Partial<{ enabled: boolean; hour: number; minute: number; rows: readonly Row[] }> = {}) {
@@ -125,7 +164,67 @@ describe('daily reminder schedule', () => {
   it('places 7:00 in the phone’s time zone', async () => {
     setReminderTimeZoneForTests(() => 'America/Los_Angeles');
     await schedule();
-    expect(moments().map((moment) => localParts(moment, 'America/Los_Angeles').hour)).toEqual([7, 7, 7, 7, 7, 7, 7]);
-    expect(moments()[0]?.getUTCHours()).toBe(15);
+    if (Platform.OS === 'android') {
+      expect(moments().map((moment) => localParts(moment, 'America/Los_Angeles').hour)).toEqual([7, 7, 7, 7, 7, 7, 7]);
+      expect(moments()[0]?.getUTCHours()).toBe(15);
+      return;
+    }
+    expect(scheduledNotifications().map((item) => item.trigger.hour)).toEqual([7, 7, 7, 7, 7, 7, 7]);
+    expect(scheduledNotifications().every((item) => item.trigger.repeats === false && item.trigger.timezone === undefined)).toBe(
+      true,
+    );
+  });
+
+  it('keeps the other mornings when one schedule call fails', async () => {
+    failSchedule('biblejourney.daily.3');
+    await expect(schedule()).rejects.toThrow('schedule failed');
+    const identifiers = scheduledNotifications().map((item) => item.identifier).sort();
+    expect(identifiers).toEqual([
+      'biblejourney.daily.0',
+      'biblejourney.daily.1',
+      'biblejourney.daily.2',
+      'biblejourney.daily.4',
+      'biblejourney.daily.5',
+      'biblejourney.daily.6',
+    ]);
+  });
+
+  it('schedules only the newest request when several arrive while one is running', async () => {
+    const held = pauseSchedules();
+    const first = syncReminderSchedule({ enabled: true, hour: 7, minute: 0, rows: [] });
+    await waitFor(() => expect(scheduleCallCount()).toBe(1));
+    const rest = [1, 2, 3, 4].map((minute) => syncReminderSchedule({ enabled: true, hour: 8, minute, rows: [] }));
+    held.release();
+    await first;
+    await Promise.all(rest);
+    expect(scheduleCallCount()).toBe(14);
+    expect(scheduledNotifications().every((item) => (item.trigger.hour ?? localParts(triggerDate(item)).hour) === 8)).toBe(true);
+    expect(scheduledNotifications().every((item) => (item.trigger.minute ?? localParts(triggerDate(item)).minute) === 4)).toBe(
+      true,
+    );
+  });
+
+  it('reads the clock when the schedule runs, not when it was queued', async () => {
+    const held = pauseSchedules();
+    let now = MORNING;
+    setReminderClockForTests(() => now);
+    const first = syncReminderSchedule({ enabled: true, hour: 7, minute: 0, rows: [] });
+    await waitFor(() => expect(scheduleCallCount()).toBe(1));
+    now = new Date('2026-11-21T11:00:00.000Z');
+    const second = syncReminderSchedule({ enabled: true, hour: 7, minute: 0, rows: [] });
+    now = new Date('2026-11-22T11:00:00.000Z');
+    held.release();
+    await first;
+    await second;
+    const firstDay = scheduledNotifications()
+      .map((item) => (item.trigger.type === 'calendar' ? item.trigger.day : localParts(triggerDate(item)).date.slice(8)))
+      .sort()[0];
+    expect(String(firstDay)).toMatch(/22/);
   });
 });
+
+function triggerDate(item: { trigger: { date?: Date | number } }): Date {
+  const raw = item.trigger.date;
+  if (raw == null) throw new Error('a scheduled reminder has no date');
+  return raw instanceof Date ? raw : new Date(raw);
+}

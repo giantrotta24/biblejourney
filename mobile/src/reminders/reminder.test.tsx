@@ -25,6 +25,7 @@ import {
   setNotificationPermission,
 } from './notifications-mock';
 import { setReminderClockForTests, setReminderTimeZoneForTests, setTimeZonePollForTests } from './schedule';
+import { zonedInstant } from './time';
 
 /* eslint-disable @typescript-eslint/no-require-imports -- the mock factory cannot close over an import */
 jest.mock('@/account/supabase', () => require('@/account/fake-supabase'));
@@ -72,6 +73,16 @@ function localDate(instant: Date, timeZone = ZONE) {
 function moments() {
   return scheduledNotifications()
     .map((item) => {
+      if (item.trigger.type === 'calendar') {
+        return zonedInstant(
+          item.trigger.year ?? 0,
+          item.trigger.month ?? 0,
+          item.trigger.day ?? 0,
+          item.trigger.hour ?? 0,
+          item.trigger.minute ?? 0,
+          ZONE,
+        );
+      }
       const raw = item.trigger.date;
       if (raw == null) throw new Error('a scheduled reminder has no date');
       return raw instanceof Date ? raw : new Date(raw);
@@ -345,10 +356,21 @@ describe('Daily reminder settings', () => {
     setTimeZonePollForTests(20);
     await renderSettings();
     await turnOn();
-    expect(moments()[0]?.getUTCHours()).toBe(12);
+    if (Platform.OS === 'android') {
+      expect(moments()[0]?.getUTCHours()).toBe(12);
+    } else {
+      expect(scheduledNotifications()[0]?.trigger).toMatchObject({ type: 'calendar', hour: 7, repeats: false });
+      expect(scheduledNotifications()[0]?.trigger.timezone).toBeUndefined();
+    }
+    const cancels = cancelCount();
     setReminderTimeZoneForTests(() => 'America/Los_Angeles');
-    await waitFor(() => expect(moments()[0]?.getUTCHours()).toBe(15));
-    expect(moments().every((moment) => localDate(moment, 'America/Los_Angeles').hour === 7)).toBe(true);
+    await waitFor(() => expect(cancelCount()).toBeGreaterThan(cancels));
+    if (Platform.OS === 'android') {
+      expect(moments()[0]?.getUTCHours()).toBe(15);
+      expect(moments().every((moment) => localDate(moment, 'America/Los_Angeles').hour === 7)).toBe(true);
+    } else {
+      expect(scheduledNotifications().every((item) => item.trigger.hour === 7 && item.trigger.timezone === undefined)).toBe(true);
+    }
   });
 
   it('schedules nothing from the screen once the year is finished', async () => {

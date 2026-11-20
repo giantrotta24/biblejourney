@@ -39,6 +39,10 @@ function zoneOffset(instant: Date, timeZone: string): number {
   return asUtc - instant.getTime();
 }
 
+export function civilTime(instant: Date, timeZone: string): Wall {
+  return wall(instant, timeZone);
+}
+
 export function zonedInstant(
   year: number,
   month: number,
@@ -49,7 +53,10 @@ export function zonedInstant(
 ): Date {
   const utc = Date.UTC(year, month - 1, day, hour, minute, 0);
   const corrected = zoneOffset(new Date(utc - zoneOffset(new Date(utc), timeZone)), timeZone);
-  return new Date(utc - corrected);
+  const result = new Date(utc - corrected);
+  const seen = wall(result, timeZone);
+  if (seen.hour === hour && seen.minute === minute) return result;
+  return new Date(result.getTime() + 60 * 60 * 1000);
 }
 
 function shiftDate(year: number, month: number, day: number, offset: number): { year: number; month: number; day: number } {

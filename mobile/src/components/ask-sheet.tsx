@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import { useSession } from '@/account/session';
 import { supabaseAnonKey } from '@/account/supabase';
 import { useColors } from '@/theme/colors';
 import { fonts, hitSize } from '@/theme/fonts';
+import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
 import { QUESTION_MAX_LENGTH, REPORT_NOTE_MAX } from '../../../supabase/functions/_shared/assistant/limits';
 import { days } from '../../../supabase/functions/_shared/content/plan';
 
@@ -30,6 +32,7 @@ import {
   type AssistantTransport,
   type QuickPromptType,
   type ReportPayload,
+  type StreamEnd,
 } from '../assistant/client';
 import {
   INVITATION_LINE,
@@ -61,6 +64,35 @@ function gateFor(status: AssistantStatus, signedIn: boolean): Gate {
   return 'ready';
 }
 
+function CareReply({ asked }: { asked: boolean }) {
+  const colors = useColors();
+  const serif = {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    lineHeight: 17 * 1.55,
+    color: colors.ink,
+  };
+  return (
+    <Text maxFontSizeMultiplier={2} style={{ ...serif, marginTop: asked ? 8 : 18 }}>
+      {CARE_TEXT.split(/(call 988|text 988)/).map((part, index) =>
+        part === 'call 988' || part === 'text 988' ? (
+          <Text
+            key={index}
+            accessibilityRole="link"
+            onPress={() => {
+              void Linking.openURL(part === 'call 988' ? 'tel:988' : 'sms:988');
+            }}
+            style={{ ...serif, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
+            {part}
+          </Text>
+        ) : (
+          <Text key={index}>{part}</Text>
+        ),
+      )}
+    </Text>
+  );
+}
+
 function reportTarget(payload: AskPayload, text: string): ReportTarget {
   if ('type' in payload) return { kind: payload.type, answer: text };
   return { kind: 'question', question: payload.question, answer: text };
@@ -87,6 +119,7 @@ export function AskSheet({
   const [question, setQuestion] = useState('');
   const [asked, setAsked] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
+  const [end, setEnd] = useState<StreamEnd | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [report, setReport] = useState<ReportTarget | null>(null);
@@ -147,6 +180,7 @@ export function AskSheet({
     askAbort.current = controller;
     setStreaming(true);
     setAnswer('');
+    setEnd(null);
     setQuestion('');
     const label = 'question' in payload ? payload.question : QUICK_PROMPTS.find((prompt) => prompt.type === payload.type)?.label;
     setAsked(label ?? null);
@@ -182,7 +216,8 @@ export function AskSheet({
         return;
       }
       const next = answerNotice(outcome);
-      setAnswer(next.keep ? outcome.text : '');
+      setEnd(outcome.end);
+      setAnswer(next.keep && outcome.end !== 'care' ? outcome.text : '');
       setNotice(next.text || null);
       setReport(next.report ? reportTarget(payload, outcome.text) : null);
       if (next.announce) AccessibilityInfo.announceForAccessibility(outcome.text);
@@ -362,9 +397,10 @@ export function AskSheet({
         {asked ? (
           <Text style={{ fontSize: 17, lineHeight: 17 * 1.35, fontWeight: '600', color: colors.ink, marginTop: 18 }}>{asked}</Text>
         ) : null}
-        {streaming && !answer ? (
+        {streaming && !answer && end !== 'care' ? (
           <Text style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>{LOADING_LINE}</Text>
         ) : null}
+        {end === 'care' ? <CareReply asked={asked !== null} /> : null}
         {answer ? (
           <Text
             maxFontSizeMultiplier={2}

@@ -1,9 +1,10 @@
 import { beforeEach, afterEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Platform, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Linking, Platform, StyleSheet } from 'react-native';
 
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { SessionProvider } from '@/account/session';
+import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
 
 import { AskSheet } from './ask-sheet';
 
@@ -210,9 +211,8 @@ describe('AskSheet', () => {
     ['refused', REFUSED, false],
     ['truncated', TRUNCATED, true],
     ['error', CUT_OFF, false],
-    ['care', 'Please call 988.', false],
   ] as const)('ends a %s answer on that frame', async (end, line, report) => {
-    const text = end === 'care' ? 'Please call 988.' : 'Half an answer.';
+    const text = 'Half an answer.';
     await renderSheet(async (_url, init) => {
       if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
       return bytes([`${text}${'\u001E'}${end}`]);
@@ -221,15 +221,35 @@ describe('AskSheet', () => {
     if (end === 'refused') {
       expect(await screen.findByText(line)).toBeOnTheScreen();
       expect(screen.queryByText(text)).toBeNull();
-    } else if (end === 'care') {
-      const care = await screen.findByText(text);
-      expect(StyleSheet.flatten(care.props.style).color).not.toBe('#c4342b');
-      expect(StyleSheet.flatten(care.props.style).fontFamily).toBe('SourceSerif4');
     } else {
       expect(await screen.findByText(text)).toBeOnTheScreen();
       expect(screen.getByText(line)).toBeOnTheScreen();
     }
     expect(screen.queryByRole('button', { name: 'Report this answer' }) === null).toBe(!report);
+  });
+
+  it('links a typed care reply to call and text 988', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    try {
+      await renderSheet(async (_url, init) => {
+        if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });
+        return bytes([`${CARE_TEXT}${'\u001E'}care`]);
+      });
+      await screen.findByLabelText('Ask about this reading');
+      await fireEvent.changeText(screen.getByLabelText('Ask about this reading'), 'I feel hopeless');
+      await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+      const call = await screen.findByRole('link', { name: 'call 988' });
+      const text = screen.getByRole('link', { name: 'text 988' });
+      expect(StyleSheet.flatten(call.props.style).textDecorationLine).toBe('underline');
+      expect(StyleSheet.flatten(call.parent?.props.style).fontFamily).toBe('SourceSerif4');
+      await fireEvent.press(call);
+      await fireEvent.press(text);
+      expect(open).toHaveBeenNthCalledWith(1, 'tel:988');
+      expect(open).toHaveBeenNthCalledWith(2, 'sms:988');
+      expect(screen.queryByRole('button', { name: 'Report this answer' })).toBeNull();
+    } finally {
+      open.mockRestore();
+    }
   });
 
   it.each([

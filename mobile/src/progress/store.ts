@@ -9,8 +9,7 @@ export type { KeyValueStore } from '@/persist/document';
 /** Legacy set of day indexes. Left in place as the backup of a migrated phone. */
 export const PROGRESS_KEY = 'biblejourney.progress.v1';
 export const PROGRESS_V2_KEY = 'biblejourney.progress.v2';
-export const PROGRESS_V1_BACKUP_KEY = 'biblejourney.progress.v1.backup';
-export const UNREADABLE_KEY = 'biblejourney.progress.v1.unreadable';
+export const PROGRESS_V2_UNREADABLE_KEY = 'biblejourney.progress.v2.unreadable';
 const PROGRESS_VERSION = 1;
 
 export type DayRow = { day_index: number; completed_at: string };
@@ -116,8 +115,6 @@ export async function loadProgress(
   const completed_at = now().toISOString();
   const rows = [...days].sort((a, b) => a - b).map((day_index) => ({ day_index, completed_at }));
   try {
-    const backup = await storage.getItem(PROGRESS_V1_BACKUP_KEY);
-    if (backup == null) await storage.setItem(PROGRESS_V1_BACKUP_KEY, v1.raw);
     await saveProgress(rows, storage);
   } catch {
     return { status: 'unavailable' };
@@ -131,5 +128,5 @@ export async function saveProgress(
   backupRaw?: string | null,
 ): Promise<void> {
   const ordered = [...rows].sort((a, b) => a.day_index - b.day_index);
-  await saveDocument(storage, PROGRESS_V2_KEY, serializeVersionedRows(ordered), UNREADABLE_KEY, backupRaw);
+  await saveDocument(storage, PROGRESS_V2_KEY, serializeVersionedRows(ordered), PROGRESS_V2_UNREADABLE_KEY, backupRaw);
 }

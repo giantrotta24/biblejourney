@@ -4,10 +4,9 @@ import { useEffect } from 'react';
 import { AppState, Pressable, Text, View } from 'react-native';
 
 import { ProgressProvider, useProgress } from './context';
-import { PROGRESS_KEY, PROGRESS_V2_KEY, type KeyValueStore } from './store';
+import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY, type KeyValueStore } from './store';
 
 const ORIGINAL = JSON.stringify({ version: 1, days: [0, 1, 2, 3, 4, 5] });
-const UNREADABLE_KEY = 'biblejourney.progress.v1.unreadable';
 
 function savedDays(raw: string | undefined): number[] {
   const parsed = JSON.parse(raw ?? '') as { rows: { day_index: number }[] };
@@ -175,7 +174,7 @@ describe('ProgressProvider', () => {
 
     await fireEvent.press(await screen.findByText('Mark 0'));
     await waitFor(() => {
-      expect(storage.raw.get(UNREADABLE_KEY)).toBe(corrupt);
+      expect(storage.raw.get(PROGRESS_V2_UNREADABLE_KEY)).toBe(corrupt);
     });
     expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([0]);
     expect(storage.raw.get(PROGRESS_KEY)).toBe(corrupt);

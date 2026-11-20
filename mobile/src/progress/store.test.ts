@@ -2,7 +2,6 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   PROGRESS_KEY,
-  PROGRESS_V1_BACKUP_KEY,
   PROGRESS_V2_KEY,
   loadProgress,
   parseProgress,
@@ -103,9 +102,18 @@ describe('progress store', () => {
       ],
     });
     expect(storage.raw.get(PROGRESS_KEY)).toBe(v1);
-    expect(storage.raw.get(PROGRESS_V1_BACKUP_KEY)).toBe(v1);
+    expect(storage.raw.has('biblejourney.progress.v1.backup')).toBe(false);
     const saved = JSON.parse(storage.raw.get(PROGRESS_V2_KEY) ?? '');
     expect(saved.rows.map((row: { day_index: number }) => row.day_index)).toEqual([1, 4]);
+  });
+
+  it('ignores v1 once v2 is stored', async () => {
+    const storage = memory(JSON.stringify({ version: 1, days: [1] }));
+    await saveProgress([{ day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' }], storage);
+    await expect(loadProgress(storage)).resolves.toEqual({
+      status: 'ready',
+      rows: [{ day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' }],
+    });
   });
 
   it('does not migrate a corrupt v1 into an empty year', async () => {

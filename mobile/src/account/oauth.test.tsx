@@ -91,7 +91,7 @@ describe('Apple and Google', () => {
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
-  it('treats a closed Google window and an error in the URL as one quiet line', async () => {
+  it('stays quiet when Google is dismissed, and shows one line for an error URL', async () => {
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({ type: 'cancel' } as never);
     await renderSignIn();
     await fireEvent.press(screen.getByRole('button', { name: 'Continue with Google' }));
@@ -100,9 +100,15 @@ describe('Apple and Google', () => {
       options: { redirectTo: 'biblejourney://auth-callback', skipBrowserRedirect: true },
     });
     expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(fakeAuth.oauthUrl, 'biblejourney://auth-callback');
-    expect(screen.getByText('Sign in was canceled.')).toBeOnTheScreen();
+    expect(screen.queryByText('Sign in was canceled.')).toBeNull();
+    expect(screen.queryByText('Something went wrong. Try again.')).toBeNull();
     expect(fakeAuth.calls.filter((call) => call.method === 'exchangeCodeForSession')).toEqual([]);
     expect(router.back).not.toHaveBeenCalled();
+
+    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({ type: 'dismiss' } as never);
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(screen.queryByText('Sign in was canceled.')).toBeNull();
+    expect(screen.queryByText('Something went wrong. Try again.')).toBeNull();
 
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
       type: 'success',

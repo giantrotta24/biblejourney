@@ -3,7 +3,6 @@ export const RATE_LIMITED = 'Too many tries. Wait a minute and try again.';
 export const NETWORK_UNREACHABLE = 'Couldn’t reach the server. Check your connection.';
 export const SIGN_IN_FAILED = 'Something went wrong. Try again.';
 export const WRONG_CODE = 'Enter the 6–10 digit code from your email.';
-export const SIGN_IN_CANCELED = 'Sign in was canceled.';
 
 const WRONG_CODES = new Set(['otp_expired', 'invalid_credentials']);
 

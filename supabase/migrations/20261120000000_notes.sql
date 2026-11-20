@@ -1,6 +1,6 @@
 create table if not exists public.notes (
   user_id uuid not null references auth.users (id) on delete cascade,
-  day_index int not null check (day_index between 0 and 311),
+  day_index smallint not null check (day_index between 0 and 311),
   body text not null check (char_length(body) between 1 and 20000),
   updated_at timestamptz not null,
   primary key (user_id, day_index)
@@ -24,7 +24,7 @@ set search_path = ''
 as $$
 begin
   if new.updated_at < old.updated_at then
-    return old;
+    return null;
   end if;
   return new;
 end;

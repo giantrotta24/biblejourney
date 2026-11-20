@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { AppState, Pressable, Text } from 'react-native';
 
 import { ReadingProviders } from '@/app/providers';
+import { useProgress } from '@/progress/context';
+import { OFFLINE_LINE, SYNCED_LINE, SYNCING_LINE } from '@/sync/copy';
+import { createFakeServer, type FakeDevice } from '@/sync/fake-remote';
 import AccountRoute from '@/app/(tabs)/more/account';
 import MoreScreen from '@/app/(tabs)/more/index';
 import { NOTES_KEY } from '@/notes/store';
@@ -111,9 +115,7 @@ describe('More and Account', () => {
       </ReadingProviders>,
     );
     expect(await screen.findByText('reader@example.com')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Your progress and notes are kept on this phone. Syncing with your account arrives in the next update.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText(OFFLINE_LINE)).toBeOnTheScreen();
     expect(screen.getByText('Signing out keeps your progress and notes on this phone.')).toBeOnTheScreen();
     const progress = await AsyncStorage.getItem(PROGRESS_KEY);
     const notes = await AsyncStorage.getItem(NOTES_KEY);
@@ -124,4 +126,63 @@ describe('More and Account', () => {
     expect(notes).toContain('Kept');
     expect(await screen.findByText('Not signed in')).toBeOnTheScreen();
   });
+
+  it('shows syncing, synced, offline, and a refused change', async () => {
+    fakeAuth.session = { access_token: 'token', user: { id: 'user-1', email: 'reader@example.com' } };
+    const listeners: ((state: string) => void)[] = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+      listeners.push(listener as (state: string) => void);
+      return { remove: jest.fn() };
+    });
+    const server = createFakeServer();
+    let release = () => {};
+    const held: { device: FakeDevice | null } = { device: null };
+    function Marker() {
+      const { mark } = useProgress();
+      return (
+        <>
+          <Pressable onPress={() => mark(0)}>
+            <Text>Mark 0</Text>
+          </Pressable>
+          <Pressable onPress={() => mark(1)}>
+            <Text>Mark 1</Text>
+          </Pressable>
+        </>
+      );
+    }
+    await render(
+      <ReadingProviders
+        remoteFor={(userId) => {
+          const next = server.device(userId);
+          release = next.holdNextPull();
+          held.device = next;
+          return next;
+        }}
+      >
+        <AccountRoute />
+        <Marker />
+      </ReadingProviders>,
+    );
+    expect(await screen.findByText(SYNCING_LINE)).toBeOnTheScreen();
+    await act(async () => {
+      release();
+    });
+    expect(await screen.findByText(SYNCED_LINE)).toBeOnTheScreen();
+
+    const device = held.device;
+    if (!device) throw new Error('sync never asked for a remote');
+    device.online = false;
+    await fireEvent.press(screen.getByText('Mark 0'));
+    expect(await screen.findByText(OFFLINE_LINE, {}, { timeout: 4000 })).toBeOnTheScreen();
+
+    device.online = true;
+    await act(async () => {
+      for (const listener of listeners) listener('active');
+    });
+    expect(await screen.findByText(SYNCED_LINE, {}, { timeout: 4000 })).toBeOnTheScreen();
+
+    device.refuseNext('putDays');
+    await fireEvent.press(screen.getByText('Mark 1'));
+    await waitFor(() => expect(screen.getByText('1 change could not be synced.')).toBeOnTheScreen(), { timeout: 4000 });
+  }, 15000);
 });

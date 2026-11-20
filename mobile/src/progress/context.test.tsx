@@ -4,10 +4,14 @@ import { useEffect } from 'react';
 import { AppState, Pressable, Text, View } from 'react-native';
 
 import { ProgressProvider, useProgress } from './context';
-import { PROGRESS_KEY, type KeyValueStore } from './store';
+import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY, type KeyValueStore } from './store';
 
 const ORIGINAL = JSON.stringify({ version: 1, days: [0, 1, 2, 3, 4, 5] });
-const UNREADABLE_KEY = 'biblejourney.progress.v1.unreadable';
+
+function savedDays(raw: string | undefined): number[] {
+  const parsed = JSON.parse(raw ?? '') as { rows: { day_index: number }[] };
+  return parsed.rows.map((row) => row.day_index);
+}
 
 function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } {
   const raw = new Map<string, string>();
@@ -170,9 +174,10 @@ describe('ProgressProvider', () => {
 
     await fireEvent.press(await screen.findByText('Mark 0'));
     await waitFor(() => {
-      expect(storage.raw.get(UNREADABLE_KEY)).toBe(corrupt);
+      expect(storage.raw.get(PROGRESS_V2_UNREADABLE_KEY)).toBe(corrupt);
     });
-    expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [0] });
+    expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([0]);
+    expect(storage.raw.get(PROGRESS_KEY)).toBe(corrupt);
   });
 
   it('saves the full set after a failed save starts working', async () => {
@@ -193,12 +198,12 @@ describe('ProgressProvider', () => {
     await fireEvent.press(screen.getByText('Mark 0'));
     await fireEvent.press(screen.getByText('Mark 1'));
     expect(await screen.findByText('Days: 0,1')).toBeOnTheScreen();
-    expect(storage.raw.has(PROGRESS_KEY)).toBe(false);
+    expect(storage.raw.has(PROGRESS_V2_KEY)).toBe(false);
 
     fail = false;
     await fireEvent.press(screen.getByText('Mark 2'));
     await waitFor(() => {
-      expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [0, 1, 2] });
+      expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([0, 1, 2]);
     });
   });
 
@@ -220,12 +225,12 @@ describe('ProgressProvider', () => {
     await fireEvent.press(screen.getByText('Mark 0'));
     await fireEvent.press(screen.getByText('Mark 1'));
     expect(await screen.findByText('Days: 0,1')).toBeOnTheScreen();
-    expect(storage.raw.has(PROGRESS_KEY)).toBe(false);
+    expect(storage.raw.has(PROGRESS_V2_KEY)).toBe(false);
 
     fail = false;
     for (const listener of listeners) listener('active');
     await waitFor(() => {
-      expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [0, 1] });
+      expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([0, 1]);
     });
   });
 
@@ -241,7 +246,7 @@ describe('ProgressProvider', () => {
     await fireEvent.press(screen.getByText('Mark 312'));
     await fireEvent.press(screen.getByText('Mark 0'));
     await waitFor(() => {
-      expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [0] });
+      expect(savedDays(storage.raw.get(PROGRESS_V2_KEY))).toEqual([0]);
     });
 
     await view.unmount();

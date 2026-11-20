@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { useDurableValue } from '@/persist/durable';
+import { useRecord, useRuntime } from '@/sync/react';
 
 import { loadVerses, saveVerses, withLearned, type KeyValueStore, type VerseRow } from './store';
 
@@ -34,7 +35,9 @@ export function VersesProvider({
   useEffect(() => {
     nowRef.current = now;
   }, [now]);
-  const { value, unavailable, read, isReady, commit, beginRetry } = useDurableValue({
+  const runtime = useRuntime();
+  const record = useRecord();
+  const { value, unavailable, read, isReady, isUnavailable, isUnreadable, commit, beginRetry } = useDurableValue({
     storage,
     load: loadVerses,
     save: saveVerses,
@@ -48,9 +51,34 @@ export function VersesProvider({
       const next = withLearned(read(), week, learned, nowRef.current().toISOString());
       if (next === read()) return;
       commit(next);
+      const row = next.find((item) => item.week === week);
+      if (row) record({ kind: 'put-verse', row });
+      else record({ kind: 'delete-verse', week });
     },
-    [commit, isReady, read],
+    [commit, isReady, read, record],
   );
+
+  const replaceVerses = useCallback(
+    (rows: readonly VerseRow[]) => {
+      if (!isReady()) return;
+      commit([...rows]);
+    },
+    [commit, isReady],
+  );
+  const book = useMemo(
+    () => ({
+      read,
+      ready: isReady,
+      unavailable: isUnavailable,
+      unreadable: isUnreadable,
+      replace: replaceVerses,
+    }),
+    [isReady, isUnavailable, isUnreadable, read, replaceVerses],
+  );
+  useEffect(() => {
+    if (!runtime) return;
+    return runtime.register('verses', book);
+  }, [book, runtime, value, unavailable]);
 
   const retry = useCallback(() => {
     beginRetry();

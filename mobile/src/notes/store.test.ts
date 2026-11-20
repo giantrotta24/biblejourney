@@ -1,6 +1,15 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { NOTES_KEY, NOTES_UNREADABLE_KEY, loadNotes, saveNotes, withNote, type KeyValueStore, type NoteRow } from './store';
+import {
+  NOTE_MAX_LENGTH,
+  NOTES_KEY,
+  NOTES_UNREADABLE_KEY,
+  loadNotes,
+  saveNotes,
+  withNote,
+  type KeyValueStore,
+  type NoteRow,
+} from './store';
 
 function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } {
   const raw = new Map<string, string>();
@@ -81,6 +90,13 @@ describe('withNote', () => {
   it('leaves the timestamp alone when the body is unchanged', () => {
     const notes = [row(3, 'A line', at)];
     expect(withNote(notes, 3, 'A line', later)).toBe(notes);
+  });
+
+  it('clamps a note to 20,000 characters', () => {
+    expect(NOTE_MAX_LENGTH).toBe(20000);
+    const next = withNote([], 3, 'x'.repeat(20001), at);
+    expect(next).toHaveLength(1);
+    expect(next[0]?.body).toHaveLength(20000);
   });
 
   it('ignores a day outside the plan', () => {

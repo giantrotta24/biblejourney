@@ -81,6 +81,7 @@ describe('NoteSheet', () => {
     const view = await renderSheet(storage);
     const input = await screen.findByLabelText('Note');
     expect(input.props.autoFocus).toBe(true);
+    expect(input.props.maxLength).toBe(20000);
 
     await fireEvent.changeText(input, 'Leave the edges');
     expect(storage.raw.has(NOTES_KEY)).toBe(false);

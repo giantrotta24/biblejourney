@@ -1,6 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PROGRESS_KEY, loadProgress, parseProgress, saveProgress, type KeyValueStore } from './store';
+import {
+  PROGRESS_KEY,
+  PROGRESS_V2_KEY,
+  loadProgress,
+  parseProgress,
+  saveProgress,
+  type KeyValueStore,
+} from './store';
 
 function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } {
   const raw = new Map<string, string>();
@@ -58,13 +65,62 @@ describe('progress store', () => {
 
   it('loads the days that were stored', async () => {
     const storage = memory(JSON.stringify({ version: 1, days: [4, 1, 1] }));
-    await expect(loadProgress(storage)).resolves.toEqual({ status: 'ready', days: new Set([1, 4]) });
+    const loaded = await loadProgress(storage);
+    expect(loaded.status).toBe('ready');
+    if (loaded.status !== 'ready') return;
+    expect(loaded.rows.map((row) => row.day_index)).toEqual([1, 4]);
   });
 
-  it('saves days in order and reads them back', async () => {
+  it('saves rows in day order and reads them back', async () => {
     const storage = memory();
-    await saveProgress(new Set([4, 1]), storage);
-    expect(JSON.parse(storage.raw.get(PROGRESS_KEY) ?? '')).toEqual({ version: 1, days: [1, 4] });
-    await expect(loadProgress(storage)).resolves.toEqual({ status: 'ready', days: new Set([1, 4]) });
+    await saveProgress(
+      [
+        { day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' },
+        { day_index: 1, completed_at: '2026-11-20T15:00:00.000Z' },
+      ],
+      storage,
+    );
+    expect(JSON.parse(storage.raw.get(PROGRESS_V2_KEY) ?? '').rows).toEqual([
+      { day_index: 1, completed_at: '2026-11-20T15:00:00.000Z' },
+      { day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' },
+    ]);
+    const loaded = await loadProgress(storage);
+    expect(loaded.status).toBe('ready');
+    if (loaded.status !== 'ready') return;
+    expect(loaded.rows.map((row) => row.day_index)).toEqual([1, 4]);
+  });
+
+  it('migrates a v1 set of days into timestamped rows and keeps the v1 value', async () => {
+    const v1 = JSON.stringify({ version: 1, days: [4, 1, 1] });
+    const storage = memory(v1);
+    const at = new Date('2026-11-20T15:00:00.000Z');
+    await expect(loadProgress(storage, () => at)).resolves.toEqual({
+      status: 'ready',
+      rows: [
+        { day_index: 1, completed_at: '2026-11-20T15:00:00.000Z' },
+        { day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' },
+      ],
+    });
+    expect(storage.raw.get(PROGRESS_KEY)).toBe(v1);
+    expect(storage.raw.has('biblejourney.progress.v1.backup')).toBe(false);
+    const saved = JSON.parse(storage.raw.get(PROGRESS_V2_KEY) ?? '');
+    expect(saved.rows.map((row: { day_index: number }) => row.day_index)).toEqual([1, 4]);
+  });
+
+  it('ignores v1 once v2 is stored', async () => {
+    const storage = memory(JSON.stringify({ version: 1, days: [1] }));
+    await saveProgress([{ day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' }], storage);
+    await expect(loadProgress(storage)).resolves.toEqual({
+      status: 'ready',
+      rows: [{ day_index: 4, completed_at: '2026-11-20T15:00:00.000Z' }],
+    });
+  });
+
+  it('does not migrate a corrupt v1 into an empty year', async () => {
+    const corrupt = '{"version":1';
+    const storage = memory(corrupt);
+    await expect(loadProgress(storage)).resolves.toEqual({ status: 'unreadable', raw: corrupt });
+    expect(storage.raw.has(PROGRESS_V2_KEY)).toBe(false);
+    expect(storage.raw.get(PROGRESS_KEY)).toBe(corrupt);
   });
 });

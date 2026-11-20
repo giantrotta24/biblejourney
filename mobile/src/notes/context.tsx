@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { useDurableValue } from '@/persist/durable';
+import { useRecord, useRuntime } from '@/sync/react';
 
 import { loadNotes, saveNotes, withNote, type KeyValueStore, type NoteRow } from './store';
 
@@ -37,7 +38,10 @@ export function NotesProvider({
   useEffect(() => {
     nowRef.current = now;
   }, [now]);
-  const { value, unavailable, saving, failed, read, isReady, commit, beginRetry } = useDurableValue({
+  const runtime = useRuntime();
+  const record = useRecord();
+  const { value, unavailable, saving, failed, read, isReady, isUnavailable, isUnreadable, commit, beginRetry } =
+    useDurableValue({
     storage,
     load: loadNotes,
     save: saveNotes,
@@ -48,12 +52,38 @@ export function NotesProvider({
   const setBody = useCallback(
     (dayIndex: number, body: string) => {
       if (!isReady()) return;
-      const next = withNote(read(), dayIndex, body, nowRef.current().toISOString());
+      const updatedAt = nowRef.current().toISOString();
+      const next = withNote(read(), dayIndex, body, updatedAt);
       if (next === read()) return;
       commit(next);
+      const row = next.find((item) => item.day_index === dayIndex);
+      if (row) record({ kind: 'put-note', row });
+      else record({ kind: 'delete-note', day_index: dayIndex, deleted_at: updatedAt });
     },
-    [commit, isReady, read],
+    [commit, isReady, read, record],
   );
+
+  const replaceNotes = useCallback(
+    (rows: readonly NoteRow[]) => {
+      if (!isReady()) return;
+      commit([...rows]);
+    },
+    [commit, isReady],
+  );
+  const book = useMemo(
+    () => ({
+      read,
+      ready: isReady,
+      unavailable: isUnavailable,
+      unreadable: isUnreadable,
+      replace: replaceNotes,
+    }),
+    [isReady, isUnavailable, isUnreadable, read, replaceNotes],
+  );
+  useEffect(() => {
+    if (!runtime) return;
+    return runtime.register('notes', book);
+  }, [book, runtime, value, unavailable]);
 
   const remove = useCallback((dayIndex: number) => setBody(dayIndex, ''), [setBody]);
   const retry = useCallback(() => {

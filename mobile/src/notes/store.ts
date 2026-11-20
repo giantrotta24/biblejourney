@@ -8,6 +8,7 @@ export type { KeyValueStore } from '@/persist/document';
 
 export const NOTES_KEY = 'biblejourney.notes.v1';
 export const NOTES_UNREADABLE_KEY = 'biblejourney.notes.v1.unreadable';
+export const NOTE_MAX_LENGTH = 20000;
 
 export type NoteRow = { day_index: number; body: string; updated_at: string };
 
@@ -48,14 +49,15 @@ export function parseNotes(raw: string): NoteRow[] | null {
 }
 
 export function withNote(rows: readonly NoteRow[], dayIndex: number, body: string, updatedAt = ''): NoteRow[] {
+  const text = body.length > NOTE_MAX_LENGTH ? body.slice(0, NOTE_MAX_LENGTH) : body;
   if (!isDay(dayIndex)) return rows as NoteRow[];
   const existing = rows.find((row) => row.day_index === dayIndex);
-  if (body.length === 0) {
+  if (text.length === 0) {
     if (!existing) return rows as NoteRow[];
     return rows.filter((row) => row.day_index !== dayIndex);
   }
-  if (existing && existing.body === body) return rows as NoteRow[];
-  const next = { day_index: dayIndex, body, updated_at: updatedAt };
+  if (existing && existing.body === text) return rows as NoteRow[];
+  const next = { day_index: dayIndex, body: text, updated_at: updatedAt };
   return [...rows.filter((row) => row.day_index !== dayIndex), next].sort((a, b) => a.day_index - b.day_index);
 }
 

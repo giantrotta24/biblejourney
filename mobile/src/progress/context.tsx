@@ -1,45 +1,56 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { useDurableValue } from '@/persist/durable';
 import { StorageBlank, StorageRetry } from '@/persist/retry';
+import { useRecord, useRuntime } from '@/sync/react';
 import { DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
 
-import { loadProgress, saveProgress, type KeyValueStore } from './store';
+import { loadProgress, saveProgress, type DayRow, type KeyValueStore } from './store';
 
 type ProgressApi = {
   days: ReadonlySet<number>;
+  rows: readonly DayRow[];
   mark: (index: number) => void;
+  replaceDays: (rows: readonly DayRow[]) => void;
 };
 
 const ProgressContext = createContext<ProgressApi | null>(null);
 
-function emptyDays(): Set<number> {
-  return new Set();
+function emptyDays(): DayRow[] {
+  return [];
 }
 
-async function loadDays(storage: KeyValueStore) {
+async function loadRows(storage: KeyValueStore) {
   const result = await loadProgress(storage);
-  if (result.status === 'ready') return { status: 'ready' as const, value: result.days };
+  if (result.status === 'ready') return { status: 'ready' as const, value: result.rows };
   return result;
 }
 
-function saveDays(days: ReadonlySet<number>, storage: KeyValueStore, backupRaw?: string | null) {
-  return saveProgress(days, storage, backupRaw);
+function saveRows(rows: readonly DayRow[], storage: KeyValueStore, backupRaw?: string | null) {
+  return saveProgress(rows, storage, backupRaw);
 }
 
 export function ProgressProvider({
   children,
   storage = AsyncStorage,
+  now = () => new Date(),
 }: {
   children: ReactNode;
   storage?: KeyValueStore;
+  now?: () => Date;
 }) {
   const [attempt, setAttempt] = useState(0);
-  const { value, unavailable, read, isReady, commit, beginRetry } = useDurableValue({
+  const nowRef = useRef(now);
+  useEffect(() => {
+    nowRef.current = now;
+  }, [now]);
+  const runtime = useRuntime();
+  const record = useRecord();
+  const { value, unavailable, read, isReady, isUnavailable, isUnreadable, commit, beginRetry } = useDurableValue({
     storage,
-    load: loadDays,
-    save: saveDays,
+    load: loadRows,
+    save: saveRows,
     empty: emptyDays,
     attempt,
   });
@@ -49,23 +60,50 @@ export function ProgressProvider({
       if (!isReady()) return;
       if (!Number.isInteger(index) || index < 0 || index >= DAY_COUNT) return;
       const current = read();
-      if (current.has(index)) return;
-      const next = new Set(current);
-      next.add(index);
+      if (current.some((row) => row.day_index === index)) return;
+      const row = { day_index: index, completed_at: nowRef.current().toISOString() };
+      const next = [...current, row].sort((a, b) => a.day_index - b.day_index);
       commit(next);
+      record({ kind: 'put-day', row });
     },
-    [commit, isReady, read],
+    [commit, isReady, read, record],
   );
+
+  const replaceDays = useCallback(
+    (rows: readonly DayRow[]) => {
+      if (!isReady()) return;
+      commit([...rows]);
+    },
+    [commit, isReady],
+  );
+
+  const book = useMemo(
+    () => ({
+      read,
+      ready: isReady,
+      unavailable: isUnavailable,
+      unreadable: isUnreadable,
+      replace: replaceDays,
+    }),
+    [isReady, isUnavailable, isUnreadable, read, replaceDays],
+  );
+  useEffect(() => {
+    if (!runtime) return;
+    return runtime.register('days', book);
+  }, [book, runtime, value, unavailable]);
 
   function retry() {
     beginRetry();
     setAttempt((next) => next + 1);
   }
 
+  const days = useMemo(() => new Set((value ?? []).map((row) => row.day_index)), [value]);
+  const api = useMemo(() => ({ days, rows: value ?? [], mark, replaceDays }), [days, mark, replaceDays, value]);
+
   if (unavailable) return <StorageRetry message="Couldn’t load your reading." onRetry={retry} />;
   if (!value) return <StorageBlank />;
 
-  return <ProgressContext.Provider value={{ days: value, mark }}>{children}</ProgressContext.Provider>;
+  return <ProgressContext.Provider value={api}>{children}</ProgressContext.Provider>;
 }
 
 export function useProgress(): ProgressApi {

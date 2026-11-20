@@ -68,10 +68,11 @@ jest.mock('expo-notifications', () => require('./src/reminders/notifications-moc
 jest.mock('@react-native-community/datetimepicker', () => {
   const React = require('react');
   const { Pressable } = require('react-native');
-  function DateTimePicker({ onValueChange, value }) {
+  function DateTimePicker({ onValueChange, value, is24Hour }) {
     return React.createElement(Pressable, {
       accessibilityRole: 'button',
       accessibilityLabel: 'Time picker',
+      is24Hour,
       onPress: () => {
         const next = new Date(value);
         next.setHours(8, 30, 0, 0);

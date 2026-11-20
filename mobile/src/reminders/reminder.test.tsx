@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert, AppState, Linking, Platform, Pressable, Text } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Linking, Platform, Pressable, Text } from 'react-native';
+
+import { dark, light } from '@/theme/colors';
 
 import { fakeAuth, fakeProfiles, resetFakeAuth } from '@/account/fake-supabase';
 import { ReadingProviders } from '@/providers';
@@ -38,7 +40,7 @@ jest.mock('react-native-safe-area-context', () => ({
 const ZONE = 'America/New_York';
 const TITLE = 'Today\u2019s reading is ready';
 const DENIED = 'Notifications are off for Bible Journey.';
-const NOTE = 'One calm note a day with your next reading, in your own time zone.';
+const NOTE = 'One calm note a day with your next reading, sent in your own time zone.';
 const granted = { granted: true, canAskAgain: false, status: 'granted', expires: 'never' as const };
 const denied = { granted: false, canAskAgain: false, status: 'denied', expires: 'never' as const };
 
@@ -133,6 +135,7 @@ describe('Daily reminder settings', () => {
     jest.mocked(router.dismissAll).mockClear();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+    jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     jest.spyOn(AppState, 'addEventListener').mockImplementation((type, listener) => {
       if (type === 'change') appListeners.add(listener as (state: string) => void);
       return { remove: () => appListeners.delete(listener as (state: string) => void) };
@@ -145,8 +148,17 @@ describe('Daily reminder settings', () => {
     const headers = screen.getAllByRole('header').map((item) => item.props.children);
     expect(headers.indexOf('Daily reminder')).toBeGreaterThan(-1);
     expect(headers.indexOf('Daily reminder')).toBeLessThan(headers.indexOf('Appearance'));
-    expect(screen.getByRole('switch', { name: 'Remind me' })).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'Time, 7:00 AM' })).toBeOnTheScreen();
+    const remind = screen.getByRole('switch', { name: 'Remind me' });
+    expect(remind).not.toBeChecked();
+    expect(remind.props.tintColor).toBe(light.rule);
+    expect(remind.props.onTintColor).toBe(light.ink);
+    expect(remind.props.thumbTintColor).toBe('#ffffff');
+    const caption = screen.getByText('Remind me', { includeHiddenElements: true });
+    expect(caption.props.accessibilityElementsHidden).toBe(true);
+    expect(caption.props.importantForAccessibility).toBe('no');
+    const time = screen.getByRole('button', { name: 'Time, 7:00 AM' });
+    expect(time.props.accessibilityState).toEqual(expect.objectContaining({ expanded: false }));
+    expect(time).toBeOnTheScreen();
     expect(screen.getByText(NOTE)).toBeOnTheScreen();
     expect(screen.queryByText(DENIED)).toBeNull();
     expect(permissionRequestCount()).toBe(0);
@@ -195,6 +207,9 @@ describe('Daily reminder settings', () => {
   it('keeps a chosen time while off, then reschedules at that time', async () => {
     await renderSettings();
     await fireEvent.press(screen.getByRole('button', { name: 'Time, 7:00 AM' }));
+    expect(screen.getByRole('button', { name: 'Time, 7:00 AM' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ expanded: true }),
+    );
     await fireEvent.press(screen.getByRole('button', { name: 'Time picker' }));
     expect(screen.getByRole('button', { name: 'Time, 8:30 AM' })).toBeOnTheScreen();
     expect(scheduledNotifications()).toEqual([]);
@@ -214,7 +229,9 @@ describe('Daily reminder settings', () => {
     try {
       await renderSettings();
       await fireEvent.press(screen.getByRole('button', { name: 'Time, 7:00 AM' }));
-      expect(screen.getByRole('button', { name: 'Time picker' })).toBeOnTheScreen();
+      const picker = screen.getByRole('button', { name: 'Time picker' });
+      expect(picker).toBeOnTheScreen();
+      expect(picker.props.is24Hour).toBeUndefined();
       await fireEvent.press(screen.getByRole('button', { name: 'Time picker' }));
       expect(screen.queryByRole('button', { name: 'Time picker' })).toBeNull();
       expect(screen.getByRole('button', { name: 'Time, 8:30 AM' })).toBeOnTheScreen();
@@ -230,11 +247,42 @@ describe('Daily reminder settings', () => {
     expect(permissionRequestCount()).toBe(1);
     expect(screen.getByRole('switch', { name: 'Remind me' })).not.toBeChecked();
     expect(screen.getByText(DENIED)).toBeOnTheScreen();
+    expect(screen.getByText(DENIED).props.accessibilityLiveRegion).toBe('polite');
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(DENIED);
     expect(scheduledNotifications()).toEqual([]);
     const stored = JSON.parse((await AsyncStorage.getItem('biblejourney.reminder.v1')) ?? '{}') as { enabled?: boolean };
     expect(stored.enabled).toBe(false);
     await fireEvent.press(screen.getByRole('button', { name: 'Open Settings' }));
     expect(Linking.openSettings).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Open Settings' }).props.style).toEqual(
+      expect.objectContaining({ minHeight: 44 }),
+    );
+  });
+
+  it('gives Open Settings a 48dp target on Android', async () => {
+    const original = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+    setNotificationPermission({ granted: false, canAskAgain: true, status: 'undetermined', expires: 'never' });
+    try {
+      await renderSettings();
+      await fireEvent(screen.getByRole('switch', { name: 'Remind me' }), 'valueChange', true);
+      expect(screen.getByRole('button', { name: 'Open Settings' }).props.style).toEqual(
+        expect.objectContaining({ minHeight: 48 }),
+      );
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, get: () => original });
+    }
+  });
+
+  it('uses a paper thumb when the ink switch is on in the dark', async () => {
+    await renderSettings();
+    await turnOn();
+    expect(screen.getByRole('switch', { name: 'Remind me' }).props.thumbTintColor).toBe('#ffffff');
+    await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
+    const remind = screen.getByRole('switch', { name: 'Remind me' });
+    expect(remind.props.tintColor).toBe(dark.rule);
+    expect(remind.props.onTintColor).toBe(dark.ink);
+    expect(remind.props.thumbTintColor).toBe(dark.paper);
   });
 
   it('turns on after she allows notifications and comes back', async () => {

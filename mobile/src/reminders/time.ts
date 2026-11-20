@@ -98,5 +98,5 @@ export function readOnLocalDate(completedAt: readonly string[], now: Date, timeZ
 
 export function formatReminderTime(hour: number, minute: number): string {
   const date = new Date(2026, 0, 1, hour, minute, 0, 0);
-  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(date).replace(/\u202f/g, ' ');
+  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date).replace(/\u202f/g, ' ');
 }

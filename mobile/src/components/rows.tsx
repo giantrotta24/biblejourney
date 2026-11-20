@@ -5,6 +5,11 @@ import Svg, { Path } from 'react-native-svg';
 import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 
+export function Note({ children }: { children: string }) {
+  const colors = useColors();
+  return <Text style={{ fontSize: 14, lineHeight: 14 * 1.4, color: colors.ink2, marginTop: 4 }}>{children}</Text>;
+}
+
 export function Section({ title }: { title: string }) {
   const colors = useColors();
   return (

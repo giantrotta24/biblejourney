@@ -10,7 +10,7 @@ import { useColors } from '@/theme/colors';
 import { useVerses } from '@/verses/context';
 
 import { ReminderSection } from './reminder-section';
-import { Row, RowChevron, Section } from './rows';
+import { Note, Row, RowChevron, Section } from './rows';
 import { StackPage } from './stack-page';
 
 const THEME_LABELS: Record<Theme, string> = {
@@ -22,11 +22,6 @@ const THEME_LABELS: Record<Theme, string> = {
 const RESET_TITLE = 'Reset your progress?';
 const RESET_MESSAGE =
   'This clears every day and memory verse you’ve marked, on this phone and on your account if you’re signed in. Your notes are kept. It can’t be undone.';
-
-function Note({ children }: { children: string }) {
-  const colors = useColors();
-  return <Text style={{ fontSize: 14, lineHeight: 14 * 1.4, color: colors.ink2, marginTop: 4 }}>{children}</Text>;
-}
 
 function Tick() {
   const colors = useColors();

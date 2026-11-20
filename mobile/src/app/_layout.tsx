@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { whenReminderReady } from '@/reminders/client';
 import { whenSettingsReady } from '@/settings/client';
 import { useColors } from '@/theme/colors';
 import { useResolvedScheme } from '@/theme/scheme';
@@ -26,7 +27,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     let live = true;
-    void whenSettingsReady().then(() => {
+    void Promise.all([whenSettingsReady(), whenReminderReady()]).then(() => {
       if (live) setSettingsReady(true);
     });
     return () => {

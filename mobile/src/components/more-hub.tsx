@@ -6,7 +6,7 @@ import { Row, RowChevron, Section } from './rows';
 
 const TIMELINE = 'The 11 eras, from the patriarchs to the early church';
 const WHOS_WHO = 'Peoples and prophets';
-const SETTINGS = 'Appearance, translation, start over';
+const SETTINGS = 'Reminder, appearance, translation';
 
 function HubRow({ title, detail, onPress, ruled = false }: { title: string; detail: string; onPress: () => void; ruled?: boolean }) {
   const colors = useColors();

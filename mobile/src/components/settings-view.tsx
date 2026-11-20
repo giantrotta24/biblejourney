@@ -9,6 +9,7 @@ import { useRuntime } from '@/sync/react';
 import { useColors } from '@/theme/colors';
 import { useVerses } from '@/verses/context';
 
+import { ReminderSection } from './reminder-section';
 import { Row, RowChevron, Section } from './rows';
 import { StackPage } from './stack-page';
 
@@ -80,6 +81,7 @@ export function SettingsView() {
 
   return (
     <StackPage title="Settings" backLabel="More">
+      <ReminderSection />
       <Section title="Appearance" />
       {THEMES.map((value, index) => (
         <Choice

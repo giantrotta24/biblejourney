@@ -8,6 +8,7 @@ import { SIGN_IN_UNAVAILABLE } from '@/account/errors';
 import { signOut, useSession } from '@/account/session';
 import { clearWelcomed } from '@/account/welcome';
 import { useNotes } from '@/notes/context';
+import { turnReminderOff } from '@/reminders/client';
 import { NOTES_KEY, NOTES_UNREADABLE_KEY } from '@/notes/store';
 import { useProgress } from '@/progress/context';
 import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY } from '@/progress/store';
@@ -78,6 +79,7 @@ export function AccountBody({
       return;
     }
     await runStep(() => signOut());
+    await runStep(() => turnReminderOff());
     const daysReady = await runStep(clearDays);
     const versesReady = await runStep(clearVerses);
     const notesReady = await runStep(clearNotes);

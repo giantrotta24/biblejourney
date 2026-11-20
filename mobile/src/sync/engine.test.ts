@@ -494,4 +494,25 @@ describe('sync engine', () => {
       jest.useRealTimers();
     }
   });
+
+  it('sends a reset to the account and leaves notes', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addVerse(2);
+    await device.store.addNote(4, 'kept');
+    await settle(device.sync);
+
+    await device.store.removeDay(0);
+    await device.store.removeVerse(2);
+    await device.sync.markReset('2026-11-20T15:00:00.000Z');
+    await settle(device.sync);
+
+    expect(server.rows(USER).days).toEqual([]);
+    expect(server.rows(USER).verses).toEqual([]);
+    expect(server.rows(USER).notes.map((row) => row.body)).toEqual(['kept']);
+    expect(server.resetAt(USER)).not.toBeNull();
+    expect(device.remote.calls).toContain('markReset');
+  });
 });

@@ -43,6 +43,8 @@ export type Sync = {
   subscribeStatus(listener: () => void): () => void;
   subscribeRemote(listener: () => void): () => void;
   onFirstLink(listener: () => void): () => void;
+  markReset(at: string): Promise<void>;
+  clearQueue(): Promise<void>;
 };
 
 type Session = {
@@ -505,6 +507,38 @@ export function createSync(
     return flush();
   }
 
+  async function halt() {
+    if (stopping) return stopping;
+    generation += 1;
+    const s = session;
+    session = null;
+    s?.unsubscribe();
+    clearTimer();
+    clearRetry();
+    recording.clear();
+    unrecorded.clear();
+    failedChanges.clear();
+    setStatus('off');
+    stopping = (async () => {
+      await linkedLoaded;
+      linked = null;
+      rejected = 0;
+      resetSeen = null;
+      refused.clear();
+      notifyStatus();
+      await queue.setLinkedUser(null).catch(() => undefined);
+      await queue.setRejectedCount(0).catch(() => undefined);
+      await queue.setResetSeen(null).catch(() => undefined);
+      await queue.setRefusedNotes([]).catch(() => undefined);
+      await persistUnrecorded();
+    })();
+    try {
+      await stopping;
+    } finally {
+      stopping = null;
+    }
+  }
+
   return {
     attach(target) {
       store = target;
@@ -531,37 +565,7 @@ export function createSync(
       return flush();
     },
 
-    async stop() {
-      if (stopping) return stopping;
-      generation += 1;
-      const s = session;
-      session = null;
-      s?.unsubscribe();
-      clearTimer();
-      clearRetry();
-      recording.clear();
-      unrecorded.clear();
-      failedChanges.clear();
-      setStatus('off');
-      stopping = (async () => {
-        await linkedLoaded;
-        linked = null;
-        rejected = 0;
-        resetSeen = null;
-        refused.clear();
-        notifyStatus();
-        await queue.setLinkedUser(null).catch(() => undefined);
-        await queue.setRejectedCount(0).catch(() => undefined);
-        await queue.setResetSeen(null).catch(() => undefined);
-        await queue.setRefusedNotes([]).catch(() => undefined);
-        await persistUnrecorded();
-      })();
-      try {
-        await stopping;
-      } finally {
-        stopping = null;
-      }
-    },
+    stop: halt,
 
     pause() {
       const s = session;
@@ -623,6 +627,20 @@ export function createSync(
     onFirstLink(listener) {
       firstLinkListeners.add(listener);
       return () => firstLinkListeners.delete(listener);
+    },
+
+    async markReset(at) {
+      await linkedLoaded;
+      const userId = session?.userId ?? linked;
+      if (!userId) return;
+      await queue.push({ kind: 'mark-reset', at, user_id: userId });
+      await rememberReset(at);
+      if (session) void track(flush());
+    },
+
+    async clearQueue() {
+      await halt();
+      await queue.clear();
     },
   };
 }

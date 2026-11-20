@@ -31,6 +31,9 @@ export default function PlanScreen() {
         done={days}
         noted={noted}
         focusWeek={focusWeek}
+        onFocusApplied={() => {
+          if (focusWeek != null) router.setParams({ week: '' });
+        }}
         onOpenDay={(index) => {
           const today = currentDay(days)?.index ?? null;
           router.navigate({ pathname: '/', params: { day: index === today ? '' : String(index) } });

@@ -23,9 +23,10 @@ type PlanViewProps = {
   noted: ReadonlySet<number>;
   onOpenDay: (index: number) => void;
   focusWeek?: number | null;
+  onFocusApplied?: () => void;
 };
 
-export function PlanView({ done, noted, onOpenDay, focusWeek = null }: PlanViewProps) {
+export function PlanView({ done, noted, onOpenDay, focusWeek = null, onFocusApplied }: PlanViewProps) {
   const colors = useColors();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
@@ -38,6 +39,8 @@ export function PlanView({ done, noted, onOpenDay, focusWeek = null }: PlanViewP
   const listTop = useRef(0);
   const offsets = useRef(new Map<number, number>());
   const pending = useRef<number | null>(null);
+  const listPlaced = useRef(false);
+  const onFocusAppliedRef = useRef(onFocusApplied);
 
   if (seenWeek !== currentWeek) {
     setSeenWeek(currentWeek);
@@ -64,10 +67,23 @@ export function PlanView({ done, noted, onOpenDay, focusWeek = null }: PlanViewP
   }
 
   useEffect(() => {
+    onFocusAppliedRef.current = onFocusApplied;
+  }, [onFocusApplied]);
+
+  const finishFocus = useCallback(
+    (week: number) => {
+      pending.current = null;
+      scrollToWeek(week);
+      onFocusAppliedRef.current?.();
+    },
+    [scrollToWeek],
+  );
+
+  useEffect(() => {
     if (focusWeek == null) return;
     pending.current = focusWeek;
-    scrollToWeek(focusWeek);
-  }, [focusWeek, scrollToWeek]);
+    if (listPlaced.current && offsets.current.has(focusWeek)) finishFocus(focusWeek);
+  }, [focusWeek, finishFocus]);
 
   const openDayRef = useRef(onOpenDay);
   useEffect(() => {
@@ -82,18 +98,21 @@ export function PlanView({ done, noted, onOpenDay, focusWeek = null }: PlanViewP
       return next;
     });
   }, []);
-  const placeList = useCallback((y: number) => {
-    listTop.current = y;
-  }, []);
+  const placeList = useCallback(
+    (y: number) => {
+      listTop.current = y;
+      listPlaced.current = true;
+      const week = pending.current;
+      if (week != null && offsets.current.has(week)) finishFocus(week);
+    },
+    [finishFocus],
+  );
   const placeWeek = useCallback(
     (week: number, y: number) => {
       offsets.current.set(week, y);
-      if (pending.current === week) {
-        pending.current = null;
-        scrollToWeek(week);
-      }
+      if (pending.current === week && listPlaced.current) finishFocus(week);
     },
-    [scrollToWeek],
+    [finishFocus],
   );
 
   function reveal(week: number) {

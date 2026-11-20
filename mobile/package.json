@@ -50,6 +50,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "config": "npx expo config --type public",
     "lint": "expo lint",
     "test": "jest --watchman=false",
     "typecheck": "tsc --noEmit"

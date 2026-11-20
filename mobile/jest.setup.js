@@ -1,3 +1,8 @@
+jest.mock('react-native-worklets', () => ({
+  isWorkletRuntime: () => false,
+  scheduleOnRN: () => {},
+  scheduleOnUI: () => {},
+}));
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   const identity = (value) => value;
@@ -7,7 +12,15 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: identity, cubic: identity, linear: identity },
     useSharedValue: (value) => ({ value, _isReanimatedSharedValue: true }),
     useAnimatedStyle: (updater) => updater(),
+    useAnimatedRef: () => ({ current: null }),
     useReducedMotion: () => false,
+    interpolate: (value) => value,
+    withSpring: (value, _config, callback) => {
+      callback?.(true);
+      return value;
+    },
+    measure: () => null,
+    ReduceMotion: { System: 'system', Always: 'always', Never: 'never' },
     withTiming: jest.fn((value, _config, callback) => {
       callback?.(true);
       return value;

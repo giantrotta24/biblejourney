@@ -148,6 +148,52 @@ describe('Today', () => {
     expect(onShowDay).not.toHaveBeenCalled();
   });
 
+  it('shows the note placeholder, then the note’s first lines, and opens that day', async () => {
+    const onOpenNote = jest.fn();
+    const note =
+      'The gleaning law stopped me. Leave part of the harvest on purpose, for the widow and the stranger.';
+    const first = await renderToday({ done: new Set(), onOpenNote, noteFor: () => null });
+
+    const placeholder = screen.getByText('Write a note on today’s reading');
+    expect(placeholder.props.numberOfLines).toBe(2);
+    expect(screen.getByRole('button', { name: /Your note/ })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: /Your note/ }));
+    expect(onOpenNote).toHaveBeenCalledWith(0);
+
+    await first.unmount();
+    await renderToday({ done: new Set([0]), dayIndex: 0, noteFor: () => note });
+    const written = screen.getByText(note);
+    expect(written.props.numberOfLines).toBe(2);
+    expect(screen.getByText('Read on Monday')).toBeOnTheScreen();
+    const order = textOrder(screen.root);
+    const noteAt = order.indexOf('Your note');
+    const readAt = order.indexOf('Read on ');
+    expect(noteAt).toBeGreaterThan(-1);
+    expect(readAt).toBeGreaterThan(noteAt);
+  });
+
+  it('keeps the note rules on the text at font scale 1 and 2', async () => {
+    const scale = jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1);
+    try {
+      const first = await renderToday({ done: new Set() });
+      const small = screen.getByText('Write a note on today’s reading');
+      expect(small.props.allowFontScaling).toBe(false);
+      expect(StyleSheet.flatten(small.props.style).fontSize).toBe(16);
+      expect(StyleSheet.flatten(small.props.style).lineHeight).toBe(30);
+      expect(StyleSheet.flatten(small.parent?.props.style).height).toBe(60);
+      await first.unmount();
+
+      scale.mockReturnValue(2);
+      await renderToday({ done: new Set() });
+      const large = screen.getByText('Write a note on today’s reading');
+      expect(StyleSheet.flatten(large.props.style).fontSize).toBe(32);
+      expect(StyleSheet.flatten(large.props.style).lineHeight).toBe(60);
+      expect(StyleSheet.flatten(large.parent?.props.style).height).toBe(120);
+    } finally {
+      scale.mockRestore();
+    }
+  });
+
   it('shows the finished page after every day is read', async () => {
     const onShowDay = jest.fn();
     const done = new Set(Array.from({ length: DAY_COUNT }, (_, index) => index));
@@ -163,6 +209,19 @@ describe('Today', () => {
     expect(onShowDay).toHaveBeenCalledWith(DAY_COUNT - 1);
   });
 });
+
+function textOrder(node: ReturnType<typeof screen.getByText> | null): string[] {
+  if (!node) return [];
+  const texts: string[] = [];
+  function walk(current: ReturnType<typeof screen.getByText>) {
+    for (const child of current.children) {
+      if (typeof child === 'string') texts.push(child);
+      else walk(child);
+    }
+  }
+  walk(node);
+  return texts;
+}
 
 function swipe(translationX: number) {
   const controller = createGestureController(getByGestureTestId('today-turn'));

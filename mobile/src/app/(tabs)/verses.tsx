@@ -1,5 +1,15 @@
-import { PlaceholderScreen } from '@/components/placeholder';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { VersesView } from '@/components/verses-view';
+import { useColors } from '@/theme/colors';
 
 export default function VersesScreen() {
-  return <PlaceholderScreen title="Verses" line="Verses arrive in the next build." />;
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.paper, paddingTop: insets.top }}>
+      <VersesView />
+    </View>
+  );
 }

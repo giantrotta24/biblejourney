@@ -6,7 +6,9 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { ProgressProvider } from '@/progress/context';
+import { useColors } from '@/theme/colors';
+
+import { ReadingProviders } from './providers';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,9 +30,25 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <ProgressProvider>
-        <Stack screenOptions={{ headerShown: false }} />
-      </ProgressProvider>
+      <ReadingProviders>
+        <RootStack />
+      </ReadingProviders>
     </GestureHandlerRootView>
+  );
+}
+
+function RootStack() {
+  const colors = useColors();
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
+      <Stack.Screen
+        name="note/[day]"
+        options={{
+          presentation: 'formSheet',
+          headerShown: false,
+          sheetGrabberVisible: true,
+        }}
+      />
+    </Stack>
   );
 }

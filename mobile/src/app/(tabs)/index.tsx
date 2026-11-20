@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TodayView } from '@/components/today-view';
+import { useNotes } from '@/notes/context';
 import { useProgress } from '@/progress/context';
 import { useColors } from '@/theme/colors';
 import { currentDay, DAY_COUNT } from '../../../../supabase/functions/_shared/content/plan';
@@ -19,6 +20,7 @@ export default function TodayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { days, mark } = useProgress();
+  const { rows, status: notesStatus } = useNotes();
   const { day } = useLocalSearchParams<{ day?: string }>();
   const dayIndex = dayParam(day);
 
@@ -27,6 +29,9 @@ export default function TodayScreen() {
       <TodayView
         done={days}
         dayIndex={dayIndex}
+        noteFor={(index) =>
+          notesStatus === 'ready' ? (rows.find((row) => row.day_index === index)?.body ?? null) : null
+        }
         onMark={(index) => {
           const tearing = currentDay(days)?.index === index;
           mark(index);
@@ -34,6 +39,7 @@ export default function TodayScreen() {
         }}
         onBackToToday={() => router.setParams({ day: '' })}
         onOpenPlan={() => router.navigate('/plan')}
+        onOpenNote={(index) => router.push({ pathname: '/note/[day]', params: { day: String(index) } })}
         onShowDay={(index) => {
           const today = currentDay(days)?.index ?? null;
           if (index == null || index === today) router.setParams({ day: '' });

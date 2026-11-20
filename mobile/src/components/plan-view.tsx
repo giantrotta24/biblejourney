@@ -20,10 +20,11 @@ const BAR = 44;
 
 type PlanViewProps = {
   done: ReadonlySet<number>;
+  noted: ReadonlySet<number>;
   onOpenDay: (index: number) => void;
 };
 
-export function PlanView({ done, onOpenDay }: PlanViewProps) {
+export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
   const colors = useColors();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
@@ -159,6 +160,7 @@ export function PlanView({ done, onOpenDay }: PlanViewProps) {
         </View>
         <PlanWeeks
           done={done}
+          noted={noted}
           open={open}
           todayIndex={current?.index ?? null}
           ink={colors.ink}
@@ -177,6 +179,7 @@ export function PlanView({ done, onOpenDay }: PlanViewProps) {
 
 const PlanWeeks = memo(function PlanWeeks({
   done,
+  noted,
   open,
   todayIndex,
   ink,
@@ -189,6 +192,7 @@ const PlanWeeks = memo(function PlanWeeks({
   onWeekTop,
 }: {
   done: ReadonlySet<number>;
+  noted: ReadonlySet<number>;
   open: ReadonlySet<number>;
   todayIndex: number | null;
   ink: string;
@@ -232,13 +236,14 @@ const PlanWeeks = memo(function PlanWeeks({
             {expanded
               ? week.days.map((day) => {
                   const read = done.has(day.index);
+                  const hasNote = noted.has(day.index);
                   const isToday = todayIndex === day.index;
                   const markColor = isToday ? blueInk : read ? ink : ink3;
                   return (
                     <Pressable
                       key={day.index}
                       accessibilityRole="button"
-                      accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}`}
+                      accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}${hasNote ? ', note' : ''}`}
                       onPress={() => onOpenDay(day.index)}
                       style={{
                         minHeight: Platform.OS === 'android' ? 48 : 44,
@@ -263,6 +268,7 @@ const PlanWeeks = memo(function PlanWeeks({
                         }}>
                         {day.reading}
                       </Text>
+                      {hasNote ? <Text style={{ fontSize: 13, lineHeight: 18, color: ink2 }}>Note</Text> : null}
                     </Pressable>
                   );
                 })

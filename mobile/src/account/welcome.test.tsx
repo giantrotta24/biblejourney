@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { PixelRatio, StyleSheet, Text } from 'react-native';
 
 import { WelcomeGate, WELCOMED_KEY } from '@/account/welcome';
 import { NotesProvider } from '@/notes/context';
@@ -95,6 +95,42 @@ describe('first run', () => {
       expect(screen.queryByText(/Read the whole Bible/)).toBeNull();
       await screen.unmount();
     }
+  });
+
+  it('uses the same day numeral as Today', async () => {
+    jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1);
+    try {
+      await show(memory());
+      const numeral = await screen.findByLabelText('Day 1');
+      const style = StyleSheet.flatten(numeral.props.style);
+      expect(numeral.props.allowFontScaling).toBe(false);
+      expect(style.fontSize).toBe(128);
+      expect(style.letterSpacing).toBeCloseTo(128 * -0.02);
+      expect(style.marginTop).toBe(-Math.round(128 * 0.17));
+      expect(style.marginBottom).toBe(-Math.round(128 * 0.08));
+    } finally {
+      jest.restoreAllMocks();
+    }
+  });
+
+  it('steps the welcome numeral down at large text', async () => {
+    jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(2);
+    try {
+      await show(memory());
+      const style = StyleSheet.flatten((await screen.findByLabelText('Day 1')).props.style);
+      expect(style.fontSize).toBe(112);
+    } finally {
+      jest.restoreAllMocks();
+    }
+  });
+
+  it('leaves the welcome when the flag cannot be saved', async () => {
+    jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('full'));
+    const onAccount = await show(memory());
+    await screen.findByRole('button', { name: 'I already have an account' });
+    await fireEvent.press(screen.getByRole('button', { name: 'I already have an account' }));
+    expect(screen.getByText('Today')).toBeOnTheScreen();
+    expect(onAccount).toHaveBeenCalledTimes(1);
   });
 
   it('waits while notes are still loading', async () => {

@@ -1,18 +1,20 @@
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColors } from '@/theme/colors';
-import { fonts, hitSize } from '@/theme/fonts';
+import { numeralLift, numeralSize, numeralTopInset } from '@/theme/dateline';
+import { fonts, useLargeText } from '@/theme/fonts';
 import { DAY_COUNT, WEEKDAY_NAMES, days } from '../../../supabase/functions/_shared/content/plan';
 
+import { PrimaryButton, TextButton } from './auth-chrome';
 import { PageEdges, Perforation } from './marks';
 
 export function WelcomeView({ onStart, onAccount }: { onStart: () => void; onAccount: () => void }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const day = days[0];
-  const android = Platform.OS === 'android';
-  const buttonHeight = android ? 48 : 50;
+  const numeral = numeralSize(useLargeText());
+  const lift = numeralLift(numeral);
   if (!day) return null;
 
   return (
@@ -48,9 +50,11 @@ export function WelcomeView({ onStart, onAccount }: { onStart: () => void; onAcc
                 accessibilityLabel="Day 1"
                 style={{
                   fontFamily: fonts.numeral,
-                  fontSize: 96,
-                  lineHeight: 96,
-                  letterSpacing: -1.9,
+                  fontSize: numeral,
+                  lineHeight: numeral,
+                  marginTop: -numeralTopInset(numeral),
+                  marginBottom: -lift,
+                  letterSpacing: numeral * -0.02,
                   color: colors.ink,
                   includeFontPadding: false,
                 }}>
@@ -91,42 +95,8 @@ export function WelcomeView({ onStart, onAccount }: { onStart: () => void; onAcc
             <Text style={{ fontSize: 15, lineHeight: 15 * 1.5, color: colors.ink2, marginTop: 12, marginBottom: 18 }}>
               52 weeks · {DAY_COUNT} reading days · no streaks. Miss a day and the next page is simply waiting.
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Start with day 1"
-              onPress={onStart}
-              style={({ pressed }) => ({
-                minHeight: buttonHeight,
-                borderRadius: 10,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.blue,
-                opacity: pressed ? 0.72 : 1,
-              })}>
-              <Text
-                style={{
-                  color: colors.onBlue,
-                  fontSize: android ? 15 : 17,
-                  fontWeight: android ? '500' : '600',
-                }}>
-                Start with day 1
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="I already have an account"
-              onPress={onAccount}
-              style={{ minHeight: hitSize(), alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: colors.ink,
-                  textDecorationLine: 'underline',
-                  textDecorationColor: colors.ink3,
-                }}>
-                I already have an account
-              </Text>
-            </Pressable>
+            <PrimaryButton label="Start with day 1" onPress={onStart} />
+            <TextButton label="I already have an account" onPress={onAccount} />
           </ScrollView>
         </View>
         <PageEdges paper={colors.paper} rule={colors.rule} />

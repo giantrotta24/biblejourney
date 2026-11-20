@@ -47,7 +47,7 @@ export function WelcomeGate({ children, onAccount }: { children: ReactNode; onAc
     try {
       await AsyncStorage.setItem(WELCOMED_KEY, '1');
     } catch {
-      return;
+      // A failed write must not keep the reader on the welcome.
     }
     setDismissed(true);
     then?.();

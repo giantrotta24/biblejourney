@@ -38,6 +38,7 @@ export type TodayViewProps = {
   dayIndex?: number | null;
   noteFor?: (index: number) => string | null;
   onMark: (index: number) => void;
+  onUnmark?: (index: number) => void;
   onBackToToday: () => void;
   onOpenPlan: () => void;
   onOpenNote?: (index: number) => void;
@@ -53,6 +54,7 @@ export function TodayView({
   dayIndex = null,
   noteFor = () => null,
   onMark,
+  onUnmark,
   onBackToToday,
   onOpenPlan,
   onOpenNote,
@@ -186,6 +188,7 @@ export function TodayView({
                   colors={colors}
                   translation={translation}
                   onMark={() => pressMark(selected)}
+                  onUnmark={onUnmark ? () => onUnmark(selected.index) : undefined}
                   onBackToToday={onBackToToday}
                   onOpenNote={onOpenNote}
                   onOpenAsk={onOpenAsk}
@@ -323,6 +326,7 @@ function DayPage({
   signedInNote = null,
   colors,
   onMark,
+  onUnmark,
   onBackToToday,
   onOpenNote,
   onOpenAsk,
@@ -335,6 +339,7 @@ function DayPage({
   signedInNote?: string | null;
   colors: Palette;
   onMark: () => void;
+  onUnmark?: () => void;
   onBackToToday: () => void;
   onOpenNote?: (index: number) => void;
   onOpenAsk?: (index: number) => void;
@@ -460,25 +465,45 @@ function DayPage({
       <NoteArea note={note} colors={colors} large={large} disabled={frozen} onPress={() => onOpenNote?.(day.index)} />
 
       {isRead ? (
-        <View style={{ minHeight: hitSize(), flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View style={{ width: 2, height: 14, backgroundColor: colors.ink }} accessibilityElementsHidden />
-          <Text style={{ fontSize: 15, color: colors.ink }}>Read on {WEEKDAY_NAMES[day.weekday]}</Text>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Back to today"
-            disabled={frozen}
-            onPress={onBackToToday}
-            style={{ marginLeft: 'auto', minHeight: hitSize(), justifyContent: 'center' }}>
-            <Text
-              style={{
-                fontSize: 15,
-                color: colors.ink,
-                textDecorationLine: 'underline',
-                textDecorationColor: colors.ink3,
-              }}>
-              Back to today
-            </Text>
-          </Pressable>
+        <View>
+          <View style={{ minHeight: hitSize(), flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 2, height: 14, backgroundColor: colors.ink }} accessibilityElementsHidden />
+            <Text style={{ fontSize: 15, color: colors.ink }}>Read on {WEEKDAY_NAMES[day.weekday]}</Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Back to today"
+              disabled={frozen}
+              onPress={onBackToToday}
+              style={{ marginLeft: 'auto', minHeight: hitSize(), justifyContent: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: colors.ink,
+                  textDecorationLine: 'underline',
+                  textDecorationColor: colors.ink3,
+                }}>
+                Back to today
+              </Text>
+            </Pressable>
+          </View>
+          {onUnmark ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Mark as unread"
+              disabled={frozen}
+              onPress={onUnmark}
+              style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start', marginLeft: 12 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: colors.ink2,
+                  textDecorationLine: 'underline',
+                  textDecorationColor: colors.ink3,
+                }}>
+                Mark as unread
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : (
         <Pressable

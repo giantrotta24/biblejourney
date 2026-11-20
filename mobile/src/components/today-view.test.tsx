@@ -76,6 +76,57 @@ describe('Today', () => {
     expect(screen.queryByRole('button', { name: 'Mark day 1 read' })).toBeNull();
   });
 
+  it('offers Mark as unread on a day already read', async () => {
+    const onUnmark = jest.fn();
+    await renderToday({ done: new Set([0, 1]), dayIndex: 0, onUnmark });
+
+    const button = screen.getByRole('button', { name: 'Mark as unread' });
+    expect(StyleSheet.flatten(button.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    await fireEvent.press(button);
+    expect(onUnmark).toHaveBeenCalledWith(0);
+  });
+
+  it('unmarks a read day and shows the day unread again', async () => {
+    function Loop() {
+      const { days, mark, unmark } = useProgress();
+      return (
+        <TodayView
+          done={days}
+          dayIndex={0}
+          onMark={mark}
+          onUnmark={unmark}
+          onBackToToday={() => {}}
+          onOpenPlan={() => {}}
+          onShowDay={() => {}}
+        />
+      );
+    }
+
+    const saved = new Map<string, string>();
+    const storage = {
+      async getItem(key: string) {
+        return saved.get(key) ?? null;
+      },
+      async setItem(key: string, value: string) {
+        saved.set(key, value);
+      },
+    };
+    await render(
+      <GestureHandlerRootView>
+        <ProgressProvider storage={storage}>
+          <Loop />
+        </ProgressProvider>
+      </GestureHandlerRootView>,
+    );
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark day 1 read' }));
+    expect(await screen.findByText('Read on Monday')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark as unread' }));
+    expect(await screen.findByRole('button', { name: 'Mark day 1 read' })).toBeOnTheScreen();
+    expect(screen.queryByText('Read on Monday')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark as unread' })).toBeNull();
+  });
+
   it('shows the whole verse', async () => {
     await renderToday({ done: new Set() });
     const verse = screen.getByText(/In the beginning God created/);

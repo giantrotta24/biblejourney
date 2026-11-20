@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   AccessibilityInfo,
-  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
   Linking,
   Platform,
   Pressable,
@@ -10,7 +11,9 @@ import {
   Text,
   TextInput,
   View,
+  type KeyboardEvent,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { accessToken } from '@/account/delete';
@@ -52,11 +55,59 @@ import { AnnouncedLine } from './auth-chrome';
 import { Perforation } from './marks';
 import { Row, RowChevron } from './rows';
 
+/** How far the composer must rise so its resting bottom meets the keyboard. */
+export function composerOverlap(windowBottom: number, currentLift: number, keyboardTop: number): number {
+  return Math.max(0, windowBottom + currentLift - keyboardTop);
+}
+
+export function composerPadding(keyboardUp: boolean, insetBottom: number): number {
+  return keyboardUp ? 12 : Math.max(12, insetBottom);
+}
+
 type Gate = 'checking' | 'not-configured' | 'sign-in' | 'invitation' | 'unavailable' | 'ready';
 
 type ReportTarget =
   | { kind: 'question'; question: string; answer: string }
   | { kind: QuickPromptType; answer: string };
+
+function useComposerLift(composerRef: RefObject<View | null>) {
+  const [lift] = useState(() => new Animated.Value(0));
+  const liftTarget = useRef(0);
+  const [keyboardUp, setKeyboardUp] = useState(false);
+
+  useEffect(() => {
+    const names =
+      Platform.OS === 'ios'
+        ? (['keyboardWillShow', 'keyboardWillHide', 'keyboardWillChangeFrame'] as const)
+        : (['keyboardDidShow', 'keyboardDidHide', 'keyboardDidChangeFrame'] as const);
+
+    function onKeyboard(event: KeyboardEvent) {
+      const duration = event.duration ?? 0;
+      const top = event.endCoordinates.screenY;
+      const height = event.endCoordinates.height;
+      setKeyboardUp(height > 0);
+      if (height === 0) {
+        liftTarget.current = 0;
+        Animated.timing(lift, { toValue: 0, duration, useNativeDriver: false }).start();
+        return;
+      }
+      const node = composerRef.current;
+      if (!node || typeof node.measureInWindow !== 'function') return;
+      node.measureInWindow((_x, y, _width, measured) => {
+        const next = composerOverlap(y + measured, liftTarget.current, top);
+        liftTarget.current = next;
+        Animated.timing(lift, { toValue: next, duration, useNativeDriver: false }).start();
+      });
+    }
+
+    const subscriptions = names.map((name) => Keyboard.addListener(name, onKeyboard));
+    return () => {
+      for (const subscription of subscriptions) subscription.remove();
+    };
+  }, [composerRef, lift]);
+
+  return { lift, keyboardUp };
+}
 
 function gateFor(status: AssistantStatus, signedIn: boolean): Gate {
   if (!status.configured) return 'not-configured';
@@ -133,6 +184,9 @@ export function AskSheet({
   const reportBusyRef = useRef(false);
   const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
+  const composerRef = useRef<View>(null);
+  const { lift, keyboardUp } = useComposerLift(composerRef);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     live.current = true;
@@ -510,16 +564,18 @@ export function AskSheet({
         ) : null}
       </ScrollView>
       {ready ? (
-        <View
-          style={{
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: colors.rule,
-            paddingHorizontal: 14,
-            paddingTop: 8,
-            paddingBottom: 12,
-            backgroundColor: colors.paper,
-          }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <Animated.View style={{ paddingBottom: lift }}>
+          <View
+            ref={composerRef}
+            style={{
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: colors.rule,
+              paddingHorizontal: 14,
+              paddingTop: 8,
+              paddingBottom: composerPadding(keyboardUp, insets.bottom),
+              backgroundColor: colors.paper,
+            }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <TextInput
               accessibilityLabel="Ask about this reading"
               value={question}
@@ -528,11 +584,12 @@ export function AskSheet({
               placeholderTextColor={colors.ink2}
               maxLength={QUESTION_MAX_LENGTH}
               editable={!streaming}
+              maxFontSizeMultiplier={1.6}
               returnKeyType="send"
               onSubmitEditing={submitQuestion}
               style={{
                 flex: 1,
-                height: android ? 56 : 44,
+                minHeight: android ? 56 : 44,
                 borderRadius: android ? 4 : 10,
                 borderWidth: android ? 1 : 0,
                 borderColor: colors.ink2,
@@ -569,16 +626,12 @@ export function AskSheet({
                 </Svg>
               </View>
             </Pressable>
+            </View>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
     </>
   );
 
-  if (!android) return sheet;
-  return (
-    <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
-      {sheet}
-    </KeyboardAvoidingView>
-  );
+  return sheet;
 }

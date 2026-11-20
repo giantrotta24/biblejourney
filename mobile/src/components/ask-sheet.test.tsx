@@ -1,13 +1,17 @@
 import { beforeEach, afterEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Linking, Platform, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Keyboard, Linking, Platform, StyleSheet } from 'react-native';
 
 import * as accountDelete from '@/account/delete';
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { SessionProvider } from '@/account/session';
 import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
 
-import { AskSheet } from './ask-sheet';
+import { AskSheet, composerOverlap } from './ask-sheet';
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
+}));
 
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
 
@@ -31,6 +35,27 @@ function questionLine(label: string) {
   const line = screen.getAllByText(label).find((node) => StyleSheet.flatten(node.props.style).fontWeight === '600');
   if (!line) throw new Error(`no question line for ${label}`);
   return line;
+}
+
+type Instance = ReturnType<typeof screen.getByText>;
+
+function findNode(node: Instance | null, match: (node: Instance) => boolean): Instance | null {
+  if (!node) return null;
+  if (match(node)) return node;
+  for (const child of node.children) {
+    if (typeof child === 'string') continue;
+    const found = findNode(child, match);
+    if (found) return found;
+  }
+  return null;
+}
+
+function composerBar() {
+  const field = screen.getByLabelText('Ask about this reading');
+  let node = field.parent;
+  while (node && StyleSheet.flatten(node.props.style)?.paddingTop !== 8) node = node.parent;
+  if (!node) throw new Error('no composer bar');
+  return node;
 }
 
 function isBefore(earlier: ReturnType<typeof screen.getByText>, later: ReturnType<typeof screen.getByText>) {
@@ -92,6 +117,15 @@ function renderSheet(transport: (url: string, init: Init) => Promise<Reply>, onS
     </SessionProvider>,
   );
 }
+
+describe('composerOverlap', () => {
+  it('lifts by the overlap and keeps that lift once the composer has moved', () => {
+    expect(composerOverlap(800, 0, 500)).toBe(300);
+    expect(composerOverlap(500, 300, 500)).toBe(300);
+    expect(composerOverlap(520, 300, 500)).toBe(320);
+    expect(composerOverlap(500, 300, 900)).toBe(0);
+  });
+});
 
 describe('AskSheet', () => {
   const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
@@ -504,6 +538,48 @@ describe('AskSheet', () => {
       release(json(200, { ok: true }));
     });
     expect(screen.queryByText('Thanks. The answer was reported.')).toBeNull();
+  });
+
+  it('lets the question field grow and pads it above the home area', async () => {
+    await renderSheet(async () => json(200, { configured: true, signInRequired: true, enabled: true }));
+    const field = await screen.findByLabelText('Ask about this reading');
+    const style = StyleSheet.flatten(field.props.style);
+    expect(style.minHeight).toBe(44);
+    expect(style.height).toBeUndefined();
+    expect(field.props.maxFontSizeMultiplier).toBe(1.6);
+    expect(StyleSheet.flatten(composerBar().props.style).paddingBottom).toBe(34);
+    let parent = field.parent;
+    let insideScroll = false;
+    while (parent) {
+      if (parent.props.automaticallyAdjustKeyboardInsets) insideScroll = true;
+      parent = parent.parent;
+    }
+    expect(insideScroll).toBe(false);
+    expect(findNode(screen.root, (node) => node.props.behavior === 'padding' || node.props.behavior === 'height')).toBeNull();
+  });
+
+  it('shortens the composer pad while the keyboard is up', async () => {
+    const listeners = new Map<string, (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void>();
+    const add = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, listener) => {
+      listeners.set(event, listener as (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void);
+      return { remove: () => undefined } as ReturnType<typeof Keyboard.addListener>;
+    });
+    try {
+      await renderSheet(async () => json(200, { configured: true, signInRequired: true, enabled: true }));
+      await screen.findByLabelText('Ask about this reading');
+      expect(listeners.has('keyboardWillShow')).toBe(true);
+      expect(listeners.has('keyboardWillHide')).toBe(true);
+      expect(listeners.has('keyboardWillChangeFrame')).toBe(true);
+      await act(() => {
+        listeners.get('keyboardWillShow')?.({
+          duration: 250,
+          endCoordinates: { height: 300, screenY: 500 },
+        });
+      });
+      expect(StyleSheet.flatten(composerBar().props.style).paddingBottom).toBe(12);
+    } finally {
+      add.mockRestore();
+    }
   });
 
   it('uses Done on iOS and a close control on Android', async () => {

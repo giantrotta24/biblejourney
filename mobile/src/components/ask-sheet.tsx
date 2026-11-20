@@ -74,7 +74,6 @@ type ReportTarget =
 function useComposerLift() {
   const [lift] = useState(() => new Animated.Value(0));
   const [keyboardUp, setKeyboardUp] = useState(false);
-  const [liftHeight, setLiftHeight] = useState(0);
 
   useEffect(() => {
     const names =
@@ -87,7 +86,6 @@ function useComposerLift() {
       const covered = event.endCoordinates.height > 0;
       setKeyboardUp(covered);
       const next = covered ? composerLift(Dimensions.get('screen').height, event.endCoordinates.screenY) : 0;
-      setLiftHeight(next);
       Animated.timing(lift, { toValue: next, duration, useNativeDriver: false }).start();
     }
 
@@ -97,7 +95,7 @@ function useComposerLift() {
     };
   }, [lift]);
 
-  return { lift, keyboardUp, liftHeight };
+  return { lift, keyboardUp };
 }
 
 function gateFor(status: AssistantStatus, signedIn: boolean): Gate {
@@ -175,7 +173,7 @@ export function AskSheet({
   const reportBusyRef = useRef(false);
   const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
-  const { lift, keyboardUp, liftHeight } = useComposerLift();
+  const { lift, keyboardUp } = useComposerLift();
   const [composerHeight, setComposerHeight] = useState(0);
   const insets = useSafeAreaInsets();
 
@@ -416,7 +414,7 @@ export function AskSheet({
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 22,
-          paddingBottom: (ready ? composerHeight + liftHeight : 0) + 16,
+          paddingBottom: (ready ? composerHeight : 0) + 16,
         }}>
         {gate === 'sign-in' ? (
           <Pressable

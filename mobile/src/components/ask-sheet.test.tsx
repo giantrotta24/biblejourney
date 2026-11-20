@@ -581,7 +581,7 @@ describe('AskSheet', () => {
     }
   });
 
-  it('keeps the end of the answer scrollable above the composer, with and without the keyboard', async () => {
+  it('pads the answer by the composer only, since the scroll view already insets for the keyboard', async () => {
     const listeners = new Map<string, (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void>();
     const add = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, listener) => {
       listeners.set(event, listener as (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void);
@@ -608,7 +608,7 @@ describe('AskSheet', () => {
           endCoordinates: { height: 300, screenY: Dimensions.get('screen').height - 300 },
         });
       });
-      expect(scroll()).toBe(86 + 300 + 16);
+      expect(scroll()).toBe(86 + 16);
 
       await act(() => {
         listeners.get('keyboardWillHide')?.({

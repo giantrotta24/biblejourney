@@ -27,12 +27,12 @@ export function MoreHub({ detail, onAccount }: { detail: string; onAccount: () =
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Account, ${detail}`}
+        accessibilityLabel={detail ? `Account, ${detail}` : 'Account'}
         onPress={onAccount}
         style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 17, lineHeight: 22, color: colors.ink }}>Account</Text>
-          <Text style={{ fontSize: 14, lineHeight: 18, color: colors.ink2 }}>{detail}</Text>
+          {detail ? <Text style={{ fontSize: 14, lineHeight: 18, color: colors.ink2 }}>{detail}</Text> : null}
         </View>
         <Svg width={8} height={13} viewBox="0 0 8 13" fill="none" accessibilityElementsHidden>
           <Path d="M1.5 1.5 6.5 6.5 1.5 11.5" stroke={colors.ink3} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />

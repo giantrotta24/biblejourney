@@ -10,7 +10,9 @@ export default function MoreScreen() {
   const session = useSession();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const detail = session.status === 'signed-in' ? (session.email ?? 'Signed in') : 'Not signed in';
+  let detail = '';
+  if (session.status === 'signed-in') detail = session.email ?? 'Signed in';
+  else if (session.status !== 'loading') detail = 'Not signed in';
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper, paddingTop: insets.top }}>
       <MoreHub detail={detail} onAccount={() => router.push('/more/account')} />

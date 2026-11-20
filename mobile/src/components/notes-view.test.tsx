@@ -1,9 +1,10 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert, Platform, PlatformColor, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SessionProvider } from '@/account/session';
+import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { NotesProvider } from '@/notes/context';
 import { NOTES_KEY, type KeyValueStore, type NoteRow } from '@/notes/store';
 import { ProgressProvider } from '@/progress/context';
@@ -11,6 +12,10 @@ import { light } from '@/theme/colors';
 import { days } from '../../../supabase/functions/_shared/content/plan';
 
 import { NotesView } from './notes-view';
+
+/* eslint-disable @typescript-eslint/no-require-imports -- the mock factory cannot close over an import */
+jest.mock('@/account/supabase', () => require('@/account/fake-supabase'));
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 function memory(rows: NoteRow[]): KeyValueStore & { raw: Map<string, string> } {
   const raw = new Map<string, string>([[NOTES_KEY, JSON.stringify({ version: 1, rows })]]);
@@ -47,7 +52,13 @@ async function renderNotes(rows: NoteRow[], onOpen = jest.fn()) {
   return { storage, onOpen };
 }
 
+const SYNC = 'Notes are kept on this phone. Sign in to keep them on your other devices too.';
+
 describe('Notes', () => {
+  beforeEach(() => {
+    resetFakeAuth();
+  });
+
   it('lists notes newest first and marks today in blue', async () => {
     await renderNotes(notes);
     const bodies = screen.getAllByText(/garden|manna/i);
@@ -84,10 +95,24 @@ describe('Notes', () => {
     await renderNotes([]);
     expect(screen.getByText('No notes yet')).toBeOnTheScreen();
     expect(screen.getByText(/Whatever you write gathers here/)).toBeOnTheScreen();
-    const sync = screen.getByText('Notes are kept on this phone. Sign in to keep them on your other devices too.');
+    const sync = await screen.findByText(SYNC);
     expect(sync).toBeOnTheScreen();
     expect(StyleSheet.flatten(sync.props.style).color).toBe(light.ink2);
     expect(screen.queryByLabelText('Search your notes')).toBeNull();
+  });
+
+  it('hides the sync line while the session is loading', async () => {
+    let release: () => void = () => {};
+    fakeAuth.hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await renderNotes([]);
+    expect(screen.getByText('No notes yet')).toBeOnTheScreen();
+    expect(screen.queryByText(SYNC)).toBeNull();
+    await act(async () => {
+      release();
+    });
+    expect(await screen.findByText(SYNC)).toBeOnTheScreen();
   });
 
   it('deletes from a long press on Android after a confirm', async () => {

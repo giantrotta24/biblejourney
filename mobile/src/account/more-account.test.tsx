@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { ReadingProviders } from '@/app/providers';
@@ -48,6 +48,24 @@ describe('More and Account', () => {
     expect(screen.queryByText(/Who/)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Account, Not signed in' }));
     expect(router.push).toHaveBeenCalledWith('/more/account');
+  });
+
+  it('says nothing about sign-in while the session is still loading', async () => {
+    let release: () => void = () => {};
+    fakeAuth.hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await render(
+      <ReadingProviders>
+        <MoreScreen />
+      </ReadingProviders>,
+    );
+    expect(screen.getByRole('button', { name: 'Account' })).toBeOnTheScreen();
+    expect(screen.queryByText('Not signed in')).toBeNull();
+    await act(async () => {
+      release();
+    });
+    expect(await screen.findByRole('button', { name: 'Account, Not signed in' })).toBeOnTheScreen();
   });
 
   it('names the account by email when signed in', async () => {

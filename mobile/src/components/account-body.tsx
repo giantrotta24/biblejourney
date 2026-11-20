@@ -7,21 +7,12 @@ import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 
 import { BackButton, PrimaryButton } from './auth-chrome';
+import { InkBar } from './ink-bar';
 
 const KEPT = 'Your progress and notes are kept on this phone.';
 const NEXT_UPDATE = 'Your progress and notes are kept on this phone. Syncing with your account arrives in the next update.';
 const NEW_HERE = 'Sign in to keep it in step on your other devices. New here? The same steps create your account.';
 const SIGN_OUT_NOTE = 'Signing out keeps your progress and notes on this phone.';
-
-function InkBar({ children }: { children: string }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 8 }}>
-      <View style={{ width: 2, height: 14, backgroundColor: colors.ink, marginTop: 4 }} accessibilityElementsHidden />
-      <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink2 }}>{children}</Text>
-    </View>
-  );
-}
 
 export function AccountBody({ onBack, onSignIn }: { onBack: () => void; onSignIn: () => void }) {
   const colors = useColors();
@@ -54,7 +45,7 @@ export function AccountBody({ onBack, onSignIn }: { onBack: () => void; onSignIn
             }}>
             {title}
           </Text>
-          <InkBar>{signedIn ? NEXT_UPDATE : KEPT}</InkBar>
+          <InkBar marginTop={8}>{signedIn ? NEXT_UPDATE : KEPT}</InkBar>
           {signedIn ? (
             <>
               <Text

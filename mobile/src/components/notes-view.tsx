@@ -12,6 +12,7 @@ import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 import { currentDay, days } from '../../../supabase/functions/_shared/content/plan';
 
+import { InkBar } from './ink-bar';
 import { DottedCut } from './marks';
 
 const dayByIndex = new Map(days.map((day) => [day.index, day]));
@@ -216,14 +217,9 @@ function EmptyNotes() {
         }}>
         Each day’s page has room for a note under the reading. Whatever you write gathers here, newest first.
       </Text>
-      {session.status === 'signed-in' ? null : (
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'flex-start' }}>
-          <View style={{ width: 2, height: 14, backgroundColor: colors.ink, marginTop: 4 }} accessibilityElementsHidden />
-          <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink2 }}>
-            Notes are kept on this phone. Sign in to keep them on your other devices too.
-          </Text>
-        </View>
-      )}
+      {session.status === 'signed-out' || session.status === 'unavailable' ? (
+        <InkBar marginTop={14}>Notes are kept on this phone. Sign in to keep them on your other devices too.</InkBar>
+      ) : null}
       <View accessibilityElementsHidden style={{ marginTop: 10, height: 90 }}>
         {[1, 2, 3].map((line) => (
           <View

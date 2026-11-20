@@ -6,6 +6,8 @@ import { createMemoryStore } from './memory-store';
 import { memoryQueue } from './queue';
 import { supabaseRemote, type SyncClient } from './supabase-remote';
 
+// The jest-expo environment's fetch goes through React Native's XMLHttpRequest stand-in, which never reaches a server.
+const nodeFetch = (jest.requireActual('node-fetch') as { default: typeof fetch }).default;
 const enabled = process.env.SYNC_INTEGRATION === '1';
 const suite = enabled ? describe : describe.skip;
 
@@ -28,6 +30,7 @@ suite('two phones, one account', () => {
     async function phone() {
       const client = createClient(url, anonKey, {
         auth: { persistSession: false, autoRefreshToken: false },
+        global: { fetch: nodeFetch },
       });
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;

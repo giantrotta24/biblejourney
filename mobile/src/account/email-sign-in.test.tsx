@@ -44,8 +44,18 @@ describe('email sign in', () => {
   it('checks the email before sending, then opens the code step', async () => {
     await renderSignIn();
     await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
-    expect(screen.getByText('Enter a valid email address.')).toBeOnTheScreen();
+    const error = screen.getByText('Enter a valid email address.');
+    const field = screen.getByLabelText('Email address');
+    const fieldBox = field.parent;
+    expect(error).toBeOnTheScreen();
+    expect(StyleSheet.flatten(field.props.style).borderColor).toBe(light.danger);
+    expect(fieldBox?.parent).toBe(error.parent);
+    expect(error.parent?.children.indexOf(error)).toBeGreaterThan(error.parent?.children.indexOf(fieldBox) ?? -1);
     expect(fakeAuth.calls.filter((call) => call.method === 'signInWithOtp')).toEqual([]);
+
+    await fireEvent.changeText(field, 'r');
+    expect(screen.queryByText('Enter a valid email address.')).toBeNull();
+    expect(StyleSheet.flatten(screen.getByLabelText('Email address').props.style).borderColor).not.toBe(light.danger);
 
     await fireEvent.changeText(screen.getByLabelText('Email address'), '  reader@example.com  ');
     await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
@@ -55,6 +65,21 @@ describe('email sign in', () => {
     });
     expect(screen.getByText('Check your email')).toBeOnTheScreen();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('sends the address typed in the same turn as the keyboard submit', async () => {
+    await renderSignIn();
+    const field = screen.getByLabelText('Email address');
+    expect(field.props.returnKeyType).toBe('send');
+    await act(async () => {
+      field.props.onChangeText('reader@example.com');
+      field.props.onSubmitEditing();
+    });
+    expect(fakeAuth.calls.find((call) => call.method === 'signInWithOtp')?.args[0]).toEqual({
+      email: 'reader@example.com',
+      options: { shouldCreateUser: true },
+    });
+    expect(screen.queryByText('Enter a valid email address.')).toBeNull();
   });
 
   it('shows a plain rate-limit line and not the server message', async () => {
@@ -69,6 +94,7 @@ describe('email sign in', () => {
       await fireEvent.changeText(screen.getByLabelText('Email address'), 'reader@example.com');
       await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
       expect(screen.getByText('Too many tries. Wait a minute and try again.')).toBeOnTheScreen();
+      expect(StyleSheet.flatten(screen.getByLabelText('Email address').props.style).borderColor).toBe(light.danger);
       expect(screen.queryByText(/security purposes/)).toBeNull();
       expect(router.push).not.toHaveBeenCalled();
       expect(alert).not.toHaveBeenCalled();
@@ -85,6 +111,7 @@ describe('email sign in', () => {
     expect(field.props.textContentType).toBe('oneTimeCode');
     expect(field.props.autoComplete).toBe('one-time-code');
     expect(field.props.keyboardType).toBe('number-pad');
+    expect(field.props.returnKeyType).toBe('go');
     expect(screen.getByText('We sent a code to reader@example.com. Enter it here; it can be 6 to 10 digits.')).toBeOnTheScreen();
 
     await fireEvent.changeText(field, '48291');
@@ -154,5 +181,16 @@ describe('email sign in', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
     expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a disabled code sign-in as a failure, not a wrong code', async () => {
+    fakeAuth.errors.verifyOtp = { code: 'otp_disabled', message: 'Signups not allowed for otp' };
+    await renderSignIn();
+    await fireEvent.changeText(screen.getByLabelText('Email address'), 'reader@example.com');
+    await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
+    await fireEvent.changeText(screen.getByLabelText('Email code'), '482917');
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.getByText('Something went wrong. Try again.')).toBeOnTheScreen();
+    expect(screen.queryByText('Enter the 6–10 digit code from your email.')).toBeNull();
   });
 });

@@ -112,6 +112,8 @@ export function CodeStep({
         code
         autoFocus
         maxLength={10}
+        returnKeyType="go"
+        onSubmitEditing={() => void submit()}
       />
       {problem ? <ErrorLine>{wrong ? WRONG_CODE : problem}</ErrorLine> : null}
       <PrimaryButton label="Sign in" disabled={busy} onPress={() => void submit()} />

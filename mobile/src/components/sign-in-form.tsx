@@ -1,5 +1,5 @@
 import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Dimensions, Platform, Pressable, Text, useColorScheme, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -49,19 +49,21 @@ export function SignInForm({
   const scheme = useColorScheme();
   const session = useSession();
   const android = Platform.OS === 'android';
+  const emailRef = useRef('');
   const [email, setEmail] = useState('');
-  const [line, setLine] = useState<string | null>(null);
+  const [ssoLine, setSsoLine] = useState<string | null>(null);
+  const [emailLine, setEmailLine] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const height = android ? 48 : 50;
 
   async function apple() {
     if (busy) return;
     setBusy(true);
-    setLine(null);
+    setSsoLine(null);
     try {
       const result = await signInWithApple();
       if (result.ok) onSignedIn();
-      else if (result.line) setLine(result.line);
+      else if (result.line) setSsoLine(result.line);
     } finally {
       setBusy(false);
     }
@@ -70,34 +72,34 @@ export function SignInForm({
   async function google() {
     if (busy) return;
     setBusy(true);
-    setLine(null);
+    setSsoLine(null);
     try {
       const result = await signInWithGoogle();
       if (result.ok) onSignedIn();
-      else if (result.line) setLine(result.line);
+      else if (result.line) setSsoLine(result.line);
     } finally {
       setBusy(false);
     }
   }
 
   async function send() {
-    const address = email.trim();
+    const address = emailRef.current.trim();
     if (!isEmail(address)) {
-      setLine('Enter a valid email address.');
+      setEmailLine('Enter a valid email address.');
       return;
     }
     if (!supabase || busy) return;
     setBusy(true);
-    setLine(null);
+    setEmailLine(null);
     try {
       const { error } = await supabase.auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } });
       if (error) {
-        setLine(authErrorLine(error));
+        setEmailLine(authErrorLine(error));
         return;
       }
       onSent(address);
     } catch (error) {
-      setLine(authErrorLine(error));
+      setEmailLine(authErrorLine(error));
     } finally {
       setBusy(false);
     }
@@ -114,7 +116,7 @@ export function SignInForm({
       ) : (
         <>
           <Lead>{LEAD}</Lead>
-          {line ? <ErrorLine>{line}</ErrorLine> : null}
+          {ssoLine ? <ErrorLine>{ssoLine}</ErrorLine> : null}
           {Platform.OS === 'ios' ? (
             <AppleAuthenticationButton
               buttonType={AppleAuthenticationButtonType.CONTINUE}
@@ -150,12 +152,20 @@ export function SignInForm({
           <AuthField
             label="Email address"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(value) => {
+              emailRef.current = value;
+              setEmail(value);
+              setEmailLine(null);
+            }}
             placeholder="you@example.com"
+            bad={emailLine !== null}
             keyboardType="email-address"
             autoComplete="email"
             textContentType="emailAddress"
+            returnKeyType="send"
+            onSubmitEditing={() => void send()}
           />
+          {emailLine ? <ErrorLine>{emailLine}</ErrorLine> : null}
           <InkButton label="Email me a code" disabled={busy} onPress={() => void send()} />
           <Text style={{ fontSize: 13, lineHeight: 13 * 1.45, color: colors.ink2, marginTop: 12 }}>
             No password. We email a code each time you sign in.

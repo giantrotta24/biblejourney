@@ -222,6 +222,8 @@ export function AuthField({
   code = false,
   autoFocus = false,
   maxLength,
+  returnKeyType,
+  onSubmitEditing,
 }: {
   label: string;
   value: string;
@@ -234,6 +236,8 @@ export function AuthField({
   code?: boolean;
   autoFocus?: boolean;
   maxLength?: number;
+  returnKeyType?: 'send' | 'go';
+  onSubmitEditing?: () => void;
 }) {
   const colors = useColors();
   const android = Platform.OS === 'android';
@@ -270,6 +274,8 @@ export function AuthField({
         autoCorrect={false}
         autoFocus={autoFocus}
         maxLength={maxLength}
+        returnKeyType={returnKeyType}
+        onSubmitEditing={onSubmitEditing}
         style={{
           height: code ? 56 : android ? 56 : 48,
           marginTop: android && !code ? 8 : 0,

@@ -5,7 +5,7 @@ export const SIGN_IN_FAILED = 'Something went wrong. Try again.';
 export const WRONG_CODE = 'Enter the 6–10 digit code from your email.';
 export const SIGN_IN_CANCELED = 'Sign in was canceled.';
 
-const WRONG_CODES = new Set(['otp_expired', 'otp_disabled', 'invalid_credentials']);
+const WRONG_CODES = new Set(['otp_expired', 'invalid_credentials']);
 
 export type AuthResult = { ok: true } | { ok: false; line: string | null };
 

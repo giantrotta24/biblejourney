@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { Alert, Platform, PlatformColor, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { SessionProvider } from '@/account/session';
 import { NotesProvider } from '@/notes/context';
 import { NOTES_KEY, type KeyValueStore, type NoteRow } from '@/notes/store';
 import { ProgressProvider } from '@/progress/context';
@@ -34,11 +35,13 @@ async function renderNotes(rows: NoteRow[], onOpen = jest.fn()) {
   const storage = memory(rows);
   await render(
     <GestureHandlerRootView>
-      <ProgressProvider>
-        <NotesProvider storage={storage}>
-          <NotesView onOpen={onOpen} />
-        </NotesProvider>
-      </ProgressProvider>
+      <SessionProvider>
+        <ProgressProvider>
+          <NotesProvider storage={storage}>
+            <NotesView onOpen={onOpen} />
+          </NotesProvider>
+        </ProgressProvider>
+      </SessionProvider>
     </GestureHandlerRootView>,
   );
   return { storage, onOpen };

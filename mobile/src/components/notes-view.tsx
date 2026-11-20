@@ -3,6 +3,7 @@ import { Alert, Platform, PlatformColor, Pressable, ScrollView, Text, TextInput,
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useSession } from '@/account/session';
 import { useNotes } from '@/notes/context';
 import { matchingNotes } from '@/notes/query';
 import { StorageBlank, StorageRetry } from '@/persist/retry';
@@ -196,6 +197,7 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
 
 function EmptyNotes() {
   const colors = useColors();
+  const session = useSession();
   return (
     <View style={{ paddingTop: 26 }}>
       <Text
@@ -214,12 +216,14 @@ function EmptyNotes() {
         }}>
         Each day’s page has room for a note under the reading. Whatever you write gathers here, newest first.
       </Text>
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'flex-start' }}>
-        <View style={{ width: 2, height: 14, backgroundColor: colors.ink, marginTop: 4 }} accessibilityElementsHidden />
-        <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink2 }}>
-          Notes are kept on this phone. Sign in to keep them on your other devices too.
-        </Text>
-      </View>
+      {session.status === 'signed-in' ? null : (
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'flex-start' }}>
+          <View style={{ width: 2, height: 14, backgroundColor: colors.ink, marginTop: 4 }} accessibilityElementsHidden />
+          <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink2 }}>
+            Notes are kept on this phone. Sign in to keep them on your other devices too.
+          </Text>
+        </View>
+      )}
       <View accessibilityElementsHidden style={{ marginTop: 10, height: 90 }}>
         {[1, 2, 3].map((line) => (
           <View

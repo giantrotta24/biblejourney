@@ -3,17 +3,18 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColors } from '@/theme/colors';
+import { useResolvedScheme } from '@/theme/scheme';
 
 import { ReadingProviders } from './providers';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
+  const scheme = useResolvedScheme();
   const [loaded, error] = useFonts({
     ArchivoCondensedExtraBold: require('../../assets/fonts/ArchivoCondensed-ExtraBold.ttf'),
     SourceSerif4: require('@expo-google-fonts/source-serif-4/400Regular/SourceSerif4_400Regular.ttf'),

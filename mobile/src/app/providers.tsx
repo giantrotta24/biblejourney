@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 
 import { SessionProvider } from '@/account/session';
+import { SettingsSync } from '@/settings/client';
 import { NotesProvider } from '@/notes/context';
 import type { KeyValueStore } from '@/persist/document';
 import { ProgressProvider } from '@/progress/context';
@@ -26,6 +27,7 @@ export function ReadingProviders({
   return (
     <SyncRuntimeProvider runtime={runtime}>
       <SessionProvider>
+        <SettingsSync />
         <NotesProvider storage={notesStorage}>
           <VersesProvider storage={versesStorage}>
             <ProgressProvider storage={progressStorage}>{children}</ProgressProvider>

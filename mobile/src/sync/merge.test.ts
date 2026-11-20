@@ -39,6 +39,15 @@ describe('sync merge', () => {
     ]);
   });
 
+  it('takes the incoming note when the timestamps are equal', () => {
+    expect(
+      mergeNotes(
+        [{ day_index: 0, body: 'phone', updated_at: at(10) }],
+        [{ day_index: 0, body: 'account', updated_at: at(10) }],
+      ),
+    ).toEqual([{ day_index: 0, body: 'account', updated_at: at(10) }]);
+  });
+
   it('keeps the latest note and the union of days', () => {
     expect(
       mergeNotes(

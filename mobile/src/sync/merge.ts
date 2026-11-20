@@ -37,7 +37,7 @@ export function mergeNotes(local: readonly NoteRow[], incoming: readonly NoteRow
   const map = new Map(local.map((row) => [row.day_index, row]));
   for (const row of incoming) {
     const existing = map.get(row.day_index);
-    if (existing && existing.updated_at >= row.updated_at) continue;
+    if (existing && existing.updated_at > row.updated_at) continue;
     map.set(row.day_index, row);
   }
   return [...map.values()].sort(byDay);

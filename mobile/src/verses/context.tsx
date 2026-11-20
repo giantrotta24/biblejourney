@@ -8,7 +8,6 @@ import { loadVerses, saveVerses, withLearned, type KeyValueStore, type VerseRow 
 
 type VersesApi = {
   rows: readonly VerseRow[];
-  learned: (week: number) => boolean;
   setLearned: (week: number, learned: boolean) => void;
 };
 
@@ -50,14 +49,12 @@ export function VersesProvider({
     [commit, isReady, read],
   );
 
-  const learned = useCallback((week: number) => read().some((row) => row.week === week), [read]);
-
   if (unavailable) {
     return <StorageRetry message="Couldn’t load your verses." onRetry={() => setAttempt((next) => next + 1)} />;
   }
   if (!value) return <StorageBlank />;
 
-  return <VersesContext.Provider value={{ rows: value, learned, setLearned }}>{children}</VersesContext.Provider>;
+  return <VersesContext.Provider value={{ rows: value, setLearned }}>{children}</VersesContext.Provider>;
 }
 
 export function useVerses(): VersesApi {

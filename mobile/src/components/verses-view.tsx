@@ -1,5 +1,15 @@
-import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type ScrollViewInstance,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { nextVerseWeek, unlockedWeeks } from '@/lib/practice';
@@ -18,12 +28,15 @@ type Mode = 'full' | 'letters';
 export function VersesView() {
   const colors = useColors();
   const { days: done } = useProgress();
-  const { learned, setLearned } = useVerses();
+  const { rows, setLearned } = useVerses();
+  const known = new Set(rows.map((row) => row.week));
   const through = unlockedWeeks(done).at(-1) ?? 1;
   const week = getWeek(through);
   const [mode, setMode] = useState<Mode>('full');
   const pool = unlockedWeeks(done);
-  const [shown, setShown] = useState(through);
+  const [shown, setShown] = useState(() => nextVerseWeek(pool, through));
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const opened = useRef(false);
   const [revealed, setRevealed] = useState(false);
   const practiceWeek = getWeek(shown <= through ? shown : through);
   const buttonHeight = Platform.OS === 'android' ? 48 : 50;
@@ -35,8 +48,39 @@ export function VersesView() {
     setRevealed(false);
   }
 
+  function placeCurrent(event: LayoutChangeEvent) {
+    if (opened.current) return;
+    opened.current = true;
+    scrollRef.current?.scrollTo({ y: event.nativeEvent.layout.y, animated: false });
+  }
+
+  function chooseMode() {
+    const options = ['Full text', 'First letters'] as const;
+    function apply(index: number) {
+      const choice = options[index];
+      if (choice === 'Full text') setMode('full');
+      else if (choice === 'First letters') setMode('letters');
+    }
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { title: 'Show the verse as', options: [...options, 'Cancel'], cancelButtonIndex: 2 },
+        apply,
+      );
+      return;
+    }
+    Alert.alert('Show the verse as', undefined, [
+      { text: 'Full text', onPress: () => apply(0) },
+      { text: 'First letters', onPress: () => apply(1) },
+    ]);
+  }
+
+  const modeLabel = mode === 'full' ? 'Full text' : 'First letters';
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.paper }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+    <ScrollView
+      ref={scrollRef}
+      style={{ flex: 1, backgroundColor: colors.paper }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
       <Text
         accessibilityRole="header"
         style={{
@@ -49,7 +93,15 @@ export function VersesView() {
         }}>
         Verses
       </Text>
-      <View style={{ marginTop: 8 }}>
+      <View
+        style={{
+          backgroundColor: colors.under,
+          marginHorizontal: -20,
+          marginTop: 6,
+          paddingTop: 12,
+          paddingHorizontal: 12,
+          paddingBottom: 18,
+        }}>
         <View
           style={{
             backgroundColor: colors.paper,
@@ -62,7 +114,7 @@ export function VersesView() {
             elevation: 2,
           }}>
           <Perforation color={colors.under} />
-          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <View style={{ paddingTop: 18, paddingHorizontal: 16, paddingBottom: 6 }}>
             <Text
               maxFontSizeMultiplier={1.6}
               style={{
@@ -80,10 +132,11 @@ export function VersesView() {
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Show the verse as, ${mode === 'full' ? 'Full text' : 'First letters'}`}
-                onPress={() => setMode((current) => (current === 'full' ? 'letters' : 'full'))}
+                accessibilityLabel="Show the verse as"
+                accessibilityValue={{ text: modeLabel }}
+                onPress={chooseMode}
                 style={{ minHeight: hitSize(), flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: 14, color: colors.ink }}>{mode === 'full' ? 'Full text' : 'First letters'}</Text>
+                <Text style={{ fontSize: 14, color: colors.ink }}>{modeLabel}</Text>
                 <Chevron open color={colors.ink} />
               </Pressable>
             </View>
@@ -95,8 +148,8 @@ export function VersesView() {
             <KnowIt
               colors={colors}
               reference={week.memoryVerse.ref}
-              checked={learned(week.week)}
-              onPress={() => setLearned(week.week, !learned(week.week))}
+              checked={known.has(week.week)}
+              onPress={() => setLearned(week.week, !known.has(week.week))}
             />
           </View>
         </View>
@@ -193,8 +246,9 @@ export function VersesView() {
           week={item}
           current={item.week === through}
           upcoming={item.week > through}
-          known={learned(item.week)}
+          known={known.has(item.week)}
           onKnow={(nextKnown) => setLearned(item.week, nextKnown)}
+          onLayout={item.week === through ? placeCurrent : undefined}
           colors={colors}
         />
       ))}
@@ -208,6 +262,7 @@ function VerseRow({
   upcoming,
   known,
   onKnow,
+  onLayout,
   colors,
 }: {
   week: Week;
@@ -215,11 +270,14 @@ function VerseRow({
   upcoming: boolean;
   known: boolean;
   onKnow: (known: boolean) => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
   colors: Palette;
 }) {
   const title = current ? colors.blueInk : upcoming ? colors.ink3 : colors.ink;
   return (
-    <View style={{ borderTopWidth: 0.5, borderTopColor: colors.rule, paddingTop: 12, paddingBottom: 4 }}>
+    <View
+      onLayout={onLayout}
+      style={{ borderTopWidth: 0.5, borderTopColor: colors.rule, paddingTop: 12, paddingBottom: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <Text
           maxFontSizeMultiplier={1.8}
@@ -230,23 +288,22 @@ function VerseRow({
           {upcoming ? `Week ${week.week}, coming up` : `Week ${week.week}`}
         </Text>
       </View>
-      <Text
-        maxFontSizeMultiplier={2}
-        style={{
-          fontFamily: fonts.serif,
-          fontSize: 16,
-          lineHeight: 16 * 1.45,
-          color: upcoming ? colors.ink3 : colors.ink,
-          marginTop: 4,
-        }}>
-        {week.memoryVerse.textKJV}
-      </Text>
-      <KnowIt
-        colors={colors}
-        reference={week.memoryVerse.ref}
-        checked={known}
-        onPress={() => onKnow(!known)}
-      />
+      {upcoming || current ? null : (
+        <Text
+          maxFontSizeMultiplier={2}
+          style={{
+            fontFamily: fonts.serif,
+            fontSize: 16,
+            lineHeight: 16 * 1.45,
+            color: colors.ink,
+            marginTop: 4,
+          }}>
+          {week.memoryVerse.textKJV}
+        </Text>
+      )}
+      {upcoming ? null : (
+        <KnowIt colors={colors} reference={week.memoryVerse.ref} checked={known} onPress={() => onKnow(!known)} />
+      )}
     </View>
   );
 }

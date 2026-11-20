@@ -24,6 +24,8 @@ npm test
 
 The app uses the same Supabase accounts as the web app. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. When either one is missing, the app stays signed out and sign-in says it isn’t set up on this copy. `.env` stays on this machine.
 
+Deploy `supabase/migrations/20261120000000_notes.sql` before a build that syncs. Without that table, note writes are refused.
+
 In the Supabase Auth settings, allow these redirect URLs:
 
 - `biblejourney://auth-callback`

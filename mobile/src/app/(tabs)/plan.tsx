@@ -19,7 +19,7 @@ function weekParam(value: string | string[] | undefined): number | null {
 export default function PlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { days } = useProgress();
+  const { days, mark, unmark } = useProgress();
   const { rows } = useNotes();
   const noted = new Set(rows.map((row) => row.day_index));
   const { week } = useLocalSearchParams<{ week?: string }>();
@@ -33,6 +33,10 @@ export default function PlanScreen() {
         focusWeek={focusWeek}
         onFocusApplied={() => {
           if (focusWeek != null) router.setParams({ week: '' });
+        }}
+        onToggleDay={(index, read) => {
+          if (read) mark(index);
+          else unmark(index);
         }}
         onOpenDay={(index) => {
           const today = currentDay(days)?.index ?? null;

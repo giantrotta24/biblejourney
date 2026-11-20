@@ -69,3 +69,15 @@ export function Chevron({ open, color }: { open: boolean; color: string }) {
     </Svg>
   );
 }
+
+export function DayCheck({ checked, color }: { checked: boolean; color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 18 18" fill="none" stroke={color} strokeWidth={checked ? 2 : 1.6}>
+      {checked ? (
+        <Path d="M3 9.5l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <Circle cx="9" cy="9" r="7.2" />
+      )}
+    </Svg>
+  );
+}

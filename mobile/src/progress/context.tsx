@@ -12,6 +12,7 @@ type ProgressApi = {
   days: ReadonlySet<number>;
   rows: readonly DayRow[];
   mark: (index: number) => void;
+  unmark: (index: number) => void;
   clearDays: () => Promise<boolean>;
   replaceDays: (rows: readonly DayRow[]) => void;
 };
@@ -70,6 +71,17 @@ export function ProgressProvider({
     [commit, isReady, read, record],
   );
 
+  const unmark = useCallback(
+    (index: number) => {
+      if (!isReady()) return;
+      const current = read();
+      if (!current.some((row) => row.day_index === index)) return;
+      commit(current.filter((row) => row.day_index !== index));
+      record({ kind: 'delete-day', day_index: index });
+    },
+    [commit, isReady, read, record],
+  );
+
   const clearDays = useCallback(() => {
     if (!isReady()) return Promise.resolve(false);
     if (read().length === 0) return Promise.resolve(true);
@@ -106,8 +118,8 @@ export function ProgressProvider({
 
   const days = useMemo(() => new Set((value ?? []).map((row) => row.day_index)), [value]);
   const api = useMemo(
-    () => ({ days, rows: value ?? [], mark, clearDays, replaceDays }),
-    [clearDays, days, mark, replaceDays, value],
+    () => ({ days, rows: value ?? [], mark, unmark, clearDays, replaceDays }),
+    [clearDays, days, mark, replaceDays, unmark, value],
   );
 
   if (unavailable) return <StorageRetry message="Couldn’t load your reading." onRetry={retry} />;

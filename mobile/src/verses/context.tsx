@@ -13,7 +13,7 @@ type VersesApi = {
   status: StoreStatus;
   retry: () => void;
   setLearned: (week: number, learned: boolean) => void;
-  clearVerses: () => void;
+  clearVerses: () => Promise<boolean>;
 };
 
 const VersesContext = createContext<VersesApi | null>(null);
@@ -60,9 +60,9 @@ export function VersesProvider({
   );
 
   const clearVerses = useCallback(() => {
-    if (!isReady()) return;
-    if (read().length === 0) return;
-    commit([]);
+    if (!isReady()) return Promise.resolve(false);
+    if (read().length === 0) return Promise.resolve(true);
+    return commit([]).then(() => true);
   }, [commit, isReady, read]);
 
   const replaceVerses = useCallback(

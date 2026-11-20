@@ -1,20 +1,24 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { accessToken, DELETE_FAILED, requestAccountDelete } from '@/account/delete';
+import { accessToken, DELETE_FAILED, DELETE_OFFLINE, requestAccountDelete, type DeleteFailure } from '@/account/delete';
 import { SIGN_IN_UNAVAILABLE } from '@/account/errors';
 import { signOut, useSession } from '@/account/session';
 import { clearWelcomed } from '@/account/welcome';
 import { useNotes } from '@/notes/context';
+import { NOTES_KEY, NOTES_UNREADABLE_KEY } from '@/notes/store';
 import { useProgress } from '@/progress/context';
+import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY } from '@/progress/store';
 import { accountLine } from '@/sync/copy';
 import { useRejectedCount, useRuntime, useSyncStatus } from '@/sync/react';
 import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 import { useVerses } from '@/verses/context';
+import { VERSES_KEY, VERSES_UNREADABLE_KEY } from '@/verses/store';
 
-import { BackButton, PrimaryButton } from './auth-chrome';
+import { BackButton, ErrorLine, PrimaryButton } from './auth-chrome';
 import { InkBar } from './ink-bar';
 
 const NEW_HERE = 'Sign in to keep it in step on your other devices. New here? The same steps create your account.';
@@ -22,6 +26,14 @@ const SIGN_OUT_NOTE = 'Signing out keeps your progress and notes on this phone.'
 const DELETE_NOTE = 'Deletes your progress and notes from your account and from this phone. You’ll be asked to confirm.';
 const DELETE_TITLE = 'Delete your account?';
 const DELETE_MESSAGE = 'This deletes your account and clears your progress and notes on this phone. It can’t be undone.';
+
+async function runStep<T>(step: () => T | Promise<T>): Promise<T | undefined> {
+  try {
+    return await step();
+  } catch {
+    return undefined;
+  }
+}
 
 export function AccountBody({
   onBack,
@@ -42,7 +54,7 @@ export function AccountBody({
   const { clearVerses } = useVerses();
   const { clearNotes } = useNotes();
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
+  const [deleteError, setDeleteError] = useState<DeleteFailure | null>(null);
   const signedIn = session.status === 'signed-in';
   const title = signedIn ? (session.email ?? 'Signed in') : 'Not signed in';
 
@@ -57,21 +69,26 @@ export function AccountBody({
   async function runDelete() {
     if (deleting) return;
     setDeleting(true);
-    setDeleteError(false);
-    const token = await accessToken();
-    const ok = token ? await requestAccountDelete(token) : false;
-    if (!ok) {
+    setDeleteError(null);
+    const token = await accessToken().catch(() => null);
+    const result = token ? await requestAccountDelete(token) : { ok: false as const, reason: 'rejected' as const };
+    if (!result.ok) {
       setDeleting(false);
-      setDeleteError(true);
+      setDeleteError(result.reason);
       return;
     }
-    await signOut();
-    clearDays();
-    clearVerses();
-    clearNotes();
-    await runtime?.sync.clearQueue();
-    await clearWelcomed();
+    await runStep(() => signOut());
+    const daysReady = await runStep(clearDays);
+    const versesReady = await runStep(clearVerses);
+    const notesReady = await runStep(clearNotes);
+    await runStep(() => runtime?.sync.clearQueue());
+    const keys = [PROGRESS_KEY, PROGRESS_V2_UNREADABLE_KEY, VERSES_UNREADABLE_KEY, NOTES_UNREADABLE_KEY];
+    if (daysReady !== true) keys.push(PROGRESS_V2_KEY);
+    if (versesReady !== true) keys.push(VERSES_KEY);
+    if (notesReady !== true) keys.push(NOTES_KEY);
+    await runStep(() => AsyncStorage.multiRemove(keys));
     onDeleted();
+    await runStep(() => clearWelcomed());
   }
 
   return (
@@ -132,9 +149,9 @@ export function AccountBody({
               </Pressable>
               <Text style={{ fontSize: 14, lineHeight: 14 * 1.4, color: colors.ink2, marginTop: 4 }}>{DELETE_NOTE}</Text>
               {deleteError ? (
-                <Text accessibilityLiveRegion="polite" style={{ fontSize: 15, lineHeight: 21, color: colors.ink, marginTop: 12 }}>
-                  {DELETE_FAILED}
-                </Text>
+                <View style={{ marginTop: 12 }}>
+                  <ErrorLine>{deleteError === 'network' ? DELETE_OFFLINE : DELETE_FAILED}</ErrorLine>
+                </View>
               ) : null}
             </>
           ) : session.status === 'unavailable' ? (

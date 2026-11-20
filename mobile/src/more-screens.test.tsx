@@ -13,14 +13,15 @@ import SettingsRoute from '@/app/(tabs)/more/settings';
 import TimelineRoute from '@/app/(tabs)/more/timeline';
 import TranslationRoute from '@/app/(tabs)/more/translation';
 import WhosWhoRoute from '@/app/(tabs)/more/whos-who';
-import { accountDeleteEnv, DELETE_FAILED } from '@/account/delete';
-import { NOTES_KEY } from '@/notes/store';
-import { PROGRESS_V2_KEY } from '@/progress/store';
-import { changeSettings, loadSettings } from '@/settings/client';
+import { supabase } from '@/account/supabase';
+import { DELETE_FAILED, DELETE_OFFLINE } from '@/account/delete';
+import { NOTES_KEY, NOTES_UNREADABLE_KEY } from '@/notes/store';
+import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY } from '@/progress/store';
+import { changeSettings, loadSettings, resetSettingsForTests } from '@/settings/client';
 import { createFakeServer } from '@/sync/fake-remote';
 import { SYNC_QUEUE_KEY } from '@/sync/queue';
 import { light, useColors } from '@/theme/colors';
-import { VERSES_KEY } from '@/verses/store';
+import { VERSES_KEY, VERSES_UNREADABLE_KEY } from '@/verses/store';
 
 /* eslint-disable @typescript-eslint/no-require-imports -- the mock factory cannot close over an import */
 jest.mock('@/account/supabase', () => require('@/account/fake-supabase'));
@@ -57,6 +58,7 @@ function Swatch() {
 
 describe('More reference and settings', () => {
   beforeEach(async () => {
+    resetSettingsForTests();
     resetFakeAuth();
     jest.mocked(router.push).mockClear();
     jest.mocked(router.navigate).mockClear();
@@ -96,7 +98,9 @@ describe('More reference and settings', () => {
     expect(StyleSheet.flatten(screen.getByText('Creation and the patriarchs').props.style).color).toBe(light.blueInk);
     expect(StyleSheet.flatten(screen.getByText('Egypt and the Exodus').props.style).color).toBe(light.ink);
 
-    await fireEvent.press(screen.getByRole('button', { name: /Egypt and the Exodus, Weeks 5–12/ }));
+    const egypt = screen.getByRole('button', { name: /Egypt and the Exodus/ });
+    expect(egypt.props.accessibilityHint).toBe('Opens week 5 in Plan');
+    await fireEvent.press(egypt);
     expect(router.navigate).toHaveBeenCalledWith({ pathname: '/plan', params: { week: '5' } });
   });
 
@@ -124,6 +128,8 @@ describe('More reference and settings', () => {
       </ReadingProviders>,
     );
     expect(await screen.findByRole('button', { name: 'Match the phone' })).toBeSelected();
+    expect(StyleSheet.flatten(screen.getByRole('button', { name: 'Match the phone' }).props.style).borderTopWidth ?? 0).toBe(0);
+    expect(StyleSheet.flatten(screen.getByRole('button', { name: 'Light' }).props.style).borderTopWidth).toBeGreaterThan(0);
     await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
     expect(screen.getByRole('button', { name: 'Dark' })).toBeSelected();
     expect(Appearance.setColorScheme).toHaveBeenCalledWith('dark');
@@ -199,18 +205,21 @@ describe('More reference and settings', () => {
 
 describe('Delete account', () => {
   beforeEach(async () => {
+    resetSettingsForTests();
     resetFakeAuth();
     jest.mocked(router.navigate).mockClear();
     jest.mocked(router.dismissAll).mockClear();
     jest.spyOn(Alert, 'alert').mockClear().mockImplementation(() => {});
-    accountDeleteEnv.base = 'https://example.test';
-    accountDeleteEnv.anon = 'anon-test';
     await AsyncStorage.clear();
     fakeAuth.session = { access_token: 'token', user: { id: 'user-1', email: 'reader@example.com' } };
     await AsyncStorage.setItem(PROGRESS_V2_KEY, JSON.stringify(day));
     await AsyncStorage.setItem(VERSES_KEY, JSON.stringify(verse));
     await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(note));
     await AsyncStorage.setItem(WELCOMED_KEY, '1');
+    await AsyncStorage.setItem(PROGRESS_KEY, '{"version":1,"days":[1]}');
+    await AsyncStorage.setItem(PROGRESS_V2_UNREADABLE_KEY, '{');
+    await AsyncStorage.setItem(VERSES_UNREADABLE_KEY, '{');
+    await AsyncStorage.setItem(NOTES_UNREADABLE_KEY, '{');
   });
 
   async function renderAccount() {
@@ -249,6 +258,10 @@ describe('Delete account', () => {
     expect(verses.rows).toEqual([]);
     expect(notes.rows).toEqual([]);
     expect(await AsyncStorage.getItem(WELCOMED_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(PROGRESS_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(PROGRESS_V2_UNREADABLE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(VERSES_UNREADABLE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(NOTES_UNREADABLE_KEY)).toBeNull();
     const queued = JSON.parse((await AsyncStorage.getItem(SYNC_QUEUE_KEY)) ?? '{"ops":[],"linkedUser":null}') as {
       ops: unknown[];
       linkedUser: string | null;
@@ -268,7 +281,9 @@ describe('Delete account', () => {
     const notesBefore = await AsyncStorage.getItem(NOTES_KEY);
     await fireEvent.press(screen.getByRole('button', { name: 'Delete account…' }));
     await confirm('Delete your account?', 'Delete');
-    expect(await screen.findByText(DELETE_FAILED)).toBeOnTheScreen();
+    const failure = await screen.findByText(DELETE_FAILED);
+    expect(failure).toBeOnTheScreen();
+    expect(StyleSheet.flatten(failure.props.style).color).toBe(light.danger);
     expect(screen.getByText('reader@example.com')).toBeOnTheScreen();
     expect(screen.queryByText(/Read the whole Bible/)).toBeNull();
     expect(await AsyncStorage.getItem(PROGRESS_V2_KEY)).toBe(progressBefore);
@@ -276,5 +291,73 @@ describe('Delete account', () => {
     expect(await AsyncStorage.getItem(WELCOMED_KEY)).toBe('1');
     expect(fakeAuth.session?.user.id).toBe('user-1');
     expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('clears the phone when a lost delete is tried again', async () => {
+    const fetchMock = jest
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new Error('lost'))
+      .mockResolvedValueOnce(new Response('not-json', { status: 200 }));
+    jest.spyOn(globalThis as { fetch: typeof fetch }, 'fetch').mockImplementation(fetchMock as typeof fetch);
+    await renderAccount();
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete account…' }));
+    await confirm('Delete your account?', 'Delete');
+    expect(await screen.findByText(DELETE_OFFLINE)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete account…' }));
+    await confirm('Delete your account?', 'Delete');
+    expect(await screen.findByText('Read the whole Bible in a year, in the order it happened.')).toBeOnTheScreen();
+    const progress = JSON.parse((await AsyncStorage.getItem(PROGRESS_V2_KEY)) ?? '{}') as { rows?: unknown[] };
+    expect(progress.rows).toEqual([]);
+    expect(await AsyncStorage.getItem(WELCOMED_KEY)).toBeNull();
+  });
+
+  it('shows the welcome again when delete follows Start in the same run', async () => {
+    fakeAuth.session = null;
+    await AsyncStorage.clear();
+    const fetchMock = jest.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    jest.spyOn(globalThis as { fetch: typeof fetch }, 'fetch').mockImplementation(fetchMock as typeof fetch);
+    await render(
+      <ReadingProviders>
+        <WelcomeGate onAccount={() => {}}>
+          <Text>Today</Text>
+        </WelcomeGate>
+        <AccountRoute />
+      </ReadingProviders>,
+    );
+    expect(await screen.findByText('Read the whole Bible in a year, in the order it happened.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start with day 1' }));
+    expect(screen.getByText('Today')).toBeOnTheScreen();
+    const client = supabase;
+    if (!client) throw new Error('supabase');
+    await act(async () => {
+      await client.auth.verifyOtp({ email: 'reader@example.com', token: '123456', type: 'email' });
+    });
+    expect(await screen.findByText('reader@example.com')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete account…' }));
+    await confirm('Delete your account?', 'Delete');
+    expect(await screen.findByText('Read the whole Bible in a year, in the order it happened.')).toBeOnTheScreen();
+  });
+
+  it('removes a live notes key the store has not loaded', async () => {
+    const fetchMock = jest.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    jest.spyOn(globalThis as { fetch: typeof fetch }, 'fetch').mockImplementation(fetchMock as typeof fetch);
+    const notesStorage = {
+      async getItem() {
+        throw new Error('read');
+      },
+      async setItem() {},
+    };
+    await render(
+      <ReadingProviders notesStorage={notesStorage}>
+        <AccountRoute />
+      </ReadingProviders>,
+    );
+    expect(await screen.findByText('reader@example.com')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete account…' }));
+    await confirm('Delete your account?', 'Delete');
+    await waitFor(async () => {
+      expect(await AsyncStorage.getItem(NOTES_KEY)).toBeNull();
+    });
+    expect(await AsyncStorage.getItem(PROGRESS_V2_UNREADABLE_KEY)).toBeNull();
   });
 });

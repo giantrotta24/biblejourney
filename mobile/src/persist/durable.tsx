@@ -15,7 +15,7 @@ export type DurableValue<T> = {
   isUnavailable: () => boolean;
   /** True after a payload that could not be parsed, until a later save replaces it. */
   isUnreadable: () => boolean;
-  commit: (next: T) => void;
+  commit: (next: T) => Promise<void>;
   beginRetry: () => void;
 };
 
@@ -44,6 +44,7 @@ export function useDurableValue<T>({
   const readyRef = useRef(false);
   const unavailableRef = useRef(false);
   const unreadableRef = useRef(false);
+  const flushPromise = useRef<Promise<void>>(Promise.resolve());
   const storageRef = useRef(storage);
   const saveRef = useRef(save);
   const emptyRef = useRef(empty);
@@ -54,32 +55,36 @@ export function useDurableValue<T>({
     emptyRef.current = empty;
   });
 
-  const flush = useCallback(async () => {
-    if (writingRef.current) return;
+  const flush = useCallback(() => {
+    if (writingRef.current) return flushPromise.current;
     writingRef.current = true;
     setSaving(true);
-    try {
-      while (pendingRef.current) {
-        const snapshot = pendingRef.current;
-        pendingRef.current = null;
-        const backup = backupRef.current;
-        try {
-          await saveRef.current(snapshot, storageRef.current, backup);
-          if (backupRef.current === backup) backupRef.current = null;
-          unreadableRef.current = false;
-          failedRef.current = false;
-          setFailed(false);
-        } catch {
-          pendingRef.current = pendingRef.current ?? snapshot;
-          failedRef.current = true;
-          setFailed(true);
-          break;
+    const run = (async () => {
+      try {
+        while (pendingRef.current) {
+          const snapshot = pendingRef.current;
+          pendingRef.current = null;
+          const backup = backupRef.current;
+          try {
+            await saveRef.current(snapshot, storageRef.current, backup);
+            if (backupRef.current === backup) backupRef.current = null;
+            unreadableRef.current = false;
+            failedRef.current = false;
+            setFailed(false);
+          } catch {
+            pendingRef.current = pendingRef.current ?? snapshot;
+            failedRef.current = true;
+            setFailed(true);
+            break;
+          }
         }
+      } finally {
+        writingRef.current = false;
+        setSaving(pendingRef.current !== null && !failedRef.current);
       }
-    } finally {
-      writingRef.current = false;
-      setSaving(pendingRef.current !== null && !failedRef.current);
-    }
+    })();
+    flushPromise.current = run;
+    return run;
   }, []);
 
   const beginRetry = useCallback(() => {
@@ -138,12 +143,12 @@ export function useDurableValue<T>({
   const isUnreadable = useCallback(() => unreadableRef.current, []);
   const commit = useCallback(
     (next: T) => {
-      if (!readyRef.current) return;
+      if (!readyRef.current) return Promise.resolve();
       valueRef.current = next;
       setValue(next);
       pendingRef.current = next;
       setSaving(true);
-      void flush();
+      return flush();
     },
     [flush],
   );

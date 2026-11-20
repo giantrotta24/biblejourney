@@ -1,12 +1,12 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAnonKey, supabaseUrl } from './supabase';
 
-export const DELETE_FAILED = 'Couldn’t delete your account. Check your connection and try again.';
+export const DELETE_FAILED = 'Couldn’t delete your account. Try again in a moment.';
+export const DELETE_OFFLINE = 'Couldn’t delete your account. Check your connection and try again.';
 
-/** Read at call time so a test can point at a stand-in before the build inlines the public env. */
-export const accountDeleteEnv = {
-  base: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
-  anon: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
-};
+const DELETE_TIMEOUT_MS = 30_000;
+
+export type DeleteFailure = 'network' | 'rejected';
+export type DeleteResult = { ok: true } | { ok: false; reason: DeleteFailure };
 
 export async function accessToken(): Promise<string | null> {
   if (!supabase) return null;
@@ -14,23 +14,25 @@ export async function accessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-export async function requestAccountDelete(token: string): Promise<boolean> {
-  const base = accountDeleteEnv.base || process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const anon = accountDeleteEnv.anon || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-  if (!base || !anon || !token) return false;
+export async function requestAccountDelete(token: string): Promise<DeleteResult> {
+  if (!supabaseUrl || !supabaseAnonKey || !token) return { ok: false, reason: 'rejected' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DELETE_TIMEOUT_MS);
   try {
-    const response = await fetch(`${base.replace(/\/$/, '')}/functions/v1/account-delete`, {
+    const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/account-delete`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        apikey: anon,
+        apikey: supabaseAnonKey,
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
     });
-    if (!response.ok) return false;
-    const body = (await response.json()) as { ok?: unknown };
-    return body.ok === true;
+    if (!response.ok) return { ok: false, reason: 'rejected' };
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, reason: 'network' };
+  } finally {
+    clearTimeout(timer);
   }
 }

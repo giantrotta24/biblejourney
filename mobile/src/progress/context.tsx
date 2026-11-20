@@ -12,7 +12,7 @@ type ProgressApi = {
   days: ReadonlySet<number>;
   rows: readonly DayRow[];
   mark: (index: number) => void;
-  clearDays: () => void;
+  clearDays: () => Promise<boolean>;
   replaceDays: (rows: readonly DayRow[]) => void;
 };
 
@@ -71,9 +71,9 @@ export function ProgressProvider({
   );
 
   const clearDays = useCallback(() => {
-    if (!isReady()) return;
-    if (read().length === 0) return;
-    commit([]);
+    if (!isReady()) return Promise.resolve(false);
+    if (read().length === 0) return Promise.resolve(true);
+    return commit([]).then(() => true);
   }, [commit, isReady, read]);
 
   const replaceDays = useCallback(

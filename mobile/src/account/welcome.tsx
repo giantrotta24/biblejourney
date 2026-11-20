@@ -29,12 +29,18 @@ export async function clearWelcomed(): Promise<void> {
   for (const listener of welcomeListeners) listener();
 }
 
-function useFirstRun(): Decision {
+function useFirstRun(): { decision: Decision; epoch: number } {
   const progress = useProgress();
   const notes = useNotes();
   const verses = useVerses();
   const epoch = useSyncExternalStore(subscribeWelcome, currentWelcomeEpoch, currentWelcomeEpoch);
   const [welcomed, setWelcomed] = useState<boolean | null>(null);
+  const [seenEpoch, setSeenEpoch] = useState(epoch);
+  const welcomedNow = seenEpoch === epoch ? welcomed : null;
+  if (seenEpoch !== epoch) {
+    setSeenEpoch(epoch);
+    setWelcomed(null);
+  }
 
   useEffect(() => {
     let active = true;
@@ -51,16 +57,18 @@ function useFirstRun(): Decision {
     };
   }, [epoch]);
 
-  if (welcomed == null || notes.status === 'loading' || verses.status === 'loading') return 'loading';
-  if (welcomed) return 'hide';
-  if (notes.status !== 'ready' || verses.status !== 'ready') return 'hide';
-  if (progress.days.size > 0 || notes.rows.length > 0 || verses.rows.length > 0) return 'hide';
-  return 'show';
+  let decision: Decision;
+  if (welcomedNow == null || notes.status === 'loading' || verses.status === 'loading') decision = 'loading';
+  else if (welcomedNow) decision = 'hide';
+  else if (notes.status !== 'ready' || verses.status !== 'ready') decision = 'hide';
+  else if (progress.days.size > 0 || notes.rows.length > 0 || verses.rows.length > 0) decision = 'hide';
+  else decision = 'show';
+  return { decision, epoch };
 }
 
 export function WelcomeGate({ children, onAccount }: { children: ReactNode; onAccount: () => void }) {
-  const decision = useFirstRun();
-  const [dismissed, setDismissed] = useState(false);
+  const { decision, epoch } = useFirstRun();
+  const [dismissedEpoch, setDismissedEpoch] = useState<number | null>(null);
 
   async function leave(then?: () => void) {
     try {
@@ -68,11 +76,11 @@ export function WelcomeGate({ children, onAccount }: { children: ReactNode; onAc
     } catch {
       // A failed write must not keep the reader on the welcome.
     }
-    setDismissed(true);
+    setDismissedEpoch(epoch);
     then?.();
   }
 
-  if (dismissed || decision === 'hide') return children;
+  if (dismissedEpoch === epoch || decision === 'hide') return children;
   if (decision === 'loading') return <StorageBlank />;
   return <WelcomeView onStart={() => void leave()} onAccount={() => void leave(onAccount)} />;
 }

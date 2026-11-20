@@ -16,7 +16,7 @@ type NotesApi = {
   failed: boolean;
   setBody: (dayIndex: number, body: string) => void;
   remove: (dayIndex: number) => void;
-  clearNotes: () => void;
+  clearNotes: () => Promise<boolean>;
 };
 
 const NotesContext = createContext<NotesApi | null>(null);
@@ -65,9 +65,9 @@ export function NotesProvider({
   );
 
   const clearNotes = useCallback(() => {
-    if (!isReady()) return;
-    if (read().length === 0) return;
-    commit([]);
+    if (!isReady()) return Promise.resolve(false);
+    if (read().length === 0) return Promise.resolve(true);
+    return commit([]).then(() => true);
   }, [commit, isReady, read]);
 
   const replaceNotes = useCallback(

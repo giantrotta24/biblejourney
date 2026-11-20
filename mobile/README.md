@@ -1,6 +1,6 @@
 # Bible Journey
 
-The native app. Today is one page of the tear-off pad. Plan is the year.
+The native app. Today is one page of the tear-off pad. Plan is the year. Verses is this week's verse, practice, and the list of 52. Notes gathers what was written on each day.
 
 ## Run
 

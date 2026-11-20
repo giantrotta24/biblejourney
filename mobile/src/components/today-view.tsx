@@ -452,6 +452,7 @@ function DayPage({
           accessibilityRole="link"
           accessibilityLabel={`Read ${day.reading} on Bible Gateway`}
           disabled={frozen}
+          style={{ paddingVertical: 8 }}
           onPress={() => {
             void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading, translation));
           }}>
@@ -460,7 +461,12 @@ function DayPage({
           <OutsideArrow color={colors.ink3} />
         </Row>
         {onOpenAsk ? (
-          <Row ruled accessibilityLabel="Ask about this reading" disabled={frozen} onPress={() => onOpenAsk(day.index)}>
+          <Row
+            ruled
+            accessibilityLabel="Ask about this reading"
+            disabled={frozen}
+            style={{ paddingVertical: 8 }}
+            onPress={() => onOpenAsk(day.index)}>
             <BubbleIcon color={colors.ink} />
             <Text style={pageRowText(colors)}>Ask about this reading</Text>
             <RowChevron />

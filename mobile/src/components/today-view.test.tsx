@@ -54,6 +54,7 @@ describe('Today', () => {
       const style = StyleSheet.flatten(row.props.style);
       expect(style.minHeight).toBe(48);
       expect(style.flexDirection).toBe('row');
+      expect(style.paddingVertical).toBe(8);
     }
     for (const label of ['Read on Bible Gateway', 'Ask about this reading']) {
       const text = StyleSheet.flatten(screen.getByText(label).props.style);

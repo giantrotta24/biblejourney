@@ -148,6 +148,29 @@ describe('Today', () => {
     expect(onShowDay).not.toHaveBeenCalled();
   });
 
+  it('shows the note placeholder, then the note’s first lines, and opens that day', async () => {
+    const onOpenNote = jest.fn();
+    const note =
+      'The gleaning law stopped me. Leave part of the harvest on purpose, for the widow and the stranger.';
+    const first = await renderToday({ done: new Set(), onOpenNote, noteFor: () => null });
+
+    const placeholder = screen.getByText('Write a note on today’s reading');
+    expect(placeholder.props.numberOfLines).toBe(2);
+    expect(screen.getByRole('button', { name: /Your note/ })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: /Your note/ }));
+    expect(onOpenNote).toHaveBeenCalledWith(0);
+
+    await first.unmount();
+    await renderToday({ done: new Set([0]), dayIndex: 0, noteFor: () => note });
+    const written = screen.getByText(note);
+    expect(written.props.numberOfLines).toBe(2);
+    expect(screen.getByText('Read on Monday')).toBeOnTheScreen();
+    const noteIndex = screen.getByText('Your note');
+    const readIndex = screen.getByText('Read on Monday');
+    expect(noteIndex).toBeOnTheScreen();
+    expect(readIndex).toBeOnTheScreen();
+  });
+
   it('shows the finished page after every day is read', async () => {
     const onShowDay = jest.fn();
     const done = new Set(Array.from({ length: DAY_COUNT }, (_, index) => index));

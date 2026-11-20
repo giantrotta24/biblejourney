@@ -11,6 +11,9 @@ export type Palette = {
   blue: string;
   blueInk: string;
   onBlue: string;
+  ruled: string;
+  field: string;
+  danger: string;
 };
 
 export const light: Palette = {
@@ -24,6 +27,9 @@ export const light: Palette = {
   blue: '#2747a5',
   blueInk: '#2747a5',
   onBlue: '#ffffff',
+  ruled: '#b3b3aa',
+  field: '#ebebe5',
+  danger: '#c4342b',
 };
 
 export const dark: Palette = {
@@ -37,6 +43,9 @@ export const dark: Palette = {
   blue: '#3f60c8',
   blueInk: '#9cb1f3',
   onBlue: '#ffffff',
+  ruled: '#4a4a45',
+  field: '#292926',
+  danger: '#ff6b5f',
 };
 
 export function useColors(): Palette {

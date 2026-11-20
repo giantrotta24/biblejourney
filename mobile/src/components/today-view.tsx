@@ -47,13 +47,24 @@ function numeralTopInset(size: number): number {
 export type TodayViewProps = {
   done: ReadonlySet<number>;
   dayIndex?: number | null;
+  noteFor?: (index: number) => string | null;
   onMark: (index: number) => void;
   onBackToToday: () => void;
   onOpenPlan: () => void;
+  onOpenNote?: (index: number) => void;
   onShowDay: (index: number | null) => void;
 };
 
-export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpenPlan, onShowDay }: TodayViewProps) {
+export function TodayView({
+  done,
+  dayIndex = null,
+  noteFor = () => null,
+  onMark,
+  onBackToToday,
+  onOpenPlan,
+  onOpenNote,
+  onShowDay,
+}: TodayViewProps) {
   const colors = useColors();
   const reducedMotion = useReduceMotion();
   const current = currentDay(done);
@@ -165,9 +176,11 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
                 <DayPage
                   day={selected}
                   done={done}
+                  note={noteFor(selected.index)}
                   colors={colors}
                   onMark={() => pressMark(selected)}
                   onBackToToday={onBackToToday}
+                  onOpenNote={onOpenNote}
                 />
               )}
             </Sheet>
@@ -182,6 +195,7 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
                   <DayPage
                     day={leaving}
                     done={unread(done, leaving.index)}
+                    note={noteFor(leaving.index)}
                     colors={colors}
                     onMark={() => {}}
                     onBackToToday={() => {}}
@@ -195,6 +209,60 @@ export function TodayView({ done, dayIndex = null, onMark, onBackToToday, onOpen
         <PageEdges paper={colors.paper} rule={colors.rule} />
       </View>
     </View>
+  );
+}
+
+function NoteArea({
+  note,
+  colors,
+  large,
+  disabled,
+  onPress,
+}: {
+  note: string | null;
+  colors: Palette;
+  large: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const lineHeight = large ? 36 : 30;
+  const written = note != null && note.length > 0;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={written ? `Your note. ${note}` : 'Your note. Write a note on today’s reading'}
+      disabled={disabled}
+      onPress={onPress}
+      style={{ minHeight: hitSize(), marginTop: 2 }}>
+      <Text style={{ fontSize: large ? 18 : 14, lineHeight: (large ? 18 : 14) * 1.35, color: colors.ink2 }}>Your note</Text>
+      <View style={{ height: lineHeight * 2, overflow: 'hidden' }}>
+        <View pointerEvents="none" style={StyleSheet.absoluteFill} accessibilityElementsHidden>
+          {[1, 2].map((line) => (
+            <View
+              key={line}
+              style={{
+                position: 'absolute',
+                top: line * lineHeight - 1,
+                left: 0,
+                right: 0,
+                height: 1,
+                backgroundColor: colors.ruled,
+              }}
+            />
+          ))}
+        </View>
+        <Text
+          numberOfLines={2}
+          style={{
+            fontFamily: written ? fonts.serif : fonts.serifItalic,
+            fontSize: large ? 21 : 16,
+            lineHeight,
+            color: written ? colors.ink : colors.ink2,
+          }}>
+          {written ? note : 'Write a note on today’s reading'}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -239,19 +307,24 @@ function Sheet({
 function DayPage({
   day,
   done,
+  note,
   colors,
   onMark,
   onBackToToday,
+  onOpenNote,
   frozen = false,
 }: {
   day: PlanDay;
   done: ReadonlySet<number>;
+  note: string | null;
   colors: Palette;
   onMark: () => void;
   onBackToToday: () => void;
+  onOpenNote?: (index: number) => void;
   frozen?: boolean;
 }) {
-  const numeral = numeralSize(useLargeText());
+  const large = useLargeText();
+  const numeral = numeralSize(large);
   const lift = numeralLift(numeral);
   const week = getWeek(day.week);
   const era = eraForWeek(day.week, eras);
@@ -343,6 +416,8 @@ function DayPage({
         </Text>
       </Pressable>
 
+      <NoteArea note={note} colors={colors} large={large} disabled={frozen} onPress={() => onOpenNote?.(day.index)} />
+
       {isRead ? (
         <View style={{ minHeight: hitSize(), flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ width: 2, height: 14, backgroundColor: colors.ink }} accessibilityElementsHidden />
@@ -371,7 +446,7 @@ function DayPage({
           disabled={frozen}
           onPress={onMark}
           style={({ pressed }) => ({
-            marginTop: 6,
+            marginTop: 10,
             minHeight: buttonHeight,
             borderRadius: 10,
             alignItems: 'center',

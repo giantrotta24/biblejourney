@@ -128,7 +128,9 @@ export function remoteError(error: unknown, status: number): unknown {
 }
 
 export function canSync(client: unknown): client is SyncClient {
-  return typeof client === 'object' && client !== null && typeof (client as { from?: unknown }).from === 'function';
+  if (typeof client !== 'object' || client === null) return false;
+  const candidate = client as { from?: unknown; channel?: unknown; rpc?: unknown };
+  return typeof candidate.from === 'function' && typeof candidate.channel === 'function' && typeof candidate.rpc === 'function';
 }
 
 export function supabaseRemote(client: SyncClient, userId: string): RemoteAccount {

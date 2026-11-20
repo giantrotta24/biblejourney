@@ -22,20 +22,25 @@ type PlanViewProps = {
   done: ReadonlySet<number>;
   noted: ReadonlySet<number>;
   onOpenDay: (index: number) => void;
+  focusWeek?: number | null;
+  onFocusApplied?: () => void;
 };
 
-export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
+export function PlanView({ done, noted, onOpenDay, focusWeek = null, onFocusApplied }: PlanViewProps) {
   const colors = useColors();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([currentWeek]));
   const [seenWeek, setSeenWeek] = useState(currentWeek);
   const [scrub, setScrub] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
   const [compact, setCompact] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const listTop = useRef(0);
   const offsets = useRef(new Map<number, number>());
   const pending = useRef<number | null>(null);
+  const listPlaced = useRef(false);
+  const onFocusAppliedRef = useRef(onFocusApplied);
 
   if (seenWeek !== currentWeek) {
     setSeenWeek(currentWeek);
@@ -51,6 +56,35 @@ export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
     scrollRef.current?.scrollTo({ y: Math.max(0, y - BAR), animated: true });
   }, []);
 
+  if (focusWeek != null && focused !== focusWeek) {
+    setFocused(focusWeek);
+    setScrub(null);
+    if (!open.has(focusWeek)) {
+      const next = new Set(open);
+      next.add(focusWeek);
+      setOpen(next);
+    }
+  }
+
+  useEffect(() => {
+    onFocusAppliedRef.current = onFocusApplied;
+  }, [onFocusApplied]);
+
+  const finishFocus = useCallback(
+    (week: number) => {
+      pending.current = null;
+      scrollToWeek(week);
+      onFocusAppliedRef.current?.();
+    },
+    [scrollToWeek],
+  );
+
+  useEffect(() => {
+    if (focusWeek == null) return;
+    pending.current = focusWeek;
+    if (listPlaced.current && offsets.current.has(focusWeek)) finishFocus(focusWeek);
+  }, [focusWeek, finishFocus]);
+
   const openDayRef = useRef(onOpenDay);
   useEffect(() => {
     openDayRef.current = onOpenDay;
@@ -64,18 +98,21 @@ export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
       return next;
     });
   }, []);
-  const placeList = useCallback((y: number) => {
-    listTop.current = y;
-  }, []);
+  const placeList = useCallback(
+    (y: number) => {
+      listTop.current = y;
+      listPlaced.current = true;
+      const week = pending.current;
+      if (week != null && offsets.current.has(week)) finishFocus(week);
+    },
+    [finishFocus],
+  );
   const placeWeek = useCallback(
     (week: number, y: number) => {
       offsets.current.set(week, y);
-      if (pending.current === week) {
-        pending.current = null;
-        scrollToWeek(week);
-      }
+      if (pending.current === week && listPlaced.current) finishFocus(week);
     },
-    [scrollToWeek],
+    [finishFocus],
   );
 
   function reveal(week: number) {

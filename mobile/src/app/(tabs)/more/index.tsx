@@ -15,7 +15,13 @@ export default function MoreScreen() {
   else if (session.status !== 'loading') detail = 'Not signed in';
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper, paddingTop: insets.top }}>
-      <MoreHub detail={detail} onAccount={() => router.push('/more/account')} />
+      <MoreHub
+        detail={detail}
+        onTimeline={() => router.push('/more/timeline')}
+        onWhosWho={() => router.push('/more/whos-who')}
+        onAccount={() => router.push('/more/account')}
+        onSettings={() => router.push('/more/settings')}
+      />
     </View>
   );
 }

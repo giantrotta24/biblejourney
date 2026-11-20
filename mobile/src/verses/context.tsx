@@ -13,6 +13,7 @@ type VersesApi = {
   status: StoreStatus;
   retry: () => void;
   setLearned: (week: number, learned: boolean) => void;
+  clearVerses: () => Promise<boolean>;
 };
 
 const VersesContext = createContext<VersesApi | null>(null);
@@ -58,6 +59,12 @@ export function VersesProvider({
     [commit, isReady, read, record],
   );
 
+  const clearVerses = useCallback(() => {
+    if (!isReady()) return Promise.resolve(false);
+    if (read().length === 0) return Promise.resolve(true);
+    return commit([]).then(() => true);
+  }, [commit, isReady, read]);
+
   const replaceVerses = useCallback(
     (rows: readonly VerseRow[]) => {
       if (!isReady()) return;
@@ -87,7 +94,9 @@ export function VersesProvider({
   const status: StoreStatus = unavailable ? 'unavailable' : value ? 'ready' : 'loading';
 
   return (
-    <VersesContext.Provider value={{ rows: value ?? [], status, retry, setLearned }}>{children}</VersesContext.Provider>
+    <VersesContext.Provider value={{ rows: value ?? [], status, retry, setLearned, clearVerses }}>
+      {children}
+    </VersesContext.Provider>
   );
 }
 

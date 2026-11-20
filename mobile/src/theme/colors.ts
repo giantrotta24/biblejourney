@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { useResolvedScheme } from './scheme';
 
 export type Palette = {
   paper: string;
@@ -49,5 +49,5 @@ export const dark: Palette = {
 };
 
 export function useColors(): Palette {
-  return useColorScheme() === 'dark' ? dark : light;
+  return useResolvedScheme() === 'dark' ? dark : light;
 }

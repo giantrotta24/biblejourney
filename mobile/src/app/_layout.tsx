@@ -2,18 +2,21 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { whenSettingsReady } from '@/settings/client';
 import { useColors } from '@/theme/colors';
+import { useResolvedScheme } from '@/theme/scheme';
 
 import { ReadingProviders } from './providers';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
+  const scheme = useResolvedScheme();
+  const [settingsReady, setSettingsReady] = useState(false);
   const [loaded, error] = useFonts({
     ArchivoCondensedExtraBold: require('../../assets/fonts/ArchivoCondensed-ExtraBold.ttf'),
     SourceSerif4: require('@expo-google-fonts/source-serif-4/400Regular/SourceSerif4_400Regular.ttf'),
@@ -22,10 +25,20 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
-  }, [loaded, error]);
+    let live = true;
+    void whenSettingsReady().then(() => {
+      if (live) setSettingsReady(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
-  if (!loaded && !error) return null;
+  useEffect(() => {
+    if ((loaded || error) && settingsReady) void SplashScreen.hideAsync();
+  }, [loaded, error, settingsReady]);
+
+  if ((!loaded && !error) || !settingsReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

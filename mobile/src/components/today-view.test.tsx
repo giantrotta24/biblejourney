@@ -4,6 +4,7 @@ import { PixelRatio, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createGestureController, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
 
 import { ProgressProvider, useProgress } from '../progress/context';
 import { DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
@@ -34,6 +35,14 @@ describe('Today', () => {
     expect(screen.getByText('1')).toBeOnTheScreen();
     expect(screen.getByText('Genesis 1–4')).toBeOnTheScreen();
     expect(screen.getByText('Mark day 1 read')).toBeOnTheScreen();
+  });
+
+  it('opens Bible Gateway in the translation it was given', async () => {
+    const open = jest.mocked(WebBrowser.openBrowserAsync);
+    open.mockClear();
+    await renderToday({ done: new Set(), translation: 'ESV' });
+    await fireEvent.press(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' }));
+    expect(open).toHaveBeenCalledWith('https://www.biblegateway.com/passage/?search=Genesis+1-4&version=ESV');
   });
 
   it('shows day N+1 after N days are read', async () => {

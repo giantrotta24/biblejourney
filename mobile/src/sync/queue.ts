@@ -18,6 +18,7 @@ export type PendingQueue = {
   refusedNotes(): Promise<number[]>;
   addRefusedNote(dayIndex: number): Promise<void>;
   setRefusedNotes(dayIndexes: readonly number[]): Promise<void>;
+  clear(): Promise<void>;
 };
 
 export const SYNC_QUEUE_KEY = 'biblejourney.sync.v1';
@@ -105,6 +106,13 @@ export function memoryQueue(): PendingQueue {
     },
     async setRefusedNotes(dayIndexes) {
       refused = [...dayIndexes];
+    },
+    async clear() {
+      ops.length = 0;
+      linked = null;
+      rejected = 0;
+      resetSeen = null;
+      refused = [];
     },
   };
 }
@@ -195,6 +203,19 @@ export function createStorageQueue(storage: KeyValueStore): PendingQueue {
       run(async () => {
         const current = await hydrate();
         await write({ ...current, refusedNotes: [...dayIndexes] });
+      }),
+    clear: () =>
+      run(async () => {
+        let nextId = file?.nextId ?? 1;
+        if (!file) {
+          try {
+            nextId = (await hydrate()).nextId;
+          } catch {
+            nextId = 1;
+          }
+        }
+        failed = false;
+        await write({ ...emptyFile(), nextId });
       }),
   };
 }

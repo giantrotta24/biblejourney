@@ -52,4 +52,4 @@ jobs:
         run: supabase db push --remote --yes --password "$SUPABASE_DB_PASSWORD"
       - name: Deploy functions
         if: steps.settings.outputs.ready == 'true'
-        run: supabase functions deploy ask reminders-send --no-verify-jwt --yes
+        run: supabase functions deploy ask reminders-send account-delete --no-verify-jwt --yes

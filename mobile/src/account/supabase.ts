@@ -3,16 +3,16 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL || undefined;
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || undefined;
+export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || undefined;
+export const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || undefined;
 
 export function accountsConfigured(): boolean {
-  return Boolean(url && anonKey);
+  return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
 export const supabase: SupabaseClient | null =
-  url && anonKey
-    ? createClient(url, anonKey, {
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           storage: AsyncStorage,
           persistSession: true,

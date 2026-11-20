@@ -4,6 +4,7 @@ import { createSync } from './engine';
 import { createFakeServer, type FakeDevice } from './fake-remote';
 import { createMemoryStore, type MemoryStore } from './memory-store';
 import { createStorageQueue, memoryQueue, type PendingQueue } from './queue';
+import { RemoteRefusedError } from './remote';
 import type { KeyValueStore } from '@/persist/document';
 
 const USER = 'user-1';
@@ -493,5 +494,83 @@ describe('sync engine', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('sends a reset to the account and leaves notes', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addVerse(2);
+    await device.store.addNote(4, 'kept');
+    await settle(device.sync);
+
+    await device.sync.markReset('2026-11-20T15:00:00.000Z');
+    await settle(device.sync);
+
+    expect(server.rows(USER).days).toEqual([]);
+    expect(server.rows(USER).verses).toEqual([]);
+    expect(server.rows(USER).notes.map((row) => row.body)).toEqual(['kept']);
+    expect(server.resetAt(USER)).not.toBeNull();
+    expect(device.remote.calls).toContain('markReset');
+  });
+
+  it('does not resend a failed progress write after a reset', async () => {
+    const server = createFakeServer();
+    const storage = memory();
+    let failWrites = false;
+    const queueStorage = {
+      async getItem(key: string) {
+        return storage.getItem(key);
+      },
+      async setItem(key: string, value: string) {
+        if (failWrites && key === 'biblejourney.sync.v1') throw new Error('disk');
+        await storage.setItem(key, value);
+      },
+    };
+    const sync = createSync(createStorageQueue(queueStorage), { debounceMs: 0, unrecordedStore: storage });
+    const store = createMemoryStore(sync, clock(4));
+    sync.attach(store);
+    const remote = server.device(USER);
+    await sync.start(USER, remote);
+    await settle(sync);
+    failWrites = true;
+    await expect(store.addDay(8)).rejects.toThrow('disk');
+    failWrites = false;
+    await sync.markReset('2026-11-20T15:00:00.000Z');
+    await settle(sync);
+    expect(server.rows(USER).days).toEqual([]);
+  });
+
+  it('does not record a refusal after the queue was cleared', async () => {
+    const server = createFakeServer();
+    const queue = memoryQueue();
+    const sync = createSync(queue, { debounceMs: 0 });
+    const store = createMemoryStore(sync, clock(1));
+    sync.attach(store);
+    const remote = server.device(USER);
+    await sync.start(USER, remote);
+    await settle(sync);
+    let release: () => void = () => {};
+    let entered: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const enteredGate = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    remote.putDays = async () => {
+      entered();
+      await gate;
+      throw new RemoteRefusedError('no', 403);
+    };
+    const recorded = store.addDay(4);
+    await enteredGate;
+    await sync.clearQueue();
+    release();
+    await recorded;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await queue.rejectedCount()).toBe(0);
+    expect(await queue.list(USER)).toEqual([]);
   });
 });

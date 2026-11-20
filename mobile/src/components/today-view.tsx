@@ -44,6 +44,7 @@ export type TodayViewProps = {
   onShowDay: (index: number | null) => void;
   signedInNote?: string | null;
   onPageTurn?: () => void;
+  translation?: string;
 };
 
 export function TodayView({
@@ -57,6 +58,7 @@ export function TodayView({
   onShowDay,
   signedInNote = null,
   onPageTurn,
+  translation = 'NIV',
 }: TodayViewProps) {
   const colors = useColors();
   const reducedMotion = useReduceMotion();
@@ -180,6 +182,7 @@ export function TodayView({
                   note={noteFor(selected.index)}
                   signedInNote={signedInNote}
                   colors={colors}
+                  translation={translation}
                   onMark={() => pressMark(selected)}
                   onBackToToday={onBackToToday}
                   onOpenNote={onOpenNote}
@@ -199,6 +202,7 @@ export function TodayView({
                     done={unread(done, leaving.index)}
                     note={noteFor(leaving.index)}
                     colors={colors}
+                    translation={translation}
                     onMark={() => {}}
                     onBackToToday={() => {}}
                     frozen
@@ -319,6 +323,7 @@ function DayPage({
   onBackToToday,
   onOpenNote,
   frozen = false,
+  translation = 'NIV',
 }: {
   day: PlanDay;
   done: ReadonlySet<number>;
@@ -329,6 +334,7 @@ function DayPage({
   onBackToToday: () => void;
   onOpenNote?: (index: number) => void;
   frozen?: boolean;
+  translation?: string;
 }) {
   const large = useLargeText();
   const numeral = numeralSize(large);
@@ -424,7 +430,7 @@ function DayPage({
         accessibilityLabel={`Read ${day.reading} on Bible Gateway`}
         disabled={frozen}
         onPress={() => {
-          void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading));
+          void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading, translation));
         }}
         style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
         <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>

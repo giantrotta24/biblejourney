@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { eras } from '../../../supabase/functions/_shared/content/plan';
-import { eraForWeek, type EraSpan } from './era';
+import { currentEraIndex, eraForWeek, weekRangeLabel, type EraSpan } from './era';
 
 const spans: EraSpan[] = [
   { title: 'Early', summary: 'The early years.', weeks: [1, 5] },
@@ -32,5 +32,15 @@ describe('eraForWeek', () => {
 
   it('throws when the week is outside every era', () => {
     expect(() => eraForWeek(0, spans)).toThrow(RangeError);
+  });
+});
+
+describe('current era', () => {
+  it('marks the later era once its first week has started', () => {
+    expect(currentEraIndex(1, eras)).toBe(0);
+    expect(currentEraIndex(5, eras)).toBe(1);
+    expect(eras[currentEraIndex(46, eras)].title).toBe('The early church');
+    expect(weekRangeLabel([39, 39])).toBe('Week 39');
+    expect(weekRangeLabel([1, 5])).toBe('Weeks 1–5');
   });
 });

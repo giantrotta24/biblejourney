@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "supabase/functions/ask/**",
     "supabase/functions/reminders-send/**",
+    "supabase/functions/account-delete/**",
     "supabase/functions/tests/**",
     "mobile/**",
   ]),

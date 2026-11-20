@@ -7,6 +7,7 @@ import { useNotes } from '@/notes/context';
 import { useProgress } from '@/progress/context';
 import { SIGNED_IN_NOTE } from '@/sync/copy';
 import { useSignedInNote } from '@/sync/react';
+import { useSettings } from '@/settings/client';
 import { useColors } from '@/theme/colors';
 import { currentDay, DAY_COUNT } from '../../../../supabase/functions/_shared/content/plan';
 
@@ -26,6 +27,7 @@ export default function TodayScreen() {
   const signedIn = useSignedInNote();
   const { day } = useLocalSearchParams<{ day?: string }>();
   const dayIndex = dayParam(day);
+  const { linkTranslation } = useSettings();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.under, paddingTop: insets.top }}>
@@ -45,6 +47,7 @@ export default function TodayScreen() {
         onOpenNote={(index) => router.push({ pathname: '/note/[day]', params: { day: String(index) } })}
         signedInNote={signedIn.visible ? SIGNED_IN_NOTE : null}
         onPageTurn={signedIn.dismiss}
+        translation={linkTranslation}
         onShowDay={(index) => {
           const today = currentDay(days)?.index ?? null;
           if (index == null || index === today) router.setParams({ day: '' });

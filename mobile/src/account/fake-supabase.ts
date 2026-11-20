@@ -3,6 +3,17 @@ export type FakeSession = { access_token: string; user: FakeUser };
 type Listener = (event: string, session: FakeSession | null) => void;
 type FakeError = { message?: string; status?: number; code?: string; name?: string };
 
+export const supabaseUrl = 'https://example.test';
+export const supabaseAnonKey = 'anon-test';
+
+type ProfileRow = { theme: string; link_translation: string };
+
+export const fakeProfiles = {
+  row: null as ProfileRow | null,
+  saves: [] as Record<string, unknown>[],
+  error: null as { message: string } | null,
+};
+
 export const fakeAuth = {
   configured: true,
   session: null as FakeSession | null,
@@ -21,6 +32,9 @@ export function resetFakeAuth() {
   fakeAuth.errors = {};
   fakeAuth.oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=test';
   fakeAuth.hold = null;
+  fakeProfiles.row = null;
+  fakeProfiles.saves = [];
+  fakeProfiles.error = null;
 }
 
 export function accountsConfigured(): boolean {
@@ -107,5 +121,27 @@ export const supabase = {
     stopAutoRefresh() {
       take('stopAutoRefresh', []);
     },
+  },
+  from(table: string) {
+    if (table !== 'profiles') throw new Error(`unexpected table ${table}`);
+    return {
+      select() {
+        return {
+          eq() {
+            return {
+              async maybeSingle() {
+                if (fakeProfiles.error) return { data: null, error: fakeProfiles.error };
+                return { data: fakeProfiles.row, error: null };
+              },
+            };
+          },
+        };
+      },
+      async upsert(values: Record<string, unknown>) {
+        fakeProfiles.saves.push(values);
+        if (fakeProfiles.error) return { error: fakeProfiles.error };
+        return { error: null };
+      },
+    };
   },
 };

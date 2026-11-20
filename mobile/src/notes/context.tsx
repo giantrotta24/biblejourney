@@ -16,6 +16,7 @@ type NotesApi = {
   failed: boolean;
   setBody: (dayIndex: number, body: string) => void;
   remove: (dayIndex: number) => void;
+  clearNotes: () => Promise<boolean>;
 };
 
 const NotesContext = createContext<NotesApi | null>(null);
@@ -63,6 +64,12 @@ export function NotesProvider({
     [commit, isReady, read, record],
   );
 
+  const clearNotes = useCallback(() => {
+    if (!isReady()) return Promise.resolve(false);
+    if (read().length === 0) return Promise.resolve(true);
+    return commit([]).then(() => true);
+  }, [commit, isReady, read]);
+
   const replaceNotes = useCallback(
     (rows: readonly NoteRow[]) => {
       if (!isReady()) return;
@@ -93,7 +100,7 @@ export function NotesProvider({
   const status: StoreStatus = unavailable ? 'unavailable' : value ? 'ready' : 'loading';
 
   return (
-    <NotesContext.Provider value={{ rows: value ?? [], status, retry, saving, failed, setBody, remove }}>
+    <NotesContext.Provider value={{ rows: value ?? [], status, retry, saving, failed, setBody, remove, clearNotes }}>
       {children}
     </NotesContext.Provider>
   );

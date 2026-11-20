@@ -26,6 +26,8 @@ The app uses the same Supabase accounts as the web app. Copy `.env.example` to `
 
 Deploy `supabase/migrations/20261120000000_notes.sql` before a build that syncs. Without that table, note writes are refused.
 
+Deploy `account-delete` before a build that shows Delete account. Without that function, delete fails and the account stays.
+
 In the Supabase Auth settings, allow these redirect URLs:
 
 - `biblejourney://auth-callback`

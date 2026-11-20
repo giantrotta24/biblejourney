@@ -1,15 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { loadDocument, saveDocument, type KeyValueStore } from '@/persist/document';
 import { DAY_COUNT } from '../../../supabase/functions/_shared/content/plan';
+
+export type { KeyValueStore } from '@/persist/document';
 
 export const PROGRESS_KEY = 'biblejourney.progress.v1';
 export const UNREADABLE_KEY = 'biblejourney.progress.v1.unreadable';
 const PROGRESS_VERSION = 1;
-
-export type KeyValueStore = {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-};
 
 export type LoadedProgress =
   | { status: 'empty' }
@@ -55,16 +53,9 @@ function serialize(days: ReadonlySet<number>): string {
 }
 
 export async function loadProgress(storage: KeyValueStore = AsyncStorage): Promise<LoadedProgress> {
-  let raw: string | null;
-  try {
-    raw = await storage.getItem(PROGRESS_KEY);
-  } catch {
-    return { status: 'unavailable' };
-  }
-  if (raw == null) return { status: 'empty' };
-  const days = documentDays(raw);
-  if (days == null) return { status: 'unreadable', raw };
-  return { status: 'ready', days };
+  const loaded = await loadDocument(storage, PROGRESS_KEY, documentDays);
+  if (loaded.status === 'ready') return { status: 'ready', days: loaded.value };
+  return loaded;
 }
 
 export async function saveProgress(
@@ -72,9 +63,5 @@ export async function saveProgress(
   storage: KeyValueStore = AsyncStorage,
   backupRaw?: string | null,
 ): Promise<void> {
-  if (backupRaw != null) {
-    const existing = await storage.getItem(UNREADABLE_KEY);
-    if (existing == null) await storage.setItem(UNREADABLE_KEY, backupRaw);
-  }
-  await storage.setItem(PROGRESS_KEY, serialize(days));
+  await saveDocument(storage, PROGRESS_KEY, serialize(days), UNREADABLE_KEY, backupRaw);
 }

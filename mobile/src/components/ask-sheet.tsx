@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
   type KeyboardEvent,
+  type ViewInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -70,7 +71,7 @@ type ReportTarget =
   | { kind: 'question'; question: string; answer: string }
   | { kind: QuickPromptType; answer: string };
 
-function useComposerLift(composerRef: RefObject<View | null>) {
+function useComposerLift(composerRef: RefObject<ViewInstance | null>) {
   const [lift] = useState(() => new Animated.Value(0));
   const liftTarget = useRef(0);
   const [keyboardUp, setKeyboardUp] = useState(false);
@@ -92,7 +93,7 @@ function useComposerLift(composerRef: RefObject<View | null>) {
         return;
       }
       const node = composerRef.current;
-      if (!node || typeof node.measureInWindow !== 'function') return;
+      if (!node) return;
       node.measureInWindow((_x, y, _width, measured) => {
         const next = composerOverlap(y + measured, liftTarget.current, top);
         liftTarget.current = next;
@@ -184,7 +185,7 @@ export function AskSheet({
   const reportBusyRef = useRef(false);
   const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
-  const composerRef = useRef<View>(null);
+  const composerRef = useRef<ViewInstance>(null);
   const { lift, keyboardUp } = useComposerLift(composerRef);
   const insets = useSafeAreaInsets();
 

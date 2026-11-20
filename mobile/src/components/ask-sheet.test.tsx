@@ -276,7 +276,7 @@ describe('AskSheet', () => {
   });
 
   it('links a typed care reply to call and text 988', async () => {
-    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const open = jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve());
     try {
       await renderSheet(async (_url, init) => {
         if (init.method === 'GET') return json(200, { configured: true, signInRequired: true, enabled: true });

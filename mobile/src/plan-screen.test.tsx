@@ -27,7 +27,7 @@ jest.mock('expo-haptics', () => ({
 }));
 
 const USER = 'user-1';
-const DAY_ONE = 'Day 1, Genesis 1–4';
+const DAY_ONE = /^Day 1, Genesis 1–4(, today)?$/;
 
 function serverDays(server: ReturnType<typeof createFakeServer>) {
   return server.rows(USER).days.map((row) => row.day_index);
@@ -56,7 +56,7 @@ describe('Plan day checks', () => {
       </GestureHandlerRootView>,
     );
 
-    await fireEvent.press(await screen.findByRole('checkbox', { name: DAY_ONE }));
+    await fireEvent.press(await screen.findByRole('checkbox', { name: 'Day 1, Genesis 1–4, today' }));
     await waitFor(() => expect(serverDays(server)).toEqual([0]), { timeout: 4000 });
     expect(screen.getByRole('checkbox', { name: DAY_ONE }).props.accessibilityState).toMatchObject({ checked: true });
 

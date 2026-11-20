@@ -38,7 +38,7 @@ describe('Plan day checks', () => {
 
     const read = screen.getByRole('checkbox', { name: 'Day 1, Genesis 1–4' });
     expect(read.props.accessibilityState).toMatchObject({ checked: true });
-    const unread = screen.getByRole('checkbox', { name: 'Day 2, Genesis 5–7' });
+    const unread = screen.getByRole('checkbox', { name: 'Day 2, Genesis 5–7, today' });
     expect(unread.props.accessibilityState).toMatchObject({ checked: false });
   });
 
@@ -67,7 +67,9 @@ describe('Plan day checks', () => {
       </GestureHandlerRootView>,
     );
 
-    await fireEvent.press(screen.getByRole('button', { name: /^Mon, Genesis 1–4, read/ }));
+    const row = screen.getByRole('button', { name: /^Mon, Genesis 1–4$/ });
+    expect(row.props.accessibilityHint).toBe('Opens this day');
+    await fireEvent.press(row);
     expect(onOpenDay).toHaveBeenCalledWith(0);
     expect(onToggleDay).not.toHaveBeenCalled();
   });

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
+import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { useColors } from '@/theme/colors';
 import { fonts, hitSize } from '@/theme/fonts';
@@ -250,6 +250,7 @@ const PlanWeeks = memo(function PlanWeeks({
   onListTop: (y: number) => void;
   onWeekTop: (week: number, y: number) => void;
 }) {
+  const target = hitSize();
   return (
     <View
       style={{ marginTop: 16 }}
@@ -285,15 +286,14 @@ const PlanWeeks = memo(function PlanWeeks({
                   const hasNote = noted.has(day.index);
                   const isToday = todayIndex === day.index;
                   const checkColor = read ? ink : isToday ? blueInk : ink3;
-                  const target = hitSize();
                   return (
                     <View
                       key={day.index}
-                      style={{ minHeight: Platform.OS === 'android' ? 48 : 44, flexDirection: 'row', alignItems: 'center' }}>
+                      style={{ minHeight: target, flexDirection: 'row', alignItems: 'center' }}>
                       <Pressable
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: read }}
-                        accessibilityLabel={`Day ${day.index + 1}, ${day.reading}`}
+                        accessibilityLabel={`Day ${day.index + 1}, ${day.reading}${isToday ? ', today' : ''}`}
                         onPress={() => onToggleDay(day.index, !read)}
                         style={{
                           width: target,
@@ -306,7 +306,8 @@ const PlanWeeks = memo(function PlanWeeks({
                       </Pressable>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : read ? ', read' : ''}${hasNote ? ', note' : ''}`}
+                        accessibilityLabel={`${day.weekday}, ${day.reading}${isToday ? ', today' : ''}${hasNote ? ', note' : ''}`}
+                        accessibilityHint="Opens this day"
                         onPress={() => onOpenDay(day.index)}
                         style={{
                           flex: 1,

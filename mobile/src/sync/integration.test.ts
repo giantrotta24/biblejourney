@@ -74,21 +74,25 @@ suite('two phones, one account', () => {
       expect(second.store.rows().verses.map((row) => row.week)).toEqual([2]);
       expect(second.store.rows().notes.map((row) => row.body)).toEqual(['From the first phone']);
 
-      minute = 2;
-      await first.store.addNote(3, 'Earlier edit');
-      minute = 3;
-      await second.store.addNote(3, 'Later edit');
+      minute = 5;
+      await first.store.addNote(3, 'Newer edit');
       await first.sync.idle();
+      minute = 4;
+      await second.store.addNote(3, 'Older edit');
       await second.sync.idle();
       await first.sync.resync();
       await second.sync.resync();
       await first.sync.idle();
       await second.sync.idle();
-      expect(first.store.rows().notes.map((row) => row.body)).toEqual(['Later edit']);
-      expect(second.store.rows().notes.map((row) => row.body)).toEqual(['Later edit']);
+      expect(first.store.rows().notes.map((row) => row.body)).toEqual(['Newer edit']);
+      expect(second.store.rows().notes.map((row) => row.body)).toEqual(['Newer edit']);
 
       await first.store.removeNote(3);
-      await first.sync.recordLocal({ kind: 'delete-note', day_index: 3 });
+      await first.sync.recordLocal({
+        kind: 'delete-note',
+        day_index: 3,
+        deleted_at: new Date(Date.UTC(2026, 10, 20, 12, 6)).toISOString(),
+      });
       await first.sync.idle();
       await second.sync.resync();
       await second.sync.idle();

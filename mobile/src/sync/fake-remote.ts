@@ -24,7 +24,7 @@ const earliest = <R>(existing: R | undefined, row: R, time: (row: R) => string) 
   existing && time(existing) <= time(row) ? existing : row;
 
 const latest = (existing: NoteRow | undefined, row: NoteRow) =>
-  existing && existing.updated_at >= row.updated_at ? existing : row;
+  existing && existing.updated_at > row.updated_at ? existing : row;
 
 export function createFakeServer() {
   const accounts = new Map<string, Account>();
@@ -150,10 +150,14 @@ export function createFakeServer() {
           }
         });
       },
-      async deleteNote(dayIndex) {
+      async deleteNote(dayIndex, deletedAt) {
         guard('deleteNote');
         ifSignedIn(() => {
-          if (account(userId).notes.delete(dayIndex)) broadcast(userId, { kind: 'delete-note', day_index: dayIndex });
+          const notes = account(userId).notes;
+          const existing = notes.get(dayIndex);
+          if (!existing || existing.updated_at > deletedAt) return;
+          notes.delete(dayIndex);
+          broadcast(userId, { kind: 'delete-note', day_index: dayIndex, deleted_at: deletedAt });
         });
       },
       async markReset() {

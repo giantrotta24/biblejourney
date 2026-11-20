@@ -1,14 +1,15 @@
 import type { SyncStatus } from './engine';
 
 export type Arrival = {
-  onAuth(event: string): void;
+  arm(): void;
+  reset(): void;
   onStatus(status: SyncStatus): void;
   visible(): boolean;
   dismiss(): void;
   subscribe(listener: () => void): () => void;
 };
 
-/** One line after a fresh sign-in sync. A restored session does not arm it. */
+/** One line after the first link. A restored session does not arm it. */
 export function createArrival(): Arrival {
   let armed = false;
   let shown = false;
@@ -20,8 +21,15 @@ export function createArrival(): Arrival {
   }
 
   return {
-    onAuth(event) {
-      if (event === 'SIGNED_IN') armed = true;
+    arm() {
+      if (shown || dismissed) return;
+      armed = true;
+    },
+    reset() {
+      armed = false;
+      shown = false;
+      dismissed = false;
+      notify();
     },
     onStatus(status) {
       if (!armed || dismissed || status !== 'synced' || shown) return;

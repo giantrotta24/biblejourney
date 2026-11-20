@@ -78,7 +78,7 @@ export function VersesProvider({
   useEffect(() => {
     if (!runtime) return;
     return runtime.register('verses', book);
-  }, [book, runtime]);
+  }, [book, runtime, value, unavailable]);
 
   const retry = useCallback(() => {
     beginRetry();

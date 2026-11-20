@@ -13,6 +13,9 @@ describe('account sync lines', () => {
       'Not synced yet. Your changes are safe on this phone and will sync when you’re back online.',
     );
     expect(accountLine(true, 'off')).toBe(accountLine(true, 'offline'));
+    expect(accountLine(true, 'synced', 1)).toBe('1 change could not be synced.');
+    expect(accountLine(true, 'offline', 2)).toBe('2 changes could not be synced.');
+    expect(accountLine(true, 'syncing', 2)).toBe('Syncing…');
     expect(SIGNED_IN_NOTE).toBe('Signed in. Your progress came with you.');
   });
 });

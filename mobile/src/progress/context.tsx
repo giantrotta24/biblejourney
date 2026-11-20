@@ -90,7 +90,7 @@ export function ProgressProvider({
   useEffect(() => {
     if (!runtime) return;
     return runtime.register('days', book);
-  }, [book, runtime]);
+  }, [book, runtime, value, unavailable]);
 
   function retry() {
     beginRetry();

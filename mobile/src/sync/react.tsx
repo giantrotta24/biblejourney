@@ -28,10 +28,17 @@ function defaultRemote(userId: string): RemoteAccount | null {
 export function createRuntime(options?: {
   remoteFor?: (userId: string) => RemoteAccount | null | undefined;
 }): Runtime {
-  const sync = createSync(createStorageQueue(AsyncStorage));
-  const ports = createPortStore();
+  const sync = createSync(createStorageQueue(AsyncStorage), { unrecordedStore: AsyncStorage });
+  const ports = createPortStore({
+    onReady() {
+      if (sync.userId()) void sync.resync();
+    },
+  });
   sync.attach(ports.store);
   const arrival = createArrival();
+  sync.onFirstLink(() => arrival.arm());
+  const engineStop = sync.stop.bind(sync);
+  sync.stop = () => engineStop().then(() => arrival.reset());
   const remotes = new Map<string, RemoteAccount>();
   return {
     sync,
@@ -81,6 +88,10 @@ function hidden() {
   return false;
 }
 
+function noneRejected() {
+  return 0;
+}
+
 export function useSyncStatus(): SyncStatus {
   const runtime = useRuntime();
   const subscribe = useCallback(
@@ -88,6 +99,16 @@ export function useSyncStatus(): SyncStatus {
     [runtime],
   );
   const get = useCallback(() => (runtime ? runtime.sync.getStatus() : offStatus()), [runtime]);
+  return useSyncExternalStore(subscribe, get, get);
+}
+
+export function useRejectedCount(): number {
+  const runtime = useRuntime();
+  const subscribe = useCallback(
+    (listener: () => void) => (runtime ? runtime.sync.subscribeStatus(listener) : emptySubscribe()),
+    [runtime],
+  );
+  const get = useCallback(() => (runtime ? runtime.sync.rejectedCount() : noneRejected()), [runtime]);
   return useSyncExternalStore(subscribe, get, get);
 }
 
@@ -106,7 +127,7 @@ export function useRecord() {
   return useCallback(
     (change: Parameters<Sync['recordLocal']>[0]) => {
       if (!runtime) return;
-      void runtime.sync.recordLocal(change);
+      void runtime.sync.recordLocal(change).catch(() => undefined);
     },
     [runtime],
   );

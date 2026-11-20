@@ -1,6 +1,6 @@
 import type { KeyValueStore } from '@/persist/document';
 
-import type { RemoteChange } from './remote';
+import { changeKey, type RemoteChange } from './remote';
 
 export type PendingOp = RemoteChange & { user_id: string };
 export type QueuedOp = PendingOp & { id: number };
@@ -15,6 +15,9 @@ export type PendingQueue = {
   setRejectedCount(count: number): Promise<void>;
   resetSeen(): Promise<string | null>;
   setResetSeen(at: string | null): Promise<void>;
+  refusedNotes(): Promise<number[]>;
+  addRefusedNote(dayIndex: number): Promise<void>;
+  setRefusedNotes(dayIndexes: readonly number[]): Promise<void>;
 };
 
 export const SYNC_QUEUE_KEY = 'biblejourney.sync.v1';
@@ -26,10 +29,11 @@ type QueueFile = {
   linkedUser: string | null;
   rejectedCount: number;
   resetSeen: string | null;
+  refusedNotes: number[];
 };
 
 function emptyFile(): QueueFile {
-  return { version: 1, nextId: 1, ops: [], linkedUser: null, rejectedCount: 0, resetSeen: null };
+  return { version: 1, nextId: 1, ops: [], linkedUser: null, rejectedCount: 0, resetSeen: null, refusedNotes: [] };
 }
 
 function parseFile(raw: string): QueueFile {
@@ -44,7 +48,14 @@ function parseFile(raw: string): QueueFile {
     linkedUser: typeof data.linkedUser === 'string' ? data.linkedUser : null,
     rejectedCount: typeof data.rejectedCount === 'number' ? data.rejectedCount : 0,
     resetSeen: typeof data.resetSeen === 'string' ? data.resetSeen : null,
+    refusedNotes: Array.isArray(data.refusedNotes) ? data.refusedNotes.filter((day) => typeof day === 'number') : [],
   };
+}
+
+function withoutEarlier(ops: readonly QueuedOp[], op: PendingOp): QueuedOp[] {
+  if (op.kind === 'mark-reset') return [...ops];
+  const key = changeKey(op);
+  return ops.filter((queued) => queued.kind === 'mark-reset' || queued.user_id !== op.user_id || changeKey(queued) !== key);
 }
 
 export function memoryQueue(): PendingQueue {
@@ -53,12 +64,15 @@ export function memoryQueue(): PendingQueue {
   let linked: string | null = null;
   let rejected = 0;
   let resetSeen: string | null = null;
+  let refused: number[] = [];
   return {
     async list(userId) {
       return ops.filter((op) => op.user_id === userId).map((op) => ({ ...op }));
     },
     async push(op) {
-      ops.push({ ...op, id: next });
+      const kept = withoutEarlier(ops, op);
+      ops.length = 0;
+      ops.push(...kept, { ...op, id: next });
       next += 1;
     },
     async remove(id) {
@@ -83,6 +97,15 @@ export function memoryQueue(): PendingQueue {
     async setResetSeen(at) {
       resetSeen = at;
     },
+    async refusedNotes() {
+      return [...refused];
+    },
+    async addRefusedNote(dayIndex) {
+      if (!refused.includes(dayIndex)) refused = [...refused, dayIndex];
+    },
+    async setRefusedNotes(dayIndexes) {
+      refused = [...dayIndexes];
+    },
   };
 }
 
@@ -103,13 +126,7 @@ export function createStorageQueue(storage: KeyValueStore): PendingQueue {
   async function hydrate(): Promise<QueueFile> {
     if (failed) throw new Error('Sync queue could not be read');
     if (file) return file;
-    let raw: string | null;
-    try {
-      raw = await storage.getItem(SYNC_QUEUE_KEY);
-    } catch (error) {
-      failed = true;
-      throw error;
-    }
+    const raw = await storage.getItem(SYNC_QUEUE_KEY);
     if (raw == null) {
       file = emptyFile();
       return file;
@@ -138,7 +155,11 @@ export function createStorageQueue(storage: KeyValueStore): PendingQueue {
       run(async () => {
         const current = await hydrate();
         const queued = { ...op, id: current.nextId };
-        await write({ ...current, nextId: current.nextId + 1, ops: [...current.ops, queued] });
+        await write({
+          ...current,
+          nextId: current.nextId + 1,
+          ops: [...withoutEarlier(current.ops, op), queued],
+        });
       }),
     remove: (id) =>
       run(async () => {
@@ -162,6 +183,18 @@ export function createStorageQueue(storage: KeyValueStore): PendingQueue {
       run(async () => {
         const current = await hydrate();
         await write({ ...current, resetSeen: at });
+      }),
+    refusedNotes: () => run(async () => [...(await hydrate()).refusedNotes]),
+    addRefusedNote: (dayIndex) =>
+      run(async () => {
+        const current = await hydrate();
+        if (current.refusedNotes.includes(dayIndex)) return;
+        await write({ ...current, refusedNotes: [...current.refusedNotes, dayIndex] });
+      }),
+    setRefusedNotes: (dayIndexes) =>
+      run(async () => {
+        const current = await hydrate();
+        await write({ ...current, refusedNotes: [...dayIndexes] });
       }),
   };
 }

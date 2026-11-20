@@ -2,8 +2,8 @@ import type { NoteRow } from '@/notes/store';
 import type { DayRow } from '@/progress/store';
 import type { VerseRow } from '@/verses/store';
 
+import type { SyncStore } from './engine';
 import { mergeDays, mergeNotes, mergeVerses, sameDays, sameNotes, sameVerses } from './merge';
-import type { SyncStore } from './memory-store';
 
 export type BookPort<T> = {
   read: () => readonly T[];
@@ -19,11 +19,12 @@ export type RegisterBook = {
   (kind: 'notes', book: BookPort<NoteRow>): () => void;
 };
 
-export function createPortStore() {
+export function createPortStore(options?: { onReady?: () => void }) {
   let days: BookPort<DayRow> | null = null;
   let verses: BookPort<VerseRow> | null = null;
   let notes: BookPort<NoteRow> | null = null;
   let snapshot: unknown = {};
+  let wasSettled = false;
 
   function publish() {
     snapshot = {};
@@ -33,10 +34,19 @@ export function createPortStore() {
     return book != null && (book.ready() || book.unavailable());
   }
 
+  function settledAll() {
+    return settled(days) && settled(verses) && settled(notes);
+  }
+
+  function booksChanged() {
+    const ready = settledAll();
+    if (ready && !wasSettled) options?.onReady?.();
+    wasSettled = ready;
+  }
+
   const store: SyncStore = {
     async load() {
-      for (let spin = 0; spin < 50; spin += 1) {
-        if (settled(days) && settled(verses) && settled(notes)) break;
+      while (!settledAll()) {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
       const books = [days, verses, notes];
@@ -99,21 +109,27 @@ export function createPortStore() {
     if (kind === 'days') {
       const next = book as BookPort<DayRow>;
       days = next;
+      booksChanged();
       return () => {
         if (days === next) days = null;
+        booksChanged();
       };
     }
     if (kind === 'verses') {
       const next = book as BookPort<VerseRow>;
       verses = next;
+      booksChanged();
       return () => {
         if (verses === next) verses = null;
+        booksChanged();
       };
     }
     const next = book as BookPort<NoteRow>;
     notes = next;
+    booksChanged();
     return () => {
       if (notes === next) notes = null;
+      booksChanged();
     };
   };
 

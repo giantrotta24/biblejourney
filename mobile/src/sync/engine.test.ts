@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import { createSync } from './engine';
 import { createFakeServer, type FakeDevice } from './fake-remote';
@@ -118,7 +118,7 @@ describe('sync engine', () => {
     device.remote.online = false;
     const other = server.device(USER);
     await other.deleteDay(0);
-    await other.deleteNote(3);
+    await other.deleteNote(3, '2099-01-01T00:00:00.000Z');
     device.remote.online = true;
     await device.sync.resync();
     await settle(device.sync);
@@ -126,6 +126,7 @@ describe('sync engine', () => {
     expect(dayIndexes(device.store)).toEqual([0]);
     expect(device.store.rows().notes.map((row) => row.body)).toEqual(['keep']);
     expect(device.sync.getStatus()).toBe('offline');
+    await device.sync.stop();
   });
 
   it('clears progress and verses after a reset elsewhere and keeps notes', async () => {
@@ -165,7 +166,7 @@ describe('sync engine', () => {
     await device.sync.start(USER, device.remote);
     await settle(device.sync);
 
-    expect(device.remote.calls.filter((call) => call !== 'pull')).toEqual(['putDays', 'putDays', 'deleteDay', 'putVerses']);
+    expect(device.remote.calls.filter((call) => call !== 'pull')).toEqual(['putDays', 'deleteDay', 'putVerses']);
     expect(server.rows(USER).days.map((row) => row.day_index)).toEqual([1]);
     expect(server.rows(USER).verses.map((row) => row.week)).toEqual([3]);
     expect(await createStorageQueue(storage).list(USER)).toEqual([]);
@@ -236,6 +237,204 @@ describe('sync engine', () => {
     expect(device.sync.getStatus()).toBe('synced');
   });
 
+  it('keeps a note edited elsewhere after an older offline delete', async () => {
+    const server = createFakeServer();
+    let minute = 1;
+    const device = await openDevice(server, memoryQueue(), () => new Date(Date.UTC(2026, 10, 20, 12, minute)));
+    await device.sync.start(USER, device.remote);
+    await device.store.addNote(3, 'original');
+    await settle(device.sync);
+
+    device.remote.online = false;
+    minute = 2;
+    await device.store.removeNote(3);
+    await device.sync.recordLocal({ kind: 'delete-note', day_index: 3, deleted_at: at(2) });
+    const other = server.device(USER);
+    await other.putNotes([{ day_index: 3, body: 'edited elsewhere', updated_at: at(3) }]);
+    device.remote.online = true;
+    await device.sync.resync();
+    await settle(device.sync);
+
+    expect(device.store.rows().notes).toEqual([{ day_index: 3, body: 'edited elsewhere', updated_at: at(3) }]);
+    expect(server.rows(USER).notes).toEqual([{ day_index: 3, body: 'edited elsewhere', updated_at: at(3) }]);
+  });
+
+  it('does not wipe notes when the account still has progress', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addNote(3, 'keep');
+    await settle(device.sync);
+
+    device.remote.online = false;
+    const other = server.device(USER);
+    await other.deleteNote(3, '2099-01-01T00:00:00.000Z');
+    device.remote.online = true;
+    await device.sync.resync();
+    await settle(device.sync);
+
+    expect(device.store.rows().notes.map((row) => row.body)).toEqual(['keep']);
+    expect(dayIndexes(device.store)).toEqual([0]);
+    expect(device.sync.getStatus()).toBe('offline');
+    await device.sync.stop();
+  });
+
+  it('keeps a note whose put the account refused', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addNote(4, 'already there');
+    await settle(device.sync);
+
+    device.remote.refuseNext('putNotes');
+    await device.store.addNote(3, 'stays on the phone');
+    await settle(device.sync);
+    await device.sync.resync();
+    await settle(device.sync);
+
+    expect(device.store.rows().notes.map((row) => row.body).sort()).toEqual(['already there', 'stays on the phone']);
+    expect(server.rows(USER).notes.map((row) => row.body)).toEqual(['already there']);
+    expect(device.sync.rejectedCount()).toBe(1);
+  });
+
+  it('does not send a debounced change after stop', async () => {
+    jest.useFakeTimers();
+    try {
+      const server = createFakeServer();
+      const sync = createSync(memoryQueue());
+      const store = createMemoryStore(sync, clock(1));
+      sync.attach(store);
+      const remote = server.device(USER);
+      await sync.start(USER, remote);
+      await jest.advanceTimersByTimeAsync(0);
+      await sync.idle();
+      const calls = remote.calls.length;
+      const recorded = store.addDay(7);
+      await jest.advanceTimersByTimeAsync(0);
+      await recorded;
+      await sync.stop();
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(remote.calls.length).toBe(calls);
+      expect(server.rows(USER).days).toEqual([]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not keep deleting after stop', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await device.store.addDay(1);
+    await settle(device.sync);
+
+    device.remote.online = false;
+    const other = server.device(USER);
+    await other.deleteDay(0);
+    await other.deleteDay(1);
+    await other.putDays([{ day_index: 2, completed_at: at(9) }]);
+    device.remote.online = true;
+
+    const original = device.store.removeDay.bind(device.store);
+    let stopped = false;
+    device.store.removeDay = async (dayIndex) => {
+      await original(dayIndex);
+      if (!stopped) {
+        stopped = true;
+        await device.sync.stop();
+      }
+    };
+    await device.sync.resync();
+    await settle(device.sync);
+
+    expect(dayIndexes(device.store)).toEqual([1]);
+    expect(server.rows(USER).days.map((row) => row.day_index)).toEqual([2]);
+  });
+
+  it('keeps a row whose change has not reached the queue', async () => {
+    const server = createFakeServer();
+    const queue = memoryQueue();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const push = queue.push.bind(queue);
+    let held = false;
+    queue.push = async (op) => {
+      if (!held && op.kind === 'put-day' && op.row.day_index === 0) {
+        held = true;
+        await gate;
+      }
+      await push(op);
+    };
+    const device = await openDevice(server, queue);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(1);
+    await settle(device.sync);
+
+    const releasePull = device.remote.holdNextPull();
+    const pending = device.store.addDay(0);
+    await until(() => held);
+    const pulls = device.remote.calls.filter((call) => call === 'pull').length;
+    const resync = device.sync.resync();
+    await until(() => device.remote.calls.filter((call) => call === 'pull').length > pulls);
+    releasePull();
+    await resync;
+    expect(dayIndexes(device.store)).toEqual([0, 1]);
+    release();
+    await pending;
+    await settle(device.sync);
+
+    expect(dayIndexes(device.store)).toEqual([0, 1]);
+    expect(server.rows(USER).days.map((row) => row.day_index)).toEqual([0, 1]);
+  });
+
+  it('pause keeps the phone linked', async () => {
+    const server = createFakeServer();
+    const queue = memoryQueue();
+    const device = await openDevice(server, queue);
+    await device.sync.start(USER, device.remote);
+    await device.store.addDay(0);
+    await settle(device.sync);
+
+    device.sync.pause();
+    expect(device.sync.userId()).toBeNull();
+    expect(await queue.linkedUser()).toBe(USER);
+    await device.sync.stop();
+  });
+
+  it('retries a stored change on the next flush', async () => {
+    const server = createFakeServer();
+    const storage = memory();
+    let failWrites = false;
+    const queueStorage = {
+      async getItem(key: string) {
+        return storage.getItem(key);
+      },
+      async setItem(key: string, value: string) {
+        if (failWrites && key === 'biblejourney.sync.v1') throw new Error('disk');
+        await storage.setItem(key, value);
+      },
+    };
+    const device = await openDevice(server, createStorageQueue(queueStorage));
+    device.sync.attach(device.store);
+    const sync = createSync(createStorageQueue(queueStorage), { debounceMs: 0, unrecordedStore: storage });
+    const store = createMemoryStore(sync, clock(4));
+    sync.attach(store);
+    const remote = server.device(USER);
+    await sync.start(USER, remote);
+    await settle(sync);
+    failWrites = true;
+    await expect(store.addDay(8)).rejects.toThrow('disk');
+    failWrites = false;
+    await sync.flush();
+    await settle(sync);
+    expect(server.rows(USER).days.map((row) => row.day_index)).toEqual([8]);
+    expect(store.rows().days.map((row) => row.day_index)).toEqual([8]);
+  });
+
   it('does not write over a store that failed to load', async () => {
     const server = createFakeServer();
     const device = await openDevice(server);
@@ -247,5 +446,35 @@ describe('sync engine', () => {
     expect(server.rows(USER).days.map((row) => row.day_index)).toEqual([0]);
     expect(dayIndexes(device.store)).toEqual([]);
     expect(device.sync.getStatus()).toBe('offline');
+    await device.sync.stop();
+  });
+
+  it('pulls again after the offline backoff', async () => {
+    jest.useFakeTimers();
+    try {
+      const server = createFakeServer();
+      const sync = createSync(memoryQueue());
+      const store = createMemoryStore(sync, clock(1));
+      sync.attach(store);
+      const remote = server.device(USER);
+      await sync.start(USER, remote);
+      await jest.advanceTimersByTimeAsync(0);
+      await sync.idle();
+      remote.online = false;
+      const recorded = store.addDay(6);
+      await jest.advanceTimersByTimeAsync(1000);
+      await recorded;
+      await sync.idle();
+      expect(sync.getStatus()).toBe('offline');
+      const pulls = remote.calls.filter((call) => call === 'pull').length;
+      remote.online = true;
+      await jest.advanceTimersByTimeAsync(5000);
+      await sync.idle();
+      expect(remote.calls.filter((call) => call === 'pull').length).toBeGreaterThan(pulls);
+      expect(sync.getStatus()).toBe('synced');
+      await sync.stop();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

@@ -3,21 +3,11 @@ import type { DayRow } from '@/progress/store';
 import { DAY_COUNT, WEEK_COUNT } from '../../../supabase/functions/_shared/content/plan';
 import type { VerseRow } from '@/verses/store';
 
-import type { Sync } from './engine';
+import type { Sync, SyncStore } from './engine';
 import { mergeDays, mergeNotes, mergeVerses, sameDays, sameNotes, sameVerses } from './merge';
 import type { RemoteBooks } from './remote';
 
-export type SyncStore = {
-  load(): Promise<boolean>;
-  rows(): RemoteBooks;
-  getSnapshot(): unknown;
-  mergeDays(rows: readonly DayRow[]): Promise<void>;
-  mergeVerses(rows: readonly VerseRow[]): Promise<void>;
-  mergeNotes(rows: readonly NoteRow[]): Promise<void>;
-  removeDay(dayIndex: number): Promise<void>;
-  removeVerse(week: number): Promise<void>;
-  removeNote(dayIndex: number): Promise<void>;
-};
+export type { SyncStore } from './engine';
 
 export type MemoryStore = SyncStore & {
   addDay(dayIndex: number): Promise<void>;

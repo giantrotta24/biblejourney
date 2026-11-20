@@ -8,7 +8,7 @@ export type RemoteChange =
   | { kind: 'put-verse'; row: VerseRow }
   | { kind: 'delete-verse'; week: number }
   | { kind: 'put-note'; row: NoteRow }
-  | { kind: 'delete-note'; day_index: number }
+  | { kind: 'delete-note'; day_index: number; deleted_at: string }
   | { kind: 'mark-reset'; at: string };
 
 export type RemoteBooks = {
@@ -26,9 +26,9 @@ export type RemoteAccount = {
   putVerses(rows: readonly VerseRow[]): Promise<void>;
   deleteVerse(week: number): Promise<void>;
   putNotes(rows: readonly NoteRow[]): Promise<void>;
-  deleteNote(dayIndex: number): Promise<void>;
+  deleteNote(dayIndex: number, deletedAt: string): Promise<void>;
   markReset(at: string): Promise<string | null>;
-  subscribe(onChange: (change: RemoteChange) => void): () => void;
+  subscribe(onChange: (change: RemoteChange) => void, onReconnect?: () => void): () => void;
 };
 
 export function changeKey(change: RemoteChange): string {
@@ -63,7 +63,7 @@ export function sendChange(remote: RemoteAccount, change: RemoteChange): Promise
     case 'put-note':
       return remote.putNotes([change.row]);
     case 'delete-note':
-      return remote.deleteNote(change.day_index);
+      return remote.deleteNote(change.day_index, change.deleted_at);
     case 'mark-reset':
       return remote.markReset(change.at);
   }

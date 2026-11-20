@@ -16,6 +16,7 @@ type QueryResult = { data: unknown; error: unknown; status: number };
 type Filter = {
   select: (columns: string) => Filter;
   eq: (column: string, value: string | number) => Filter & PromiseLike<QueryResult>;
+  lte: (column: string, value: string) => Filter & PromiseLike<QueryResult>;
   upsert: (rows: unknown[], options: { onConflict: string }) => PromiseLike<{ error: unknown; status: number }>;
   delete: () => Filter;
   maybeSingle: () => PromiseLike<QueryResult>;
@@ -35,7 +36,7 @@ export type SyncClient = {
       filter: { event: string },
       callback: (message: { payload?: BroadcastPayload }) => void,
     ) => void;
-    subscribe: () => void;
+    subscribe: (onStatus?: (status: string) => void) => void;
   };
   removeChannel: (channel: unknown) => Promise<unknown>;
 };
@@ -93,7 +94,8 @@ export function broadcastChange(payload: BroadcastPayload | null | undefined, us
     if (table === 'verse_progress') {
       return isIndex(old.week, 1, WEEK_COUNT) ? { kind: 'delete-verse', week: old.week } : null;
     }
-    return isIndex(old.day_index, 0, DAY_COUNT - 1) ? { kind: 'delete-note', day_index: old.day_index } : null;
+    if (!isIndex(old.day_index, 0, DAY_COUNT - 1)) return null;
+    return { kind: 'delete-note', day_index: old.day_index, deleted_at: isoTime(old.updated_at) ?? '1970-01-01T00:00:00.000Z' };
   }
   if (operation !== 'INSERT' && operation !== 'UPDATE') return null;
   const record = payload.record ?? {};
@@ -184,23 +186,33 @@ export function supabaseRemote(client: SyncClient, userId: string): RemoteAccoun
           { onConflict: 'user_id,day_index' },
         ),
       ),
-    deleteNote: (dayIndex) => check(() => client.from('notes').delete().eq('user_id', userId).eq('day_index', dayIndex)),
+    deleteNote: (dayIndex, deletedAt) =>
+      check(() => client.from('notes').delete().eq('user_id', userId).eq('day_index', dayIndex).lte('updated_at', deletedAt)),
     async markReset() {
       await signedIn();
       const { data, error, status } = await client.rpc('reset_progress');
       if (error) throw remoteError(error, status);
       return isoTime(data);
     },
-    subscribe(onChange) {
+    subscribe(onChange, onReconnect) {
       const channel = client.channel(progressTopic(userId), { config: { private: true } });
       channel.on('broadcast', { event: '*' }, (message: { payload?: BroadcastPayload }) => {
         const change = broadcastChange(message.payload, userId);
         if (change) onChange(change);
       });
       let closed = false;
+      let subscribed = false;
       void client.realtime.setAuth().then(
         () => {
-          if (!closed) channel.subscribe();
+          if (closed) return;
+          channel.subscribe((status) => {
+            if (status !== 'SUBSCRIBED') return;
+            if (!subscribed) {
+              subscribed = true;
+              return;
+            }
+            onReconnect?.();
+          });
         },
         () => undefined,
       );

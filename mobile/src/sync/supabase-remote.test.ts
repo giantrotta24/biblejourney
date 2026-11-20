@@ -30,7 +30,7 @@ describe('progress broadcast', () => {
         { table: 'notes', operation: 'DELETE', old_record: { user_id: userId, day_index: 3 } },
         userId,
       ),
-    ).toEqual({ kind: 'delete-note', day_index: 3 });
+    ).toEqual({ kind: 'delete-note', day_index: 3, deleted_at: '1970-01-01T00:00:00.000Z' });
     expect(broadcastChange({ table: 'profiles', operation: 'UPDATE', record: { user_id: userId } }, userId)).toBeNull();
   });
 

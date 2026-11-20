@@ -4,8 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SIGN_IN_UNAVAILABLE } from '@/account/errors';
 import { signOut, useSession } from '@/account/session';
 import { accountLine } from '@/sync/copy';
-import { useSyncStatus } from '@/sync/react';
-import type { SyncStatus } from '@/sync/engine';
+import { useRejectedCount, useSyncStatus } from '@/sync/react';
 import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
 
@@ -15,20 +14,12 @@ import { InkBar } from './ink-bar';
 const NEW_HERE = 'Sign in to keep it in step on your other devices. New here? The same steps create your account.';
 const SIGN_OUT_NOTE = 'Signing out keeps your progress and notes on this phone.';
 
-export function AccountBody({
-  onBack,
-  onSignIn,
-  syncStatus,
-}: {
-  onBack: () => void;
-  onSignIn: () => void;
-  syncStatus?: SyncStatus;
-}) {
+export function AccountBody({ onBack, onSignIn }: { onBack: () => void; onSignIn: () => void }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const session = useSession();
-  const liveStatus = useSyncStatus();
-  const status = syncStatus ?? liveStatus;
+  const status = useSyncStatus();
+  const rejected = useRejectedCount();
   const signedIn = session.status === 'signed-in';
   const title = signedIn ? (session.email ?? 'Signed in') : 'Not signed in';
 
@@ -56,7 +47,7 @@ export function AccountBody({
             }}>
             {title}
           </Text>
-          <InkBar marginTop={8}>{accountLine(signedIn, status)}</InkBar>
+          <InkBar marginTop={8}>{accountLine(signedIn, status, rejected)}</InkBar>
           {signedIn ? (
             <>
               <Text

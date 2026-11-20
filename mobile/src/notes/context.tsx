@@ -52,12 +52,13 @@ export function NotesProvider({
   const setBody = useCallback(
     (dayIndex: number, body: string) => {
       if (!isReady()) return;
-      const next = withNote(read(), dayIndex, body, nowRef.current().toISOString());
+      const updatedAt = nowRef.current().toISOString();
+      const next = withNote(read(), dayIndex, body, updatedAt);
       if (next === read()) return;
       commit(next);
       const row = next.find((item) => item.day_index === dayIndex);
       if (row) record({ kind: 'put-note', row });
-      else record({ kind: 'delete-note', day_index: dayIndex });
+      else record({ kind: 'delete-note', day_index: dayIndex, deleted_at: updatedAt });
     },
     [commit, isReady, read, record],
   );
@@ -82,7 +83,7 @@ export function NotesProvider({
   useEffect(() => {
     if (!runtime) return;
     return runtime.register('notes', book);
-  }, [book, runtime]);
+  }, [book, runtime, value, unavailable]);
 
   const remove = useCallback((dayIndex: number) => setBody(dayIndex, ''), [setBody]);
   const retry = useCallback(() => {

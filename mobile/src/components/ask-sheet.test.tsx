@@ -7,7 +7,7 @@ import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { SessionProvider } from '@/account/session';
 import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
 
-import { AskSheet, composerOverlap } from './ask-sheet';
+import { AskSheet, composerLift } from './ask-sheet';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
@@ -118,12 +118,11 @@ function renderSheet(transport: (url: string, init: Init) => Promise<Reply>, onS
   );
 }
 
-describe('composerOverlap', () => {
-  it('lifts by the overlap and keeps that lift once the composer has moved', () => {
-    expect(composerOverlap(800, 0, 500)).toBe(300);
-    expect(composerOverlap(500, 300, 500)).toBe(300);
-    expect(composerOverlap(520, 300, 500)).toBe(320);
-    expect(composerOverlap(500, 300, 900)).toBe(0);
+describe('composerLift', () => {
+  it('rises by the part of the screen the keyboard covers', () => {
+    expect(composerLift(874, 538)).toBe(336);
+    expect(composerLift(874, 874)).toBe(0);
+    expect(composerLift(874, 900)).toBe(0);
   });
 });
 

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Dimensions,
   AccessibilityInfo,
   Animated,
   Keyboard,
@@ -12,7 +13,6 @@ import {
   TextInput,
   View,
   type KeyboardEvent,
-  type ViewInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -56,9 +56,9 @@ import { AnnouncedLine } from './auth-chrome';
 import { Perforation } from './marks';
 import { Row, RowChevron } from './rows';
 
-/** How far the composer must rise so its resting bottom meets the keyboard. */
-export function composerOverlap(windowBottom: number, currentLift: number, keyboardTop: number): number {
-  return Math.max(0, windowBottom + currentLift - keyboardTop);
+/** The sheet reaches the bottom of the screen, so the composer rises by however much of the screen the keyboard covers. */
+export function composerLift(screenHeight: number, keyboardTop: number): number {
+  return Math.max(0, screenHeight - keyboardTop);
 }
 
 export function composerPadding(keyboardUp: boolean, insetBottom: number): number {
@@ -71,9 +71,8 @@ type ReportTarget =
   | { kind: 'question'; question: string; answer: string }
   | { kind: QuickPromptType; answer: string };
 
-function useComposerLift(composerRef: RefObject<ViewInstance | null>) {
+function useComposerLift() {
   const [lift] = useState(() => new Animated.Value(0));
-  const liftTarget = useRef(0);
   const [keyboardUp, setKeyboardUp] = useState(false);
 
   useEffect(() => {
@@ -84,28 +83,17 @@ function useComposerLift(composerRef: RefObject<ViewInstance | null>) {
 
     function onKeyboard(event: KeyboardEvent) {
       const duration = event.duration ?? 0;
-      const top = event.endCoordinates.screenY;
-      const height = event.endCoordinates.height;
-      setKeyboardUp(height > 0);
-      if (height === 0) {
-        liftTarget.current = 0;
-        Animated.timing(lift, { toValue: 0, duration, useNativeDriver: false }).start();
-        return;
-      }
-      const node = composerRef.current;
-      if (!node) return;
-      node.measureInWindow((_x, y, _width, measured) => {
-        const next = composerOverlap(y + measured, liftTarget.current, top);
-        liftTarget.current = next;
-        Animated.timing(lift, { toValue: next, duration, useNativeDriver: false }).start();
-      });
+      const covered = event.endCoordinates.height > 0;
+      setKeyboardUp(covered);
+      const next = covered ? composerLift(Dimensions.get('screen').height, event.endCoordinates.screenY) : 0;
+      Animated.timing(lift, { toValue: next, duration, useNativeDriver: false }).start();
     }
 
     const subscriptions = names.map((name) => Keyboard.addListener(name, onKeyboard));
     return () => {
       for (const subscription of subscriptions) subscription.remove();
     };
-  }, [composerRef, lift]);
+  }, [lift]);
 
   return { lift, keyboardUp };
 }
@@ -185,8 +173,7 @@ export function AskSheet({
   const reportBusyRef = useRef(false);
   const [reportBusy, setReportBusy] = useState(false);
   const live = useRef(true);
-  const composerRef = useRef<ViewInstance>(null);
-  const { lift, keyboardUp } = useComposerLift(composerRef);
+  const { lift, keyboardUp } = useComposerLift();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -567,7 +554,6 @@ export function AskSheet({
       {ready ? (
         <Animated.View style={{ paddingBottom: lift }}>
           <View
-            ref={composerRef}
             style={{
               borderTopWidth: StyleSheet.hairlineWidth,
               borderTopColor: colors.rule,

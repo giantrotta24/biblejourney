@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Text, TextInput, useColorScheme, View } from 'react-native';
+import { Alert, Platform, PlatformColor, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useNotes } from '@/notes/context';
 import { matchingNotes } from '@/notes/query';
+import { StorageBlank, StorageRetry } from '@/persist/retry';
 import { useProgress } from '@/progress/context';
 import { useColors } from '@/theme/colors';
 import { fonts } from '@/theme/fonts';
@@ -12,17 +13,19 @@ import { currentDay, days } from '../../../supabase/functions/_shared/content/pl
 
 import { DottedCut } from './marks';
 
-const DELETE_RED = { light: '#d70015', dark: '#ff453a' };
+const dayByIndex = new Map(days.map((day) => [day.index, day]));
 
 export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
   const colors = useColors();
-  const scheme = useColorScheme();
-  const { rows, remove } = useNotes();
+  const { rows, remove, status, retry } = useNotes();
   const { days: done } = useProgress();
   const [query, setQuery] = useState('');
   const today = currentDay(done)?.index ?? null;
-  const matches = matchingNotes(rows, query, (index) => days.find((day) => day.index === index)?.reading ?? '');
+  const matches = matchingNotes(rows, query, (index) => dayByIndex.get(index)?.reading ?? '');
   const android = Platform.OS === 'android';
+
+  if (status === 'unavailable') return <StorageRetry message="Couldn’t load your notes." onRetry={retry} />;
+  if (status === 'loading') return <StorageBlank />;
 
   function confirmRemove(dayIndex: number) {
     const number = dayIndex + 1;
@@ -57,11 +60,12 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
         <EmptyNotes />
       ) : (
         <>
-          <View
+            <View
             style={{
               marginTop: 4,
               marginBottom: 6,
-              height: android ? 48 : 36,
+              minHeight: android ? 48 : 36,
+              paddingVertical: 6,
               borderRadius: android ? 24 : 10,
               backgroundColor: colors.field,
               flexDirection: 'row',
@@ -76,12 +80,20 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
             <TextInput
               accessibilityLabel="Search your notes"
               placeholder="Search your notes"
-              placeholderTextColor={colors.ink3}
+              placeholderTextColor={colors.ink2}
               value={query}
               onChangeText={setQuery}
               autoCapitalize="none"
               autoCorrect={false}
-              style={{ flex: 1, fontSize: android ? 16 : 17, color: colors.ink, padding: 0 }}
+              maxFontSizeMultiplier={1.6}
+              style={{
+                flex: 1,
+                fontSize: android ? 16 : 17,
+                lineHeight: android ? 20 : 22,
+                color: colors.ink,
+                paddingVertical: 0,
+                ...(android ? { includeFontPadding: false } : null),
+              }}
             />
           </View>
           {matches.length === 0 ? (
@@ -90,13 +102,18 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
             </Text>
           ) : (
             matches.map((row) => {
-              const day = days.find((item) => item.index === row.day_index);
+              const day = dayByIndex.get(row.day_index);
               if (!day) return null;
               const current = today === day.index;
+              const when = current ? 'Today' : day.weekday;
               const card = (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${day.reading}. ${row.body}`}
+                  accessibilityLabel={`Day ${day.index + 1}, ${day.reading}, ${when}. ${row.body}`}
+                  accessibilityActions={[{ name: 'delete', label: 'Delete note' }]}
+                  onAccessibilityAction={(event) => {
+                    if (event.nativeEvent.actionName === 'delete') confirmRemove(day.index);
+                  }}
                   onPress={() => onOpen(day.index)}
                   onLongPress={android ? () => confirmRemove(day.index) : undefined}
                   style={{ paddingTop: 14, paddingBottom: 10 }}>
@@ -149,6 +166,7 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
                     card
                   ) : (
                     <ReanimatedSwipeable
+                      childrenContainerStyle={{ backgroundColor: colors.paper }}
                       renderRightActions={() => (
                         <Pressable
                           accessibilityRole="button"
@@ -156,11 +174,11 @@ export function NotesView({ onOpen }: { onOpen: (dayIndex: number) => void }) {
                           onPress={() => remove(day.index)}
                           style={{
                             width: 92,
-                            backgroundColor: scheme === 'dark' ? DELETE_RED.dark : DELETE_RED.light,
+                            backgroundColor: PlatformColor('systemRed'),
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}>
-                          <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '600' }}>Delete</Text>
+                          <Text style={{ color: colors.onBlue, fontSize: 15, fontWeight: '600' }}>Delete</Text>
                         </Pressable>
                       )}>
                       {card}
@@ -198,7 +216,7 @@ function EmptyNotes() {
       </Text>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'flex-start' }}>
         <View style={{ width: 2, height: 14, backgroundColor: colors.ink, marginTop: 4 }} accessibilityElementsHidden />
-        <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink }}>
+        <Text style={{ flex: 1, fontSize: 15, lineHeight: 21, color: colors.ink2 }}>
           Notes are kept on this phone. Sign in to keep them on your other devices too.
         </Text>
       </View>

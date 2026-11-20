@@ -1,12 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Platform, StyleSheet } from 'react-native';
+import { Alert, Platform, PlatformColor, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { NotesProvider } from '@/notes/context';
 import { NOTES_KEY, type KeyValueStore, type NoteRow } from '@/notes/store';
 import { ProgressProvider } from '@/progress/context';
 import { light } from '@/theme/colors';
+import { days } from '../../../supabase/functions/_shared/content/plan';
 
 import { NotesView } from './notes-view';
 
@@ -80,9 +81,9 @@ describe('Notes', () => {
     await renderNotes([]);
     expect(screen.getByText('No notes yet')).toBeOnTheScreen();
     expect(screen.getByText(/Whatever you write gathers here/)).toBeOnTheScreen();
-    expect(
-      screen.getByText('Notes are kept on this phone. Sign in to keep them on your other devices too.'),
-    ).toBeOnTheScreen();
+    const sync = screen.getByText('Notes are kept on this phone. Sign in to keep them on your other devices too.');
+    expect(sync).toBeOnTheScreen();
+    expect(StyleSheet.flatten(sync.props.style).color).toBe(light.ink2);
     expect(screen.queryByLabelText('Search your notes')).toBeNull();
   });
 
@@ -102,6 +103,40 @@ describe('Notes', () => {
       });
     } finally {
       Object.defineProperty(Platform, 'OS', { get: () => original });
+      alert.mockRestore();
+    }
+  });
+
+  it('names the day and deletes from the screen reader', async () => {
+    const day = days[2];
+    if (!day) throw new Error('missing day 3');
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    try {
+      await renderNotes(notes);
+      const row = screen.getByRole('button', {
+        name: `Day 3, ${day.reading}, ${day.weekday}. A note about manna later`,
+      });
+      expect(row.props.accessibilityActions).toEqual([{ name: 'delete', label: 'Delete note' }]);
+      await fireEvent(row, 'accessibilityAction', { nativeEvent: { actionName: 'delete' } });
+      expect(alert).toHaveBeenCalledWith('Delete this note?', expect.stringContaining('day 3'), expect.any(Array));
+
+      const input = screen.getByLabelText('Search your notes');
+      expect(input.props.placeholderTextColor).toBe(light.ink2);
+      expect(input.props.maxFontSizeMultiplier).toBe(1.6);
+      expect(StyleSheet.flatten(input.props.style).lineHeight).toBe(22);
+      expect(StyleSheet.flatten(input.props.style).paddingVertical).toBe(0);
+      const box = input.parent;
+      expect(StyleSheet.flatten(box?.props.style).minHeight).toBe(36);
+      expect(StyleSheet.flatten(box?.props.style).paddingVertical).toBe(6);
+
+      let cover: ReturnType<typeof screen.getByText> | null = row.parent;
+      while (cover && StyleSheet.flatten(cover.props.style)?.backgroundColor !== light.paper) cover = cover.parent;
+      expect(StyleSheet.flatten(cover?.props.style).flex).not.toBe(1);
+      expect(StyleSheet.flatten(cover?.props.style).backgroundColor).toBe(light.paper);
+      const action = screen.getAllByRole('button', { name: /Delete note on day/ })[0];
+      expect(StyleSheet.flatten(action?.props.style).backgroundColor).toEqual(PlatformColor('systemRed'));
+      expect(StyleSheet.flatten(screen.getAllByText('Delete')[0]?.props.style).color).toBe(light.onBlue);
+    } finally {
       alert.mockRestore();
     }
   });

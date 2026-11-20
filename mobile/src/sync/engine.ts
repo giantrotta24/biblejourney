@@ -324,7 +324,7 @@ export function createSync(
     const progressEmpty = remote.days.length === 0 && remote.verses.length === 0;
     const notesEmpty = remote.notes.length === 0;
     const resetElsewhere = remote.resetAt !== null && remote.resetAt !== resetSeen;
-    if (linked === s.userId && !resetElsewhere && ((progressEmpty && removableProgress) || (notesEmpty && removableNotes))) {
+    if (linked === s.userId && !resetElsewhere && progressEmpty && (removableProgress || (notesEmpty && removableNotes))) {
       return false;
     }
 

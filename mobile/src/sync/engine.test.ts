@@ -259,11 +259,29 @@ describe('sync engine', () => {
     expect(server.rows(USER).notes).toEqual([{ day_index: 3, body: 'edited elsewhere', updated_at: at(3) }]);
   });
 
-  it('does not wipe notes when the account still has progress', async () => {
+  it('deletes the last note when another device deleted it and the account still has progress', async () => {
     const server = createFakeServer();
     const device = await openDevice(server);
     await device.sync.start(USER, device.remote);
     await device.store.addDay(0);
+    await device.store.addNote(3, 'deleted elsewhere');
+    await settle(device.sync);
+
+    const other = server.device(USER);
+    await other.deleteNote(3, '2099-01-01T00:00:00.000Z');
+    await device.sync.resync();
+    await settle(device.sync);
+
+    expect(device.store.rows().notes).toEqual([]);
+    expect(dayIndexes(device.store)).toEqual([0]);
+    expect(device.sync.getStatus()).toBe('synced');
+    await device.sync.stop();
+  });
+
+  it('does not wipe notes when the whole account comes back empty', async () => {
+    const server = createFakeServer();
+    const device = await openDevice(server);
+    await device.sync.start(USER, device.remote);
     await device.store.addNote(3, 'keep');
     await settle(device.sync);
 
@@ -275,7 +293,6 @@ describe('sync engine', () => {
     await settle(device.sync);
 
     expect(device.store.rows().notes.map((row) => row.body)).toEqual(['keep']);
-    expect(dayIndexes(device.store)).toEqual([0]);
     expect(device.sync.getStatus()).toBe('offline');
     await device.sync.stop();
   });

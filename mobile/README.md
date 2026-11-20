@@ -28,6 +28,8 @@ Deploy `supabase/migrations/20261120000000_notes.sql` before a build that syncs.
 
 Deploy `account-delete` before a build that shows Delete account. Without that function, delete fails and the account stays.
 
+Set `EXPO_PUBLIC_ASSISTANT_URL` to the ask function, `https://<project>.supabase.co/functions/v1/ask`, to show Ask about this reading on the day’s page. A report is sent to that same address with `/report` on the end. Leave the variable blank and the link stays hidden. The app does not hold an Anthropic key.
+
 In the Supabase Auth settings, allow these redirect URLs:
 
 - `biblejourney://auth-callback`

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { askUrl } from '@/assistant/url';
 import { TodayView } from '@/components/today-view';
 import { useNotes } from '@/notes/context';
 import { useProgress } from '@/progress/context';
@@ -45,6 +46,11 @@ export default function TodayScreen() {
         onBackToToday={() => router.setParams({ day: '' })}
         onOpenPlan={() => router.navigate('/plan')}
         onOpenNote={(index) => router.push({ pathname: '/note/[day]', params: { day: String(index) } })}
+        onOpenAsk={
+          askUrl()
+            ? (index) => router.push({ pathname: '/ask/[day]', params: { day: String(index) } })
+            : undefined
+        }
         signedInNote={signedIn.visible ? SIGNED_IN_NOTE : null}
         onPageTurn={signedIn.dismiss}
         translation={linkTranslation}

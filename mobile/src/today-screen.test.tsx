@@ -28,24 +28,46 @@ jest.mock('expo-web-browser', () => ({
   openBrowserAsync: jest.fn(),
 }));
 
+const ASSISTANT_URL = process.env.EXPO_PUBLIC_ASSISTANT_URL;
+
+function renderToday() {
+  return render(
+    <GestureHandlerRootView>
+      <ProgressProvider>
+        <NotesProvider>
+          <TodayScreen />
+        </NotesProvider>
+      </ProgressProvider>
+    </GestureHandlerRootView>,
+  );
+}
+
 describe('Today note route', () => {
   beforeEach(() => {
     jest.mocked(router.push).mockClear();
+    if (ASSISTANT_URL === undefined) delete process.env.EXPO_PUBLIC_ASSISTANT_URL;
+    else process.env.EXPO_PUBLIC_ASSISTANT_URL = ASSISTANT_URL;
   });
 
   it('opens the writing sheet for the day on the page', async () => {
-    await render(
-      <GestureHandlerRootView>
-        <ProgressProvider>
-          <NotesProvider>
-            <TodayScreen />
-          </NotesProvider>
-        </ProgressProvider>
-      </GestureHandlerRootView>,
-    );
+    await renderToday();
 
     await fireEvent.press(await screen.findByRole('button', { name: /Your note/ }));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[day]', params: { day: '0' } });
+  });
+
+  it('hides Ask about this reading when the ask address is unset', async () => {
+    delete process.env.EXPO_PUBLIC_ASSISTANT_URL;
+    await renderToday();
+    expect(await screen.findByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: 'Ask about this reading' })).toBeNull();
+  });
+
+  it('opens the assistant for the day on the page', async () => {
+    process.env.EXPO_PUBLIC_ASSISTANT_URL = 'https://project.supabase.co/functions/v1/ask';
+    await renderToday();
+    await fireEvent.press(await screen.findByRole('link', { name: 'Ask about this reading' }));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/ask/[day]', params: { day: '0' } });
   });
 
   it('still shows today when notes cannot be read', async () => {

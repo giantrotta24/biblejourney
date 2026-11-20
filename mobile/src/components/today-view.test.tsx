@@ -45,6 +45,19 @@ describe('Today', () => {
     expect(open).toHaveBeenCalledWith('https://www.biblegateway.com/passage/?search=Genesis+1-4&version=ESV');
   });
 
+  it('offers Ask about this reading beside Bible Gateway when asking is available', async () => {
+    const onOpenAsk = jest.fn();
+    await renderToday({ done: new Set(), onOpenAsk });
+    expect(screen.getByRole('link', { name: 'Read Genesis 1–4 on Bible Gateway' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('link', { name: 'Ask about this reading' }));
+    expect(onOpenAsk).toHaveBeenCalledWith(0);
+  });
+
+  it('hides Ask about this reading when asking is not offered', async () => {
+    await renderToday({ done: new Set() });
+    expect(screen.queryByRole('link', { name: 'Ask about this reading' })).toBeNull();
+  });
+
   it('shows day N+1 after N days are read', async () => {
     const read = 6;
     await renderToday({ done: new Set(Array.from({ length: read }, (_, index) => index)) });

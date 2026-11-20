@@ -4,8 +4,8 @@ import { router } from 'expo-router';
 import { Alert, StyleSheet } from 'react-native';
 
 import { SessionProvider } from '@/account/session';
-import CodeRoute from '@/app/sign-in/code';
 import SignInRoute from '@/app/sign-in/index';
+import { CodeStep } from '@/components/code-step';
 import { light } from '@/theme/colors';
 
 import { fakeAuth, resetFakeAuth } from './fake-supabase';
@@ -14,9 +14,7 @@ import { fakeAuth, resetFakeAuth } from './fake-supabase';
 jest.mock('@/account/supabase', () => require('@/account/fake-supabase'));
 /* eslint-enable @typescript-eslint/no-require-imports */
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), dismissAll: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
-  useLocalSearchParams: () => ({ email: 'reader@example.com' }),
-  Redirect: () => null,
+  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
 }));
 
 async function renderSignIn() {
@@ -32,7 +30,6 @@ describe('email sign in', () => {
     resetFakeAuth();
     jest.mocked(router.push).mockClear();
     jest.mocked(router.back).mockClear();
-    jest.mocked(router.dismissAll).mockClear();
   });
 
   it('says sign in is not set up when the client is missing', async () => {
@@ -56,7 +53,8 @@ describe('email sign in', () => {
       email: 'reader@example.com',
       options: { shouldCreateUser: true },
     });
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/sign-in/code', params: { email: 'reader@example.com' } });
+    expect(screen.getByText('Check your email')).toBeOnTheScreen();
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it('shows a plain rate-limit line and not the server message', async () => {
@@ -80,11 +78,9 @@ describe('email sign in', () => {
   });
 
   it('rejects a short code, shows a wrong code in red, and closes the sheet on success', async () => {
-    await render(
-      <SessionProvider>
-        <CodeRoute />
-      </SessionProvider>,
-    );
+    await renderSignIn();
+    await fireEvent.changeText(screen.getByLabelText('Email address'), 'reader@example.com');
+    await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
     const field = screen.getByLabelText('Email code');
     expect(field.props.textContentType).toBe('oneTimeCode');
     expect(field.props.autoComplete).toBe('one-time-code');
@@ -104,7 +100,7 @@ describe('email sign in', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
     expect(screen.getByText('Enter the 6–10 digit code from your email.')).toBeOnTheScreen();
     expect(screen.queryByText(/Token has expired/)).toBeNull();
-    expect(router.dismissAll).not.toHaveBeenCalled();
+    expect(router.back).not.toHaveBeenCalled();
 
     delete fakeAuth.errors.verifyOtp;
     await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
@@ -113,13 +109,15 @@ describe('email sign in', () => {
       token: '482917',
       type: 'email',
     });
-    expect(router.dismissAll).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   it('waits 30 seconds before another code can be sent', async () => {
     jest.useFakeTimers();
     try {
-      await render(<CodeRoute />);
+      await render(
+        <CodeStep email="reader@example.com" onCancel={() => {}} onBack={() => {}} onSignedIn={() => {}} />,
+      );
       const resend = screen.getByRole('button', { name: 'Send a new code' });
       expect(resend).toBeDisabled();
       await fireEvent.press(resend);
@@ -144,10 +142,17 @@ describe('email sign in', () => {
   });
 
   it('goes back for a different email and cancel closes the sheet', async () => {
-    await render(<CodeRoute />);
+    await renderSignIn();
+    await fireEvent.changeText(screen.getByLabelText('Email address'), 'reader@example.com');
+    await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Use a different email' }));
-    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Email address')).toBeOnTheScreen();
+    expect(screen.queryByText('Check your email')).toBeNull();
+    expect(router.back).not.toHaveBeenCalled();
+
+    await fireEvent.changeText(screen.getByLabelText('Email address'), 'reader@example.com');
+    await fireEvent.press(screen.getByRole('button', { name: 'Email me a code' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
-    expect(router.dismissAll).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 });

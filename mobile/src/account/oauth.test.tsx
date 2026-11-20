@@ -19,7 +19,6 @@ jest.mock('expo-router', () => ({
   router: {
     push: jest.fn(),
     back: jest.fn(),
-    dismissAll: jest.fn(),
     replace: jest.fn(),
     canGoBack: jest.fn(() => true),
   },
@@ -48,7 +47,6 @@ describe('Apple and Google', () => {
   beforeEach(() => {
     resetFakeAuth();
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOS });
-    jest.mocked(router.dismissAll).mockClear();
     jest.mocked(router.back).mockClear();
     jest.mocked(router.replace).mockClear();
     jest.mocked(router.canGoBack).mockReturnValue(true);
@@ -72,7 +70,7 @@ describe('Apple and Google', () => {
     expect(screen.queryByText('Sign in was canceled.')).toBeNull();
     expect(screen.queryByText('Something went wrong. Try again.')).toBeNull();
     expect(fakeAuth.calls.filter((call) => call.method === 'signInWithIdToken')).toEqual([]);
-    expect(router.dismissAll).not.toHaveBeenCalled();
+    expect(router.back).not.toHaveBeenCalled();
 
     jest.mocked(AppleAuthentication.signInAsync).mockResolvedValueOnce({ identityToken: 'apple-token' } as never);
     await fireEvent.press(screen.getByRole('button', { name: 'Continue with Apple' }));
@@ -90,7 +88,7 @@ describe('Apple and Google', () => {
       token: 'apple-token',
       nonce: '0102ff',
     });
-    expect(router.dismissAll).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   it('treats a closed Google window and an error in the URL as one quiet line', async () => {
@@ -104,7 +102,7 @@ describe('Apple and Google', () => {
     expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(fakeAuth.oauthUrl, 'biblejourney://auth-callback');
     expect(screen.getByText('Sign in was canceled.')).toBeOnTheScreen();
     expect(fakeAuth.calls.filter((call) => call.method === 'exchangeCodeForSession')).toEqual([]);
-    expect(router.dismissAll).not.toHaveBeenCalled();
+    expect(router.back).not.toHaveBeenCalled();
 
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
       type: 'success',
@@ -124,7 +122,7 @@ describe('Apple and Google', () => {
     await renderSignIn();
     await fireEvent.press(screen.getByRole('button', { name: 'Continue with Google' }));
     expect(fakeAuth.calls.find((call) => call.method === 'exchangeCodeForSession')?.args).toEqual(['the-code']);
-    expect(router.dismissAll).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   it('returns from the auth callback to the screen underneath, or home if there is none', async () => {

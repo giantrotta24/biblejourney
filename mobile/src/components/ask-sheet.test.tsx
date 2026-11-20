@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Keyboard, Linking, Platform, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Dimensions, Keyboard, Linking, Platform, StyleSheet } from 'react-native';
 
 import * as accountDelete from '@/account/delete';
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
@@ -576,6 +576,47 @@ describe('AskSheet', () => {
         });
       });
       expect(StyleSheet.flatten(composerBar().props.style).paddingBottom).toBe(12);
+    } finally {
+      add.mockRestore();
+    }
+  });
+
+  it('keeps the end of the answer scrollable above the composer, with and without the keyboard', async () => {
+    const listeners = new Map<string, (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void>();
+    const add = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, listener) => {
+      listeners.set(event, listener as (event: { duration: number; endCoordinates: { height: number; screenY: number } }) => void);
+      return { remove: () => undefined } as ReturnType<typeof Keyboard.addListener>;
+    });
+    try {
+      await renderSheet(async () => json(200, { configured: true, signInRequired: true, enabled: true }));
+      await screen.findByLabelText('Ask about this reading');
+      const scroll = () => {
+        let top = composerBar();
+        while (top.parent) top = top.parent;
+        const node = findNode(top, (candidate) => candidate.props.automaticallyAdjustKeyboardInsets === true);
+        if (!node) throw new Error('no answer scroll view');
+        return StyleSheet.flatten(node.props.contentContainerStyle).paddingBottom;
+      };
+      await act(() => {
+        fireEvent(composerBar(), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 86 } } });
+      });
+      expect(scroll()).toBe(86 + 16);
+
+      await act(() => {
+        listeners.get('keyboardWillShow')?.({
+          duration: 0,
+          endCoordinates: { height: 300, screenY: Dimensions.get('screen').height - 300 },
+        });
+      });
+      expect(scroll()).toBe(86 + 300 + 16);
+
+      await act(() => {
+        listeners.get('keyboardWillHide')?.({
+          duration: 0,
+          endCoordinates: { height: 0, screenY: Dimensions.get('screen').height },
+        });
+      });
+      expect(scroll()).toBe(86 + 16);
     } finally {
       add.mockRestore();
     }

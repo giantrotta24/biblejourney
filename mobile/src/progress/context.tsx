@@ -36,7 +36,7 @@ export function ProgressProvider({
   storage?: KeyValueStore;
 }) {
   const [attempt, setAttempt] = useState(0);
-  const { value, unavailable, read, isReady, commit } = useDurableValue({
+  const { value, unavailable, read, isReady, commit, beginRetry } = useDurableValue({
     storage,
     load: loadDays,
     save: saveDays,
@@ -58,6 +58,7 @@ export function ProgressProvider({
   );
 
   function retry() {
+    beginRetry();
     setAttempt((next) => next + 1);
   }
 

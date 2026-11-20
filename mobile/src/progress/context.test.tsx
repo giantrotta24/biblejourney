@@ -124,6 +124,40 @@ describe('ProgressProvider', () => {
     expect(raw.get(PROGRESS_KEY)).toBe(ORIGINAL);
   });
 
+  it('shows a blank page while Try again reloads', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let fail = true;
+    const raw = new Map<string, string>([[PROGRESS_KEY, ORIGINAL]]);
+    const storage: KeyValueStore = {
+      async getItem(key) {
+        if (key !== PROGRESS_KEY) return raw.get(key) ?? null;
+        if (fail) throw new Error('read');
+        await gate;
+        return raw.get(key) ?? null;
+      },
+      async setItem(key, value) {
+        raw.set(key, value);
+      },
+    };
+
+    await render(
+      <ProgressProvider storage={storage}>
+        <Marker />
+      </ProgressProvider>,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeOnTheScreen();
+    fail = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByText(/Days:/)).toBeNull();
+    release();
+    expect(await screen.findByText('Days: 0,1,2,3,4,5')).toBeOnTheScreen();
+  });
+
   it('copies unreadable progress aside before the first save', async () => {
     const corrupt = '{"version":1';
     const storage = memory(corrupt);

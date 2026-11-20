@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import TodayScreen from '@/app/(tabs)/index';
 import { NotesProvider } from '@/notes/context';
+import { NOTES_KEY, type KeyValueStore } from '@/notes/store';
 import { ProgressProvider } from '@/progress/context';
 
 jest.mock('expo-router', () => ({
@@ -45,5 +46,56 @@ describe('Today note route', () => {
 
     await fireEvent.press(await screen.findByRole('button', { name: /Your note/ }));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/note/[day]', params: { day: '0' } });
+  });
+
+  it('still shows today when notes cannot be read', async () => {
+    const storage: KeyValueStore = {
+      async getItem() {
+        throw new Error('read');
+      },
+      async setItem() {},
+    };
+    await render(
+      <GestureHandlerRootView>
+        <ProgressProvider>
+          <NotesProvider storage={storage}>
+            <TodayScreen />
+          </NotesProvider>
+        </ProgressProvider>
+      </GestureHandlerRootView>,
+    );
+    expect(await screen.findByText('Mark day 1 read')).toBeOnTheScreen();
+    expect(screen.queryByText('Couldn’t load your notes.')).toBeNull();
+  });
+
+  it('keeps the note blank until notes have loaded', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const storage: KeyValueStore = {
+      async getItem(key) {
+        if (key !== NOTES_KEY) return null;
+        await gate;
+        return JSON.stringify({
+          version: 1,
+          rows: [{ day_index: 0, body: 'Hidden until ready', updated_at: '2026-11-20T12:00:00.000Z' }],
+        });
+      },
+      async setItem() {},
+    };
+    await render(
+      <GestureHandlerRootView>
+        <ProgressProvider>
+          <NotesProvider storage={storage}>
+            <TodayScreen />
+          </NotesProvider>
+        </ProgressProvider>
+      </GestureHandlerRootView>,
+    );
+    expect(await screen.findByText('Write a note on today’s reading')).toBeOnTheScreen();
+    expect(screen.queryByText('Hidden until ready')).toBeNull();
+    release();
+    expect(await screen.findByText('Hidden until ready')).toBeOnTheScreen();
   });
 });

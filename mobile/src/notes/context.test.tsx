@@ -23,15 +23,16 @@ function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } 
 }
 
 function WriteOnce() {
-  const { setBody } = useNotes();
+  const { setBody, status } = useNotes();
   useEffect(() => {
     setBody(0, 'Hello');
   }, [setBody]);
-  return <Text>wrote</Text>;
+  return <Text>{status}</Text>;
 }
 
 function Editor() {
-  const { rows, setBody } = useNotes();
+  const { rows, setBody, status } = useNotes();
+  if (status !== 'ready') return <Text>{status}</Text>;
   const listed = [...rows]
     .sort((a, b) => a.day_index - b.day_index)
     .map((row) => `${row.day_index}:${row.body}@${row.updated_at}`)
@@ -103,13 +104,9 @@ describe('NotesProvider', () => {
       </NotesProvider>,
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('wrote') ?? screen.queryByRole('button', { name: 'Try again' })).toBeTruthy();
-    });
+    expect(await screen.findByText('unavailable')).toBeOnTheScreen();
     expect(writes).toEqual([]);
     expect(raw.get(NOTES_KEY)).toBe('{"version":1,"rows":[]}');
-    expect(screen.getByText('Couldn’t load your notes.')).toBeOnTheScreen();
-    expect(screen.queryByText('wrote')).toBeNull();
   });
 
   it('copies unreadable notes aside before the first save', async () => {

@@ -14,6 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { nextVerseWeek, unlockedWeeks } from '@/lib/practice';
 import { firstLetters } from '@/lib/reading';
+import { StorageBlank, StorageRetry } from '@/persist/retry';
 import { useProgress } from '@/progress/context';
 import { useColors, type Palette } from '@/theme/colors';
 import { fonts, hitSize } from '@/theme/fonts';
@@ -28,7 +29,7 @@ type Mode = 'full' | 'letters';
 export function VersesView() {
   const colors = useColors();
   const { days: done } = useProgress();
-  const { rows, setLearned } = useVerses();
+  const { rows, setLearned, status, retry } = useVerses();
   const known = new Set(rows.map((row) => row.week));
   const through = unlockedWeeks(done).at(-1) ?? 1;
   const week = getWeek(through);
@@ -75,6 +76,9 @@ export function VersesView() {
   }
 
   const modeLabel = mode === 'full' ? 'Full text' : 'First letters';
+
+  if (status === 'unavailable') return <StorageRetry message="Couldn’t load your verses." onRetry={retry} />;
+  if (status === 'loading') return <StorageBlank />;
 
   return (
     <ScrollView

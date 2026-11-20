@@ -6,9 +6,14 @@ import { type KeyValueStore, type Loaded } from './document';
 export type DurableValue<T> = {
   value: T | null;
   unavailable: boolean;
+  /** A write is queued or in flight. A failed write stays pending for retry and is not saving. */
+  saving: boolean;
+  /** Set when a write throws, cleared when a write succeeds. */
+  failed: boolean;
   read: () => T;
   isReady: () => boolean;
   commit: (next: T) => void;
+  beginRetry: () => void;
 };
 
 export function useDurableValue<T>({
@@ -26,6 +31,9 @@ export function useDurableValue<T>({
 }): DurableValue<T> {
   const [value, setValue] = useState<T | null>(null);
   const [unavailable, setUnavailable] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const failedRef = useRef(false);
   const valueRef = useRef<T>(empty());
   const backupRef = useRef<string | null>(null);
   const pendingRef = useRef<T | null>(null);
@@ -44,6 +52,7 @@ export function useDurableValue<T>({
   const flush = useCallback(async () => {
     if (writingRef.current) return;
     writingRef.current = true;
+    setSaving(true);
     try {
       while (pendingRef.current) {
         const snapshot = pendingRef.current;
@@ -52,14 +61,30 @@ export function useDurableValue<T>({
         try {
           await saveRef.current(snapshot, storageRef.current, backup);
           if (backupRef.current === backup) backupRef.current = null;
+          failedRef.current = false;
+          setFailed(false);
         } catch {
           pendingRef.current = pendingRef.current ?? snapshot;
+          failedRef.current = true;
+          setFailed(true);
           break;
         }
       }
     } finally {
       writingRef.current = false;
+      setSaving(pendingRef.current !== null && !failedRef.current);
     }
+  }, []);
+
+  const beginRetry = useCallback(() => {
+    readyRef.current = false;
+    valueRef.current = emptyRef.current();
+    pendingRef.current = null;
+    failedRef.current = false;
+    setFailed(false);
+    setSaving(false);
+    setValue(null);
+    setUnavailable(false);
   }, []);
 
   useEffect(() => {
@@ -103,10 +128,11 @@ export function useDurableValue<T>({
       valueRef.current = next;
       setValue(next);
       pendingRef.current = next;
+      setSaving(true);
       void flush();
     },
     [flush],
   );
 
-  return { value, unavailable, read, isReady, commit };
+  return { value, unavailable, saving, failed, read, isReady, commit, beginRetry };
 }

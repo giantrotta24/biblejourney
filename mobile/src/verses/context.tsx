@@ -2,12 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useDurableValue } from '@/persist/durable';
-import { StorageBlank, StorageRetry } from '@/persist/retry';
 
 import { loadVerses, saveVerses, withLearned, type KeyValueStore, type VerseRow } from './store';
 
+type StoreStatus = 'loading' | 'ready' | 'unavailable';
+
 type VersesApi = {
   rows: readonly VerseRow[];
+  status: StoreStatus;
+  retry: () => void;
   setLearned: (week: number, learned: boolean) => void;
 };
 
@@ -31,7 +34,7 @@ export function VersesProvider({
   useEffect(() => {
     nowRef.current = now;
   }, [now]);
-  const { value, unavailable, read, isReady, commit } = useDurableValue({
+  const { value, unavailable, read, isReady, commit, beginRetry } = useDurableValue({
     storage,
     load: loadVerses,
     save: saveVerses,
@@ -49,12 +52,15 @@ export function VersesProvider({
     [commit, isReady, read],
   );
 
-  if (unavailable) {
-    return <StorageRetry message="Couldn’t load your verses." onRetry={() => setAttempt((next) => next + 1)} />;
-  }
-  if (!value) return <StorageBlank />;
+  const retry = useCallback(() => {
+    beginRetry();
+    setAttempt((next) => next + 1);
+  }, [beginRetry]);
+  const status: StoreStatus = unavailable ? 'unavailable' : value ? 'ready' : 'loading';
 
-  return <VersesContext.Provider value={{ rows: value, setLearned }}>{children}</VersesContext.Provider>;
+  return (
+    <VersesContext.Provider value={{ rows: value ?? [], status, retry, setLearned }}>{children}</VersesContext.Provider>
+  );
 }
 
 export function useVerses(): VersesApi {

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { act, fireEvent, render, screen, waitFor, type ReactTestInstance } from '@testing-library/react-native';
-import { ActionSheetIOS, Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { ActionSheetIOS, Alert, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { firstLetters } from '@/lib/reading';
 import { ProgressProvider } from '@/progress/context';
@@ -154,6 +154,28 @@ describe('Verses', () => {
     }
   });
 
+  it('offers try again when verses cannot be read', async () => {
+    const storage: KeyValueStore = {
+      async getItem() {
+        throw new Error('read');
+      },
+      async setItem() {},
+    };
+    await render(
+      <ProgressProvider>
+        <VersesProvider storage={storage}>
+          <>
+            <Text>still here</Text>
+            <VersesView />
+          </>
+        </VersesProvider>
+      </ProgressProvider>,
+    );
+    expect(await screen.findByText('Couldn’t load your verses.')).toBeOnTheScreen();
+    expect(screen.getByText('still here')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeOnTheScreen();
+  });
+
   it('sets this week’s page on the pad', async () => {
     await render(
       <ProgressProvider>
@@ -181,9 +203,12 @@ function readDays(count: number): KeyValueStore {
   };
 }
 
-function textOrder(node: ReactTestInstance): string[] {
+type Instance = ReturnType<typeof screen.getByText>;
+
+function textOrder(node: Instance | null): string[] {
+  if (!node) return [];
   const texts: string[] = [];
-  function walk(current: ReactTestInstance) {
+  function walk(current: Instance) {
     for (const child of current.children) {
       if (typeof child === 'string') texts.push(child);
       else walk(child);
@@ -193,7 +218,8 @@ function textOrder(node: ReactTestInstance): string[] {
   return texts;
 }
 
-function findPad(node: ReactTestInstance): ReactTestInstance | null {
+function findPad(node: Instance | null): Instance | null {
+  if (!node) return null;
   const style = StyleSheet.flatten(node.props.style);
   if (style?.backgroundColor === light.under && style?.marginHorizontal === -20) return node;
   for (const child of node.children) {
@@ -204,8 +230,8 @@ function findPad(node: ReactTestInstance): ReactTestInstance | null {
   return null;
 }
 
-function layoutHost(node: ReactTestInstance): ReactTestInstance {
-  let current: ReactTestInstance | null = node;
+function layoutHost(node: Instance): Instance {
+  let current: Instance | null = node;
   while (current) {
     if (current.props.onLayout) return current;
     current = current.parent;

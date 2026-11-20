@@ -23,15 +23,16 @@ function memory(initial?: string): KeyValueStore & { raw: Map<string, string> } 
 }
 
 function LearnOnce() {
-  const { setLearned } = useVerses();
+  const { setLearned, status } = useVerses();
   useEffect(() => {
     setLearned(1, true);
   }, [setLearned]);
-  return <Text>learned</Text>;
+  return <Text>{status}</Text>;
 }
 
 function Marker() {
-  const { rows, setLearned } = useVerses();
+  const { rows, setLearned, status } = useVerses();
+  if (status !== 'ready') return <Text>{status}</Text>;
   const listed = [...rows]
     .sort((a, b) => a.week - b.week)
     .map((row) => `${row.week}@${row.learned_at}`)
@@ -96,12 +97,8 @@ describe('VersesProvider', () => {
       </VersesProvider>,
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('learned') ?? screen.queryByRole('button', { name: 'Try again' })).toBeTruthy();
-    });
+    expect(await screen.findByText('unavailable')).toBeOnTheScreen();
     expect(writes).toEqual([]);
-    expect(screen.getByText('Couldn’t load your verses.')).toBeOnTheScreen();
-    expect(screen.queryByText('learned')).toBeNull();
   });
 
   it('copies unreadable verses aside before the first save', async () => {

@@ -20,7 +20,7 @@ export default function TodayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { days, mark } = useProgress();
-  const { rows } = useNotes();
+  const { rows, status: notesStatus } = useNotes();
   const { day } = useLocalSearchParams<{ day?: string }>();
   const dayIndex = dayParam(day);
 
@@ -29,7 +29,9 @@ export default function TodayScreen() {
       <TodayView
         done={days}
         dayIndex={dayIndex}
-        noteFor={(index) => rows.find((row) => row.day_index === index)?.body ?? null}
+        noteFor={(index) =>
+          notesStatus === 'ready' ? (rows.find((row) => row.day_index === index)?.body ?? null) : null
+        }
         onMark={(index) => {
           const tearing = currentDay(days)?.index === index;
           mark(index);

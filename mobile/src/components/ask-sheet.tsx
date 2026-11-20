@@ -1,0 +1,624 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  Dimensions,
+  AccessibilityInfo,
+  Animated,
+  Keyboard,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type KeyboardEvent,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
+
+import { accessToken } from '@/account/delete';
+import { useSession } from '@/account/session';
+import { supabaseAnonKey } from '@/account/supabase';
+import { useColors } from '@/theme/colors';
+import { fonts, hitSize } from '@/theme/fonts';
+import { CARE_TEXT } from '../../../supabase/functions/_shared/assistant/care';
+import { QUESTION_MAX_LENGTH, REPORT_NOTE_MAX } from '../../../supabase/functions/_shared/assistant/limits';
+import { days } from '../../../supabase/functions/_shared/content/plan';
+
+import {
+  defaultTransport,
+  loadStatus,
+  requestAnswer,
+  submitReport,
+  type AskPayload,
+  type AssistantStatus,
+  type AssistantTransport,
+  type QuickPromptType,
+  type ReportPayload,
+  type StreamEnd,
+} from '../assistant/client';
+import {
+  INVITATION_LINE,
+  LOADING_LINE,
+  NOT_CONFIGURED_LINE,
+  QUICK_PROMPTS,
+  REPORT_THANKS,
+  SIGN_IN_LINE,
+  UPSTREAM_LINE,
+  answerNotice,
+  failureLine,
+  reportLine,
+} from '../assistant/copy';
+import { askUrl, reportUrl } from '../assistant/url';
+
+import { AnnouncedLine } from './auth-chrome';
+import { Perforation } from './marks';
+import { Row, RowChevron } from './rows';
+
+/** The sheet reaches the bottom of the screen, so the composer rises by however much of the screen the keyboard covers. */
+export function composerLift(screenHeight: number, keyboardTop: number): number {
+  return Math.max(0, screenHeight - keyboardTop);
+}
+
+export function composerPadding(keyboardUp: boolean, insetBottom: number): number {
+  return keyboardUp ? 12 : Math.max(12, insetBottom);
+}
+
+type Gate = 'checking' | 'not-configured' | 'sign-in' | 'invitation' | 'unavailable' | 'ready';
+
+type ReportTarget =
+  | { kind: 'question'; question: string; answer: string }
+  | { kind: QuickPromptType; answer: string };
+
+function useComposerLift() {
+  const [lift] = useState(() => new Animated.Value(0));
+  const [keyboardUp, setKeyboardUp] = useState(false);
+
+  useEffect(() => {
+    const names =
+      Platform.OS === 'ios'
+        ? (['keyboardWillShow', 'keyboardWillHide', 'keyboardWillChangeFrame'] as const)
+        : (['keyboardDidShow', 'keyboardDidHide', 'keyboardDidChangeFrame'] as const);
+
+    function onKeyboard(event: KeyboardEvent) {
+      const duration = event.duration ?? 0;
+      const covered = event.endCoordinates.height > 0;
+      setKeyboardUp(covered);
+      const next = covered ? composerLift(Dimensions.get('screen').height, event.endCoordinates.screenY) : 0;
+      Animated.timing(lift, { toValue: next, duration, useNativeDriver: false }).start();
+    }
+
+    const subscriptions = names.map((name) => Keyboard.addListener(name, onKeyboard));
+    return () => {
+      for (const subscription of subscriptions) subscription.remove();
+    };
+  }, [lift]);
+
+  return { lift, keyboardUp };
+}
+
+function gateFor(status: AssistantStatus, signedIn: boolean): Gate {
+  if (!status.configured) return 'not-configured';
+  if (status.enabled === false) return 'invitation';
+  if (status.signInRequired && !signedIn) return 'sign-in';
+  return 'ready';
+}
+
+function CareReply({ asked }: { asked: boolean }) {
+  const colors = useColors();
+  const serif = {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    lineHeight: 17 * 1.55,
+    color: colors.ink,
+  };
+  return (
+    <Text maxFontSizeMultiplier={2} style={{ ...serif, marginTop: asked ? 8 : 18 }}>
+      {CARE_TEXT.split(/(call 988|text 988)/).map((part, index) =>
+        part === 'call 988' || part === 'text 988' ? (
+          <Text
+            key={index}
+            accessibilityRole="link"
+            onPress={() => {
+              void Linking.openURL(part === 'call 988' ? 'tel:988' : 'sms:988');
+            }}
+            style={{ ...serif, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
+            {part}
+          </Text>
+        ) : (
+          <Text key={index}>{part}</Text>
+        ),
+      )}
+    </Text>
+  );
+}
+
+function reportTarget(payload: AskPayload, text: string): ReportTarget {
+  if ('type' in payload) return { kind: payload.type, answer: text };
+  return { kind: 'question', question: payload.question, answer: text };
+}
+
+export function AskSheet({
+  dayIndex,
+  onClose,
+  onSignIn,
+  transport = defaultTransport,
+}: {
+  dayIndex: number;
+  onClose: () => void;
+  onSignIn: () => void;
+  transport?: AssistantTransport;
+}) {
+  const colors = useColors();
+  const session = useSession();
+  const day = days.find((item) => item.index === dayIndex);
+  const signedIn = session.status === 'signed-in';
+  const address = askUrl();
+  const [remoteGate, setRemoteGate] = useState<Gate>('checking');
+  const [statusAttempt, setStatusAttempt] = useState(0);
+  const [question, setQuestion] = useState('');
+  const [asked, setAsked] = useState<string | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [end, setEnd] = useState<StreamEnd | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [report, setReport] = useState<ReportTarget | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportNote, setReportNote] = useState('');
+  const [reportThanks, setReportThanks] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const askAbort = useRef<AbortController | null>(null);
+  const reportAbort = useRef<AbortController | null>(null);
+  const reportBusyRef = useRef(false);
+  const [reportBusy, setReportBusy] = useState(false);
+  const live = useRef(true);
+  const { lift, keyboardUp } = useComposerLift();
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+      askAbort.current?.abort();
+      reportAbort.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const url = askUrl();
+    if (!url || session.status === 'loading') return;
+    const controller = new AbortController();
+    let current = true;
+    void (async () => {
+      try {
+        const token = signedIn ? await accessToken() : null;
+        if (!current) return;
+        const status = await loadStatus({
+          transport,
+          url,
+          token,
+          anonKey: supabaseAnonKey ?? null,
+          signal: controller.signal,
+        });
+        if (!current) return;
+        setRemoteGate(gateFor(status, signedIn));
+      } catch {
+        if (!current || controller.signal.aborted) return;
+        setRemoteGate('unavailable');
+      }
+    })();
+    return () => {
+      current = false;
+      controller.abort();
+    };
+  }, [session.status, session.user?.id, signedIn, transport, statusAttempt]);
+
+  if (!day) return null;
+
+  async function ask(payload: AskPayload) {
+    const url = askUrl();
+    if (!url || streaming) return;
+    askAbort.current?.abort();
+    reportAbort.current?.abort();
+    reportBusyRef.current = false;
+    setReportBusy(false);
+    const controller = new AbortController();
+    askAbort.current = controller;
+    setStreaming(true);
+    setAnswer('');
+    setEnd(null);
+    setQuestion('');
+    const label = 'question' in payload ? payload.question : QUICK_PROMPTS.find((prompt) => prompt.type === payload.type)?.label;
+    setAsked(label ?? null);
+    setNotice(null);
+    setReport(null);
+    setReportOpen(false);
+    setReportNote('');
+    setReportThanks(false);
+    setReportError(null);
+    try {
+      let token: string | null;
+      try {
+        token = await accessToken();
+      } catch {
+        if (!live.current || controller.signal.aborted) return;
+        setAnswer('');
+        setNotice(UPSTREAM_LINE);
+        return;
+      }
+      if (!live.current || controller.signal.aborted) return;
+      const outcome = await requestAnswer({
+        transport,
+        url,
+        token,
+        anonKey: supabaseAnonKey ?? null,
+        payload,
+        signal: controller.signal,
+        onText: (text) => {
+          if (live.current && askAbort.current === controller) setAnswer(text);
+        },
+      });
+      if (!live.current || controller.signal.aborted || outcome.kind === 'aborted') return;
+      if (outcome.kind === 'failure') {
+        const line = failureLine(outcome, signedIn);
+        setAnswer('');
+        setReport(null);
+        if (line.kind === 'sign-in') setRemoteGate('sign-in');
+        else if (line.kind === 'invitation') setRemoteGate('invitation');
+        else if (line.kind === 'not-configured') setRemoteGate('not-configured');
+        else setNotice(line.text);
+        return;
+      }
+      const next = answerNotice(outcome);
+      setEnd(outcome.end);
+      setAnswer(next.keep && outcome.end !== 'care' ? outcome.text : '');
+      setNotice(next.text || null);
+      setReport(next.report ? reportTarget(payload, outcome.text) : null);
+      if (next.announce) AccessibilityInfo.announceForAccessibility(outcome.text);
+    } finally {
+      if (askAbort.current === controller) {
+        askAbort.current = null;
+        if (live.current) setStreaming(false);
+      }
+    }
+  }
+
+  function submitQuestion() {
+    const trimmed = question.trim();
+    if (!trimmed || streaming) return;
+    void ask({ dayIndex, question: trimmed });
+  }
+
+  async function sendReport() {
+    const url = reportUrl();
+    if (!report || !url || reportThanks || reportBusyRef.current) return;
+    reportBusyRef.current = true;
+    setReportBusy(true);
+    setReportError(null);
+    const controller = new AbortController();
+    reportAbort.current = controller;
+    const note = reportNote.trim();
+    const payload: ReportPayload =
+      report.kind === 'question'
+        ? {
+            dayIndex,
+            kind: 'question',
+            question: report.question,
+            answer: report.answer,
+            ...(note ? { note } : {}),
+          }
+        : { dayIndex, kind: report.kind, answer: report.answer, ...(note ? { note } : {}) };
+    try {
+      let token: string | null;
+      try {
+        token = await accessToken();
+      } catch {
+        if (!live.current || controller.signal.aborted) return;
+        setReportError(UPSTREAM_LINE);
+        return;
+      }
+      if (!live.current || controller.signal.aborted) return;
+      const outcome = await submitReport({
+        transport,
+        url,
+        token,
+        anonKey: supabaseAnonKey ?? null,
+        payload,
+        signal: controller.signal,
+      });
+      if (!live.current || controller.signal.aborted || outcome.kind === 'aborted') return;
+      if (outcome.kind === 'ok') {
+        setReportThanks(true);
+        setReportOpen(false);
+        return;
+      }
+      setReportError(reportLine(outcome));
+    } finally {
+      if (reportAbort.current === controller) reportAbort.current = null;
+      reportBusyRef.current = false;
+      if (live.current) setReportBusy(false);
+    }
+  }
+
+  function cancelReport() {
+    reportAbort.current?.abort();
+    reportBusyRef.current = false;
+    setReportBusy(false);
+    setReportOpen(false);
+    setReportNote('');
+    setReportError(null);
+  }
+
+  const android = Platform.OS === 'android';
+  const gate = address ? remoteGate : 'not-configured';
+  const ready = gate === 'ready';
+  let statusLine: string | null = null;
+  if (gate === 'not-configured') statusLine = NOT_CONFIGURED_LINE;
+  else if (gate === 'invitation') statusLine = INVITATION_LINE;
+  else if (gate === 'unavailable') statusLine = UPSTREAM_LINE;
+
+  const sheet = (
+    <>
+      <View collapsable={false} style={{ backgroundColor: colors.paper }}>
+        <Perforation color={colors.under} />
+        <View style={{ paddingHorizontal: 22, flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+          <Text
+            accessibilityRole="header"
+            maxFontSizeMultiplier={1.6}
+            style={{
+              flex: 1,
+              fontFamily: fonts.serifSemibold,
+              fontSize: 22,
+              lineHeight: 22 * 1.2,
+              color: colors.ink,
+              paddingTop: 8,
+            }}>
+            {day.reading}
+          </Text>
+          {android ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              onPress={onClose}
+              style={{ minWidth: hitSize(), minHeight: hitSize(), alignItems: 'center', justifyContent: 'center' }}>
+              <View
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: colors.field,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Svg width={12} height={12} viewBox="0 0 12 12">
+                  <Path d="M2 2l8 8M10 2l-8 8" stroke={colors.ink} strokeWidth={2} strokeLinecap="round" />
+                </Svg>
+              </View>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Done"
+              onPress={onClose}
+              style={{ minHeight: hitSize(), justifyContent: 'center', paddingHorizontal: 2 }}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.ink }}>Done</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 16 }}>
+        {gate === 'sign-in' ? (
+          <Pressable
+            accessibilityRole="link"
+            onPress={onSignIn}
+            style={{ minHeight: hitSize(), justifyContent: 'center' }}>
+            <Text
+              style={{
+                fontSize: 15,
+                lineHeight: 22,
+                color: colors.ink2,
+                textDecorationLine: 'underline',
+                textDecorationColor: colors.ink3,
+              }}>
+              {SIGN_IN_LINE}
+            </Text>
+          </Pressable>
+        ) : null}
+        {statusLine ? <AnnouncedLine>{statusLine}</AnnouncedLine> : null}
+        {gate === 'unavailable' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setStatusAttempt((attempt) => attempt + 1)}
+            style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
+            <Text
+              style={{
+                fontSize: 17,
+                color: colors.ink,
+                textDecorationLine: 'underline',
+                textDecorationColor: colors.ink3,
+              }}>
+              Try again
+            </Text>
+          </Pressable>
+        ) : null}
+        {ready ? (
+          <View style={{ marginTop: 6 }}>
+            {QUICK_PROMPTS.map((prompt, index) => (
+              <Row
+                key={prompt.type}
+                ruled={index > 0}
+                disabled={streaming}
+                accessibilityLabel={prompt.label}
+                onPress={() => {
+                  void ask({ dayIndex, type: prompt.type });
+                }}>
+                <Text style={{ flex: 1, fontSize: 17, color: colors.ink }}>{prompt.label}</Text>
+                <RowChevron />
+              </Row>
+            ))}
+          </View>
+        ) : null}
+        {asked ? (
+          <Text style={{ fontSize: 17, lineHeight: 17 * 1.35, fontWeight: '600', color: colors.ink, marginTop: 18 }}>{asked}</Text>
+        ) : null}
+        {streaming && !answer && end !== 'care' ? (
+          <Text style={{ fontSize: 15, lineHeight: 22, color: colors.ink2, marginTop: 8 }}>{LOADING_LINE}</Text>
+        ) : null}
+        {end === 'care' ? <CareReply asked={asked !== null} /> : null}
+        {answer ? (
+          <Text
+            maxFontSizeMultiplier={2}
+            style={{
+              fontFamily: fonts.serif,
+              fontSize: 17,
+              lineHeight: 17 * 1.55,
+              color: colors.ink,
+              marginTop: asked ? 8 : 18,
+            }}>
+            {answer}
+          </Text>
+        ) : null}
+        {notice ? <AnnouncedLine>{notice}</AnnouncedLine> : null}
+        {report && !streaming ? (
+          reportThanks ? (
+            <AnnouncedLine>{REPORT_THANKS}</AnnouncedLine>
+          ) : reportOpen ? (
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 14, color: colors.ink2, marginBottom: 6 }}>Add a note, if you want</Text>
+              <TextInput
+                accessibilityLabel="Add a note, if you want"
+                value={reportNote}
+                onChangeText={setReportNote}
+                maxLength={REPORT_NOTE_MAX}
+                multiline
+                placeholderTextColor={colors.ink2}
+                style={{
+                  minHeight: android ? 56 : 48,
+                  borderRadius: android ? 4 : 10,
+                  borderWidth: android ? 1 : 0,
+                  borderColor: colors.ink2,
+                  backgroundColor: android ? 'transparent' : colors.field,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  fontSize: 16,
+                  color: colors.ink,
+                  textAlignVertical: 'top',
+                }}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Send the report"
+                  accessibilityState={{ disabled: reportBusy }}
+                  disabled={reportBusy}
+                  onPress={() => {
+                    void sendReport();
+                  }}
+                  style={{ minHeight: hitSize(), justifyContent: 'center', paddingRight: 12 }}>
+                  <Text style={{ fontSize: 17, color: reportBusy ? colors.ink3 : colors.ink }}>Send</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel"
+                  onPress={cancelReport}
+                  style={{ minHeight: hitSize(), justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 17, color: colors.ink2 }}>Cancel</Text>
+                </Pressable>
+              </View>
+              {reportError ? <AnnouncedLine style={{ marginTop: 0 }}>{reportError}</AnnouncedLine> : null}
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Report this answer"
+              onPress={() => setReportOpen(true)}
+              style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.ink2,
+                  textDecorationLine: 'underline',
+                  textDecorationColor: colors.ink3,
+                }}>
+                Report this answer
+              </Text>
+            </Pressable>
+          )
+        ) : null}
+      </ScrollView>
+      {ready ? (
+        <Animated.View style={{ paddingBottom: lift }}>
+          <View
+            style={{
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: colors.rule,
+              paddingHorizontal: 14,
+              paddingTop: 8,
+              paddingBottom: composerPadding(keyboardUp, insets.bottom),
+              backgroundColor: colors.paper,
+            }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <TextInput
+              accessibilityLabel="Ask about this reading"
+              value={question}
+              onChangeText={setQuestion}
+              placeholder="Ask about this reading"
+              placeholderTextColor={colors.ink2}
+              maxLength={QUESTION_MAX_LENGTH}
+              editable={!streaming}
+              maxFontSizeMultiplier={1.6}
+              returnKeyType="send"
+              onSubmitEditing={submitQuestion}
+              style={{
+                flex: 1,
+                minHeight: android ? 56 : 44,
+                borderRadius: android ? 4 : 10,
+                borderWidth: android ? 1 : 0,
+                borderColor: colors.ink2,
+                backgroundColor: android ? 'transparent' : colors.field,
+                paddingHorizontal: 14,
+                fontSize: 16,
+                color: colors.ink,
+              }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send"
+              accessibilityState={{ disabled: streaming || question.trim().length === 0 }}
+              disabled={streaming || question.trim().length === 0}
+              onPress={submitQuestion}
+              style={{ minWidth: hitSize(), minHeight: hitSize(), alignItems: 'center', justifyContent: 'center' }}>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  backgroundColor: streaming || question.trim().length === 0 ? colors.ink3 : colors.ink,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+                  <Path
+                    d="M8 13V3M3.5 7.5 8 3l4.5 4.5"
+                    stroke={colors.paper}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </View>
+            </Pressable>
+            </View>
+          </View>
+        </Animated.View>
+      ) : null}
+    </>
+  );
+
+  return sheet;
+}

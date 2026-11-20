@@ -63,6 +63,16 @@ function RootStack() {
         }}
       />
       <Stack.Screen
+        name="ask/[day]"
+        options={{
+          presentation: 'formSheet',
+          headerShown: false,
+          sheetGrabberVisible: true,
+          sheetCornerRadius: Platform.OS === 'android' ? 28 : 12,
+          contentStyle: { backgroundColor: colors.paper },
+        }}
+      />
+      <Stack.Screen
         name="sign-in"
         options={{
           presentation: 'formSheet',

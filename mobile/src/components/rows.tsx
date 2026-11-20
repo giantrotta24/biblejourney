@@ -37,6 +37,7 @@ export function Row({
   onPress,
   accessibilityLabel,
   accessibilityState,
+  disabled = false,
   ruled = false,
   style,
 }: {
@@ -44,6 +45,7 @@ export function Row({
   onPress: () => void;
   accessibilityLabel: string;
   accessibilityState?: AccessibilityState;
+  disabled?: boolean;
   ruled?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -52,7 +54,8 @@ export function Row({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={accessibilityState}
+      accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
+      disabled={disabled}
       onPress={onPress}
       style={[
         {

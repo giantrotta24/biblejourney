@@ -41,6 +41,7 @@ export type TodayViewProps = {
   onBackToToday: () => void;
   onOpenPlan: () => void;
   onOpenNote?: (index: number) => void;
+  onOpenAsk?: (index: number) => void;
   onShowDay: (index: number | null) => void;
   signedInNote?: string | null;
   onPageTurn?: () => void;
@@ -55,6 +56,7 @@ export function TodayView({
   onBackToToday,
   onOpenPlan,
   onOpenNote,
+  onOpenAsk,
   onShowDay,
   signedInNote = null,
   onPageTurn,
@@ -186,6 +188,7 @@ export function TodayView({
                   onMark={() => pressMark(selected)}
                   onBackToToday={onBackToToday}
                   onOpenNote={onOpenNote}
+                  onOpenAsk={onOpenAsk}
                 />
               )}
             </Sheet>
@@ -322,6 +325,7 @@ function DayPage({
   onMark,
   onBackToToday,
   onOpenNote,
+  onOpenAsk,
   frozen = false,
   translation = 'NIV',
 }: {
@@ -333,6 +337,7 @@ function DayPage({
   onMark: () => void;
   onBackToToday: () => void;
   onOpenNote?: (index: number) => void;
+  onOpenAsk?: (index: number) => void;
   frozen?: boolean;
   translation?: string;
 }) {
@@ -425,18 +430,32 @@ function DayPage({
         {era.summary}
       </Text>
 
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`Read ${day.reading} on Bible Gateway`}
-        disabled={frozen}
-        onPress={() => {
-          void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading, translation));
-        }}
-        style={{ minHeight: hitSize(), justifyContent: 'center', alignSelf: 'flex-start' }}>
-        <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
-          Read on Bible Gateway
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`Read ${day.reading} on Bible Gateway`}
+          disabled={frozen}
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(bibleGatewayUrl(day.reading, translation));
+          }}
+          style={{ minHeight: hitSize(), justifyContent: 'center' }}>
+          <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
+            Read on Bible Gateway
+          </Text>
+        </Pressable>
+        {onOpenAsk ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Ask about this reading"
+            disabled={frozen}
+            onPress={() => onOpenAsk(day.index)}
+            style={{ minHeight: hitSize(), justifyContent: 'center' }}>
+            <Text style={{ fontSize: 15, color: colors.ink, textDecorationLine: 'underline', textDecorationColor: colors.ink3 }}>
+              Ask about this reading
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <NoteArea note={note} colors={colors} large={large} disabled={frozen} onPress={() => onOpenNote?.(day.index)} />
 

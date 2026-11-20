@@ -109,7 +109,6 @@ export function memoryQueue(): PendingQueue {
     },
     async clear() {
       ops.length = 0;
-      next = 1;
       linked = null;
       rejected = 0;
       resetSeen = null;
@@ -207,8 +206,16 @@ export function createStorageQueue(storage: KeyValueStore): PendingQueue {
       }),
     clear: () =>
       run(async () => {
+        let nextId = file?.nextId ?? 1;
+        if (!file) {
+          try {
+            nextId = (await hydrate()).nextId;
+          } catch {
+            nextId = 1;
+          }
+        }
         failed = false;
-        await write(emptyFile());
+        await write({ ...emptyFile(), nextId });
       }),
   };
 }

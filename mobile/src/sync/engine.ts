@@ -276,9 +276,11 @@ export function createSync(
       try {
         if (op.kind === 'mark-reset') {
           const stamped = await s.remote.markReset(op.at);
+          if (session !== s) return false;
           if (stamped) await rememberReset(stamped);
         } else {
           await sendChange(s.remote, op);
+          if (session !== s) return false;
           if (op.kind === 'delete-note') {
             s.reconciled = false;
             again = true;
@@ -288,10 +290,12 @@ export function createSync(
           }
         }
       } catch (error) {
+        if (session !== s) return false;
         if (!isRefusal(error)) return false;
         await addRejected();
         if (op.kind === 'put-note') await rememberRefused(op.row.day_index);
       }
+      if (session !== s) return false;
       await queue.remove(op.id);
     }
     return true;
@@ -633,6 +637,13 @@ export function createSync(
       await linkedLoaded;
       const userId = session?.userId ?? linked;
       if (!userId) return;
+      for (const key of new Set([...unrecorded, ...failedChanges.keys()])) {
+        if (key.startsWith('day:') || key.startsWith('verse:')) {
+          unrecorded.delete(key);
+          failedChanges.delete(key);
+        }
+      }
+      await persistUnrecorded();
       await queue.push({ kind: 'mark-reset', at, user_id: userId });
       await rememberReset(at);
       if (session) void track(flush());

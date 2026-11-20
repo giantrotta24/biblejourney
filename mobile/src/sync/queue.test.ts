@@ -79,6 +79,21 @@ describe('sync queue', () => {
     expect(note && note.kind === 'put-note' ? note.row.body : null).toBe('second');
   });
 
+  it('keeps issuing new ids after a clear', async () => {
+    const queue = memoryQueue();
+    await queue.push({ kind: 'delete-day', day_index: 0, user_id: 'user-1' });
+    await queue.clear();
+    await queue.push({ kind: 'delete-verse', week: 2, user_id: 'user-1' });
+    expect((await queue.list('user-1')).map((op) => op.id)).toEqual([2]);
+
+    const storage = memory();
+    const stored = createStorageQueue(storage);
+    await stored.push({ kind: 'delete-day', day_index: 0, user_id: 'user-1' });
+    await stored.clear();
+    await stored.push({ kind: 'delete-verse', week: 2, user_id: 'user-1' });
+    expect((await stored.list('user-1')).map((op) => op.id)).toEqual([2]);
+  });
+
   it('retries a read that threw and stops after a payload it cannot parse', async () => {
     let reads = 0;
     const storage: KeyValueStore = {

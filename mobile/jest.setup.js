@@ -64,3 +64,21 @@ jest.mock('expo-crypto', () => ({
   CryptoEncoding: { HEX: 'hex' },
   digestStringAsync: jest.fn(async () => 'hashed-nonce'),
 }));
+jest.mock('expo-notifications', () => require('./src/reminders/notifications-mock'));
+jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { Pressable } = require('react-native');
+  function DateTimePicker({ onValueChange, value, is24Hour }) {
+    return React.createElement(Pressable, {
+      accessibilityRole: 'button',
+      accessibilityLabel: 'Time picker',
+      is24Hour,
+      onPress: () => {
+        const next = new Date(value);
+        next.setHours(8, 30, 0, 0);
+        if (onValueChange) onValueChange({ nativeEvent: { timestamp: next.getTime(), utcOffset: 0 } }, next);
+      },
+    });
+  }
+  return { __esModule: true, default: DateTimePicker };
+});

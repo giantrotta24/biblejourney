@@ -6,7 +6,7 @@ import { Alert, Appearance, StyleSheet, Text } from 'react-native';
 
 import { fakeAuth, resetFakeAuth } from '@/account/fake-supabase';
 import { WelcomeGate, WELCOMED_KEY } from '@/account/welcome';
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import AccountRoute from '@/app/(tabs)/more/account';
 import MoreScreen from '@/app/(tabs)/more/index';
 import SettingsRoute from '@/app/(tabs)/more/settings';
@@ -80,7 +80,7 @@ describe('More reference and settings', () => {
     expect(router.push).toHaveBeenCalledWith('/more/timeline');
     await fireEvent.press(screen.getByRole('button', { name: /Who’s who, Peoples and prophets/ }));
     expect(router.push).toHaveBeenCalledWith('/more/whos-who');
-    await fireEvent.press(screen.getByRole('button', { name: /Settings, Appearance, translation, start over/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /Settings, Reminder, appearance, translation/ }));
     expect(router.push).toHaveBeenCalledWith('/more/settings');
   });
 

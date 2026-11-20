@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { router } from 'expo-router';
 import { AppState, Pressable, Text } from 'react-native';
 
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import { useProgress } from '@/progress/context';
 import { OFFLINE_LINE, SYNCED_LINE, SYNCING_LINE } from '@/sync/copy';
 import { createFakeServer, type FakeDevice } from '@/sync/fake-remote';
@@ -48,7 +48,7 @@ describe('More and Account', () => {
     expect(await screen.findByRole('button', { name: 'Account, Not signed in' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: /Timeline, The 11 eras/ })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: /Who’s who, Peoples and prophets/ })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: /Settings, Appearance, translation, start over/ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /Settings, Reminder, appearance, translation/ })).toBeOnTheScreen();
     expect(screen.queryByText('Subscription')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Account, Not signed in' }));
     expect(router.push).toHaveBeenCalledWith('/more/account');

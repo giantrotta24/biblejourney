@@ -11,6 +11,7 @@ import { useNotes } from '@/notes/context';
 import { NOTES_KEY, NOTES_UNREADABLE_KEY } from '@/notes/store';
 import { useProgress } from '@/progress/context';
 import { PROGRESS_KEY, PROGRESS_V2_KEY, PROGRESS_V2_UNREADABLE_KEY } from '@/progress/store';
+import { turnReminderOff } from '@/reminders/client';
 import { accountLine } from '@/sync/copy';
 import { useRejectedCount, useRuntime, useSyncStatus } from '@/sync/react';
 import { useColors } from '@/theme/colors';
@@ -78,6 +79,7 @@ export function AccountBody({
       return;
     }
     await runStep(() => signOut());
+    await runStep(() => turnReminderOff());
     const daysReady = await runStep(clearDays);
     const versesReady = await runStep(clearVerses);
     const notesReady = await runStep(clearNotes);

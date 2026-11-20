@@ -4,7 +4,7 @@ import { render, waitFor } from '@testing-library/react-native';
 import { Appearance, Text } from 'react-native';
 
 import { fakeAuth, fakeProfiles, resetFakeAuth } from '@/account/fake-supabase';
-import { ReadingProviders } from '@/app/providers';
+import { ReadingProviders } from '@/providers';
 import { resetSettingsForTests } from '@/settings/client';
 
 /* eslint-disable @typescript-eslint/no-require-imports -- the mock factory cannot close over an import */

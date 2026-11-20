@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { ReadingProviders } from '@/providers';
+import { whenReminderReady } from '@/reminders/client';
 import { whenSettingsReady } from '@/settings/client';
 import { useColors } from '@/theme/colors';
 import { useResolvedScheme } from '@/theme/scheme';
-
-import { ReadingProviders } from './providers';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,7 +26,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     let live = true;
-    void whenSettingsReady().then(() => {
+    void Promise.all([whenSettingsReady(), whenReminderReady()]).then(() => {
       if (live) setSettingsReady(true);
     });
     return () => {

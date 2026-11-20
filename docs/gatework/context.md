@@ -66,3 +66,4 @@ Record decisions here, newest last: the date, the decision, and the reason.
 - 2026-11-15: closed task BJ-12: Assistant gated to enabled accounts, shipped in PR 19
 - 2026-11-18: closed task BJ-13: Harden the study assistant: screen, answer check, crisis reply, reports
 - 2026-11-18: closed task BJ-14: Native app design round: Today, Plan, study assistant, paywall
+- 2026-11-20: BJ-23: Reminders are local notifications on the phone. profiles.reminder_time is never written. Granting permission later does not turn the reminder on.

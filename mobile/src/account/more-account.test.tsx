@@ -46,10 +46,10 @@ describe('More and Account', () => {
       </ReadingProviders>,
     );
     expect(await screen.findByRole('button', { name: 'Account, Not signed in' })).toBeOnTheScreen();
-    expect(screen.queryByText('Timeline')).toBeNull();
-    expect(screen.queryByText('Settings')).toBeNull();
+    expect(screen.getByRole('button', { name: /Timeline, The 11 eras/ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /Who’s who, Peoples and prophets/ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /Settings, Appearance, translation, start over/ })).toBeOnTheScreen();
     expect(screen.queryByText('Subscription')).toBeNull();
-    expect(screen.queryByText(/Who/)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Account, Not signed in' }));
     expect(router.push).toHaveBeenCalledWith('/more/account');
   });

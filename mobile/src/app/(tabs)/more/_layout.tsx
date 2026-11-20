@@ -8,6 +8,10 @@ export default function MoreStack() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="account" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="translation" />
+      <Stack.Screen name="timeline" />
+      <Stack.Screen name="whos-who" />
     </Stack>
   );
 }

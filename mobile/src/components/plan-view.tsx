@@ -22,15 +22,17 @@ type PlanViewProps = {
   done: ReadonlySet<number>;
   noted: ReadonlySet<number>;
   onOpenDay: (index: number) => void;
+  focusWeek?: number | null;
 };
 
-export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
+export function PlanView({ done, noted, onOpenDay, focusWeek = null }: PlanViewProps) {
   const colors = useColors();
   const current = currentDay(done);
   const currentWeek = current?.week ?? WEEK_COUNT;
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([currentWeek]));
   const [seenWeek, setSeenWeek] = useState(currentWeek);
   const [scrub, setScrub] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
   const [compact, setCompact] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const listTop = useRef(0);
@@ -50,6 +52,22 @@ export function PlanView({ done, noted, onOpenDay }: PlanViewProps) {
     const y = listTop.current + (offsets.current.get(week) ?? 0);
     scrollRef.current?.scrollTo({ y: Math.max(0, y - BAR), animated: true });
   }, []);
+
+  if (focusWeek != null && focused !== focusWeek) {
+    setFocused(focusWeek);
+    setScrub(null);
+    if (!open.has(focusWeek)) {
+      const next = new Set(open);
+      next.add(focusWeek);
+      setOpen(next);
+    }
+  }
+
+  useEffect(() => {
+    if (focusWeek == null) return;
+    pending.current = focusWeek;
+    scrollToWeek(focusWeek);
+  }, [focusWeek, scrollToWeek]);
 
   const openDayRef = useRef(onOpenDay);
   useEffect(() => {
